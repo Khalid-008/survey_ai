@@ -1,0 +1,20 @@
+# Ignore the whole experiments folder
+/experiments/*
+whatsapp-venv/
+
+# Except the src subfolder
+!/experiments/src/
+!/experiments/src/**
+
+# Ignore the other project experiment folder entirely
+/exp_project/
+
+# Optional: Ignore system or IDE files
+*.log
+*.tmp
+.DS_Store
+*.swp
+.idea/
+.vscode/
+*.pyc
+*.venv

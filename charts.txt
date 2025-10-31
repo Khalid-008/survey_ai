@@ -1,0 +1,10 @@
+Pyramid chart
+Bubble chart
+Scatter plot
+Histogram
+Area chart
+Donut chart
+Pie chart
+Column chart
+Bar chart
+Stacked bar chart

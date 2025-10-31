@@ -1,0 +1,128 @@
+<style>
+    .chart-widget,.wordcloud-widget{background:#fff;border-radius:12px;padding:30px;margin:0 auto 20px auto;box-shadow:0 2px 8px rgba(0,0,0,0.1);max-width:100%;box-sizing:border-box}
+    .chart-title{font-size:18px;font-weight:600;margin-bottom:20px;text-align:center;color:#1e293b}
+    canvas{display:block;width:100%!important;height:400px!important;max-width:100%}
+    svg{max-width:100%!important;height:auto!important}
+  </style>
+  
+  <div class="wordcloud-widget">
+    <div class="chart-title">أبرز الكلمات في التعليقات</div>
+    <div id="f9d2a5e7-3c8b-4a91-8e6f-2b7d4c9a1e53"></div>
+  </div>
+  
+  <div class="chart-widget">
+    <div class="chart-title">عدد التعليقات ذات التقييم الممتاز</div>
+    <canvas id="b4e7c2a9-5f1d-4b83-9a72-6e3d8f1c4a95"></canvas>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-cloud/1.2.5/d3.layout.cloud.min.js"></script>
+  <script>
+  /* Word Cloud */
+  const wcContainer = document.getElementById('f9d2a5e7-3c8b-4a91-8e6f-2b7d4c9a1e53');
+  const wcWidth = wcContainer.clientWidth;
+  const wcHeight = 500;
+  const words = [
+    {text:"ممتاز",size:80,type:"positive"},
+    {text:"شكرا",size:70,type:"positive"},
+    {text:"خدمة",size:65,type:"positive"},
+    {text:"سريع",size:60,type:"positive"},
+    {text:"محترم",size:58,type:"positive"},
+    {text:"تأخير",size:55,type:"negative"},
+    {text:"جيد",size:54,type:"positive"},
+    {text:"ممتازة",size:52,type:"positive"},
+    {text:"ردود",size:50,type:"positive"},
+    {text:"دليل",size:48,type:"neutral"},
+    {text:"احترافية",size:47,type:"positive"},
+    {text:"متعاون",size:45,type:"positive"},
+    {text:"سعر",size:44,type:"neutral"},
+    {text:"منتج",size:43,type:"neutral"},
+    {text:"تهاون",size:42,type:"negative"},
+    {text:"منتظر",size:41,type:"negative"},
+    {text:"موظف",size:40,type:"neutral"},
+    {text:"تجربة",size:39,type:"positive"},
+    {text:"وقت",size:38,type:"neutral"},
+    {text:"تواصل",size:37,type:"positive"},
+    {text:"مساعدة",size:36,type:"positive"},
+    {text:"شحن",size:35,type:"neutral"},
+    {text:"إمكان",size:34,type:"neutral"},
+    {text:"سؤال",size:33,type:"neutral"},
+    {text:"إستجابة",size:32,type:"positive"},
+    {text:"توصيل",size:31,type:"positive"},
+    {text:"موقع",size:30,type:"neutral"},
+    {text:"قائمة",size:29,type:"neutral"},
+    {text:"معامل",size:28,type:"neutral"},
+    {text:"تقييم",size:27,type:"neutral"},
+    {text:"ملاحظة",size:26,type:"negative"},
+    {text:"عملاء",size:25,type:"neutral"},
+    {text:"دعم",size:24,type:"positive"},
+    {text:"فريق",size:23,type:"positive"},
+    {text:"إدارة",size:22,type:"neutral"},
+    {text:"آراء",size:21,type:"neutral"},
+    {text:"أمان",size:20,type:"positive"},
+    {text:"إجراءات",size:19,type:"neutral"},
+    {text:"موقعك",size:18,type:"neutral"},
+    {text:"منتظرين",size:17,type:"negative"},
+    {text:"ساعة",size:16,type:"neutral"},
+    {text:"عجلة",size:15,type:"neutral"},
+    {text:"صعب",size:14,type:"negative"},
+    {text:"راحة",size:13,type:"positive"},
+    {text:"خطأ",size:12,type:"negative"},
+    {text:"نقطة",size:11,type:"neutral"},
+    {text:"مفاجئ",size:10,type:"positive"},
+    {text:"تحسين",size:9,type:"neutral"},
+    {text:"نظام",size:8,type:"neutral"},
+    {text:"هدف",size:7,type:"neutral"},
+    {text:"سعادة",size:6,type:"positive"}
+  ];
+  const color = d => d.type==="positive"? "#28a745" : d.type==="negative"? "#dc3545" : "#007bff";
+  
+  d3.layout.cloud()
+    .size([wcWidth, wcHeight])
+    .words(words.map(d=>Object.assign({},d,{size:d.size})))
+    .padding(5)
+    .rotate(0)
+    .font("Arial")
+    .fontSize(d=>d.size)
+    .on("end", draw)
+    .start();
+  
+  function draw(words){
+    d3.select('#' + wcContainer.id).append("svg")
+      .attr("width", wcWidth)
+      .attr("height", wcHeight)
+      .append("g")
+      .attr("transform", "translate(" + wcWidth/2 + "," + wcHeight/2 + ")")
+      .selectAll("text")
+      .data(words)
+      .enter().append("text")
+      .style("font-family","Arial")
+      .style("font-weight","700")
+      .style("font-size", d=>d.size + "px")
+      .style("fill", d=>color(d))
+      .attr("text-anchor","middle")
+      .attr("transform", d=>"translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")")
+      .text(d=>d.text);
+  }
+  
+  /* Bar Chart */
+  new Chart(document.getElementById('b4e7c2a9-5f1d-4b83-9a72-6e3d8f1c4a95'),{
+    type:'bar',
+    data:{
+      labels:['ممتاز'],
+      datasets:[{
+        label:'عدد التعليقات',
+        data:[977],
+        backgroundColor:'#28a745'
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      scales:{
+        y:{beginAtZero:true}
+      }
+    }
+  });
+  </script>

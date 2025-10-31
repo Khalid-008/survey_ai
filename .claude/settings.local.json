@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c \"from src.agents.prompt.visualization_generator_prompt import visualization_generator_prompt; result = visualization_generator_prompt.invoke({''DATASET_SAMPLE'': ''test data''}); print(''✓ Import successful''); print(f''✓ Returns {len(result)} messages''); print(f''✓ Has normal single brackets: {''{'' in str(result)}'')\")",
+      "Bash(python:*)",
+      "Bash(.venvScriptspython.exe -c \"from src.agents.prompt.visualization_generator_prompt import visualization_generator_prompt; result = visualization_generator_prompt.invoke({''DATASET_SAMPLE'': ''test data''}); print(''✓ Success! Prompt works and uses normal single brackets'')\")",
+      "Bash(.venv/Scripts/python.exe:*)",
+      "Bash(timeout 5 .venv/Scripts/python.exe:*)",
+      "Bash(../.venv/Scripts/python.exe -c \"from agents.prompt.visualization_generator_prompt import visualization_generator_prompt; print(''[SUCCESS] Prompt imports correctly from src directory!'')\")",
+      "Bash(../.venv/Scripts/python.exe:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

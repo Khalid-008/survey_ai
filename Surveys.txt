@@ -1,0 +1,28 @@
+Surveys 
+
+survey 1
+6BB381D8-B348-4E66-8CCA-A9F63A91973F
+
+select ID, Subject, Description from Survey where ID = '6BB381D8-B348-4E66-8CCA-A9F63A91973F'
+
+SELECT q.ID as QuestionID, q.Question as QuestionsEn, q.Question_Header as QuestionsAr
+FROM [VMS].[dbo].[Survey] s
+INNER JOIN SurveyQuestion q ON q.SurveyID = s.ID
+WHERE s.ID = '6BB381D8-B348-4E66-8CCA-A9F63A91973F'
+
+Q1 = هل كانو العملاء راضين عن وقت اصال المنتج؟
+Q2 = ايش سبب التأخير اللي حصل؟
+
+survey 2
+64453205-136A-425D-B702-A95D583CCA73
+
+select ID, Subject, Description from Survey where ID = '64453205-136A-425D-B702-A95D583CCA73'
+
+SELECT q.ID as QuestionID, q.Question as QuestionsEn, q.Question_Header as QuestionsAr
+FROM [VMS].[dbo].[Survey] s
+INNER JOIN SurveyQuestion q ON q.SurveyID = s.ID
+WHERE s.ID = '64453205-136A-425D-B702-A95D583CCA73'
+
+
+Q1 = ايش اكثر البطايق ا لمستخدمه؟
+Q2 = طيب ممكن اعرف المدن اللي فيها البقالات

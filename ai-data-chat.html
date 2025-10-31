@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مساعد تحليل الاستبيانات</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Cairo', 'Tajawal', 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .chat-container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 1400px;
+            height: 90vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 24px;
+            border-radius: 16px 16px 0 0;
+        }
+
+        .chat-header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .survey-id-input {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .survey-id-input input {
+            flex: 1;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .survey-id-input button {
+            padding: 8px 16px;
+            background: white;
+            color: #667eea;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .survey-id-input button:hover {
+            transform: scale(1.05);
+        }
+
+        .survey-id-display {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .new-session-button {
+            padding: 6px 12px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .new-session-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            background: #f8f9fa;
+        }
+
+        .message {
+            margin-bottom: 20px;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message-user {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .message-user .message-content {
+            background: #667eea;
+            color: white;
+            padding: 12px 16px;
+            border-radius: 18px 18px 4px 18px;
+            max-width: 70%;
+            word-wrap: break-word;
+            direction: rtl;
+            text-align: right;
+        }
+
+        .message-assistant {
+            display: flex;
+            justify-content: flex-start;
+        }
+
+        .message-assistant .message-content {
+            background: white;
+            padding: 20px;
+            border-radius: 4px 18px 18px 18px;
+            max-width: 100%;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            direction: rtl;
+            text-align: right;
+        }
+
+        .insight-card {
+            margin-bottom: 16px;
+        }
+
+        .insight-section {
+            margin-bottom: 20px;
+        }
+
+        .insight-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .insight-title {
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 8px;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            direction: rtl;
+            text-align: right;
+        }
+
+        .insight-title::before {
+            content: '';
+            display: inline-block;
+            width: 4px;
+            height: 16px;
+            background: #667eea;
+            border-radius: 2px;
+        }
+
+        .executive-summary {
+            background: #f0f4ff;
+            padding: 16px;
+            border-radius: 8px;
+            border-right: 4px solid #667eea;
+            font-size: 15px;
+            line-height: 1.6;
+            color: #334155;
+            direction: rtl;
+            text-align: right;
+        }
+
+        .detailed-analysis {
+            font-size: 14px;
+            line-height: 1.8;
+            color: #475569;
+            direction: rtl;
+            text-align: right;
+        }
+
+        .key-metrics {
+            display: grid;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .metric-item {
+            background: #f8fafc;
+            padding: 12px 16px;
+            border-radius: 8px;
+            border-right: 3px solid #10b981;
+            font-size: 14px;
+            color: #334155;
+            direction: rtl;
+            text-align: right;
+        }
+
+        .recommendations {
+            display: grid;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .recommendation-item {
+            background: #fff7ed;
+            padding: 12px 16px;
+            border-radius: 8px;
+            border-right: 3px solid #f97316;
+            font-size: 14px;
+            color: #334155;
+            direction: rtl;
+            text-align: right;
+        }
+
+        .insight-section {
+            margin-bottom: 32px;
+        }
+
+        .visualizations {
+            width: 100%;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .visualization-item {
+            width: 100%;
+            margin-bottom: 0;
+        }
+        
+        @media (max-width: 900px) {
+            .visualizations {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .visualization-description {
+            font-size: 14px;
+            color: #64748b;
+            margin-bottom: 16px;
+            line-height: 1.6;
+            direction: rtl;
+            text-align: right;
+            background: #f0f9ff;
+            padding: 12px;
+            border-radius: 8px;
+            border-right: 3px solid #0ea5e9;
+        }
+
+        .chart-render-container {
+            width: 100%;
+            overflow: visible;
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin: 20px 0;
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .chart-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #1e293b;
+            text-align: center;
+            width: 100%;
+            direction: rtl;
+        }
+
+        /* Override inline styles from chart HTML - ensure proper sizing */
+        .chart-render-container .chart-widget {
+            max-width: 100% !important;
+            width: 100% !important;
+            margin: 0 auto 20px auto !important;
+            box-sizing: border-box !important;
+        }
+
+        .chart-render-container .wordcloud-widget {
+            max-width: 100% !important;
+            width: 100% !important;
+            margin: 0 auto 20px auto !important;
+            box-sizing: border-box !important;
+        }
+
+        .chart-render-container canvas {
+            max-width: 800px !important;
+            width: 100% !important;
+            height: 450px !important;
+            box-sizing: border-box !important;
+            background: white;
+        }
+
+        .chart-render-container svg {
+            max-width: 100% !important;
+            width: 100% !important;
+            height: auto !important;
+            box-sizing: border-box !important;
+        }
+
+        /* Ensure word cloud containers are properly sized */
+        .chart-render-container div[id] {
+            max-width: 100% !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #667eea;
+            font-weight: 500;
+            direction: rtl;
+        }
+
+        .loading-dots {
+            display: flex;
+            gap: 6px;
+        }
+
+        .loading-dots span {
+            width: 8px;
+            height: 8px;
+            background: #667eea;
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+
+        .loading-dots span:nth-child(1) {
+            animation-delay: -0.32s;
+        }
+
+        .loading-dots span:nth-child(2) {
+            animation-delay: -0.16s;
+        }
+
+        @keyframes bounce {
+            0%, 80%, 100% {
+                transform: scale(0);
+            }
+            40% {
+                transform: scale(1);
+            }
+        }
+
+        .chat-input-container {
+            padding: 20px 24px;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+        }
+
+        #messageInput {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 14px;
+            resize: none;
+            max-height: 150px;
+            min-height: 48px;
+            font-family: 'Cairo', 'Arial', sans-serif;
+            direction: rtl;
+            text-align: right;
+            transition: border-color 0.2s;
+        }
+
+        #messageInput:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        #sendButton {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            white-space: nowrap;
+        }
+
+        #sendButton:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        #sendButton:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .error-message {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 16px;
+            border-radius: 8px;
+            border-right: 4px solid #dc2626;
+            direction: rtl;
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>🤖 مساعد تحليل الاستبيانات</h1>
+            <div id="surveyIdSection">
+                <div class="survey-id-input">
+                    <input 
+                        type="text" 
+                        id="surveyIdInput" 
+                        placeholder="أدخل معرّف الاستبيان (Survey ID)"
+                        style="direction: ltr; text-align: left;"
+                    >
+                    <button onclick="setSurveyId()">تعيين جلسة جديدة</button>
+                </div>
+            </div>
+            <div id="currentSurveyDisplay" class="survey-id-display" style="display: none;">
+                <span id="surveyIdText"></span>
+                <button class="new-session-button" onclick="startNewSession()">
+                    🔄 جلسة جديدة
+                </button>
+            </div>
+        </div>
+        
+        <div id="chatMessages" class="chat-messages"></div>
+        
+        <div class="chat-input-container">
+            <textarea 
+                id="messageInput" 
+                placeholder="اكتب سؤالك هنا..."
+                disabled
+            ></textarea>
+            <button id="sendButton" onclick="sendMessage()" disabled>إرسال</button>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5566/survey_insight';
+        let currentSurveyId = null;
+        let sessionId = null;
+
+        function generateSessionId() {
+            return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        function setSurveyId() {
+            const input = document.getElementById('surveyIdInput');
+            const surveyId = input.value.trim();
+            
+            if (!surveyId) {
+                alert('الرجاء إدخال معرّف الاستبيان');
+                return;
+            }
+
+            currentSurveyId = surveyId;
+            sessionId = generateSessionId();
+
+            document.getElementById('surveyIdSection').style.display = 'none';
+            document.getElementById('currentSurveyDisplay').style.display = 'flex';
+            document.getElementById('surveyIdText').textContent = `الاستبيان: ${surveyId}`;
+
+            document.getElementById('messageInput').disabled = false;
+            document.getElementById('sendButton').disabled = false;
+            document.getElementById('messageInput').focus();
+
+            document.getElementById('chatMessages').innerHTML = '';
+
+            addMessage(`
+                <div style="text-align: center; padding: 20px; color: #64748b; direction: rtl;">
+                    مرحباً! تم تعيين الاستبيان <strong>${surveyId}</strong><br>
+                    يمكنك الآن طرح أسئلتك حول البيانات 🚀
+                </div>
+            `);
+        }
+
+        function startNewSession() {
+            if (confirm('هل تريد بدء جلسة جديدة؟ سيتم مسح المحادثة الحالية.')) {
+                currentSurveyId = null;
+                sessionId = null;
+                document.getElementById('surveyIdInput').value = '';
+                document.getElementById('surveyIdSection').style.display = 'block';
+                document.getElementById('currentSurveyDisplay').style.display = 'none';
+                document.getElementById('messageInput').disabled = true;
+                document.getElementById('sendButton').disabled = true;
+                document.getElementById('chatMessages').innerHTML = '';
+            }
+        }
+
+        function addMessage(content, isUser = false) {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message message-${isUser ? 'user' : 'assistant'}`;
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            contentDiv.innerHTML = content;
+            
+            messageDiv.appendChild(contentDiv);
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function addLoadingMessage() {
+            const chatMessages = document.getElementById('chatMessages');
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'message message-assistant';
+            loadingDiv.id = 'loadingMessage';
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            contentDiv.innerHTML = `
+                <div class="loading">
+                    <div class="loading-dots">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                    <span>جاري تحليل البيانات...</span>
+                </div>
+            `;
+            
+            loadingDiv.appendChild(contentDiv);
+            chatMessages.appendChild(loadingDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function removeLoadingMessage() {
+            const loadingMsg = document.getElementById('loadingMessage');
+            if (loadingMsg) {
+                loadingMsg.remove();
+            }
+        }
+
+        function loadScriptDynamically(src) {
+            return new Promise((resolve, reject) => {
+                const existingScript = document.querySelector(`script[src="${src}"]`);
+                if (existingScript) {
+                    resolve();
+                    return;
+                }
+                
+                const script = document.createElement('script');
+                script.src = src;
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
+
+        async function renderChart(containerId, chartConfig) {
+            const container = document.getElementById(containerId);
+            if (!container) {
+                console.error('Container not found:', containerId);
+                return;
+            }
+
+            try {
+                const chartType = chartConfig.chart_type || 'bar';
+                let chartData = chartConfig.data || {};
+                const chartOptions = chartConfig.options || {};
+                const chartTitle = chartConfig.title || '';
+                
+                // Transform data structure to match Chart.js requirements
+                if (chartData.datasets === undefined && chartData.data && chartData.labels) {
+                    // API returns: { labels: [...], data: [...], backgroundColor: [...], label: "..." }
+                    // Chart.js needs: { labels: [...], datasets: [{ data: [...], backgroundColor: [...], label: "..." }] }
+                    let backgroundColor = chartData.backgroundColor || chartData.backgroundColors || '#667eea';
+                    
+                    // Ensure backgroundColor is an array matching data length
+                    const dataLength = (chartData.data || []).length;
+                    if (Array.isArray(backgroundColor)) {
+                        // If array length doesn't match, pad or trim
+                        while (backgroundColor.length < dataLength) {
+                            backgroundColor.push('#cccccc');
+                        }
+                        if (backgroundColor.length > dataLength) {
+                            backgroundColor = backgroundColor.slice(0, dataLength);
+                        }
+                    } else {
+                        // If single color, create array of that color
+                        backgroundColor = Array(dataLength).fill(backgroundColor);
+                    }
+                    
+                    chartData = {
+                        labels: chartData.labels,
+                        datasets: [{
+                            label: chartData.label || 'Data',
+                            data: chartData.data || [],
+                            backgroundColor: backgroundColor
+                        }]
+                    };
+                }
+                
+                // Load Chart.js if needed
+                if (!window.Chart) {
+                    await loadScriptDynamically('https://cdn.jsdelivr.net/npm/chart.js');
+                }
+                
+                // Wait a bit more to ensure Chart.js is fully loaded
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                // If word cloud, use D3.js
+                if (chartType === 'wordcloud') {
+                    if (!window.d3) {
+                        await loadScriptDynamically('https://d3js.org/d3.v6.min.js');
+                    }
+                    
+                    // Load D3-cloud separately
+                    if (!window.cloud) {
+                        await loadScriptDynamically('https://cdn.jsdelivr.net/npm/d3-cloud@1.2.5/build/d3.layout.cloud.min.js');
+                    }
+                    
+                    // Render word cloud
+                    renderWordCloud(container, chartData.words || []);
+                } else {
+                    // Clear any existing content
+                    container.innerHTML = '';
+                    
+                    // Add title if provided
+                    if (chartTitle) {
+                        const titleDiv = document.createElement('div');
+                        titleDiv.className = 'chart-title';
+                        titleDiv.textContent = chartTitle;
+                        container.appendChild(titleDiv);
+                    }
+                    
+                    // Create canvas element for standard charts with proper dimensions
+                    const canvas = document.createElement('canvas');
+                    canvas.style.width = '100%';
+                    canvas.style.height = '400px';
+                    canvas.style.display = 'block';
+                    canvas.style.maxWidth = '100%';
+                    container.appendChild(canvas);
+                    
+                    // Render standard Chart.js chart
+                    setTimeout(() => {
+                        try {
+                            const ctx = canvas.getContext('2d');
+                            if (!ctx) {
+                                throw new Error('Could not get 2D context from canvas');
+                            }
+                            
+                            // Validate chartData structure
+                            if (!chartData.labels || !chartData.datasets || !Array.isArray(chartData.datasets)) {
+                                throw new Error('Invalid chart data structure. Expected: {labels: [...], datasets: [...]}');
+                            }
+                            
+                            new Chart(ctx, {
+                                type: chartType,
+                                data: chartData,
+                                options: chartOptions
+                            });
+                        } catch (chartError) {
+                            container.innerHTML = `
+                                <div style="padding: 20px; background: #fee; color: #c00; border-radius: 8px; text-align: center; direction: rtl;">
+                                    ⚠️ خطأ في إنشاء الرسم البياني: ${chartError.message}
+                                </div>
+                            `;
+                        }
+                    }, 200);
+                }
+
+            } catch (error) {
+                console.error('Chart rendering error:', error);
+                container.innerHTML = `
+                    <div style="padding: 20px; background: #fee; color: #c00; border-radius: 8px; text-align: center;">
+                        ⚠️ خطأ في عرض الرسم البياني: ${error.message}
+                    </div>
+                `;
+            }
+        }
+        
+        function renderWordCloud(container, words) {
+            try {
+                if (!words || words.length === 0) {
+                    container.innerHTML = '<div style="padding:20px;text-align:center;">لا توجد بيانات للعرض</div>';
+                    return;
+                }
+                
+                const width = container.clientWidth || 600;
+                const height = 500;
+                
+                // Clear container
+                container.innerHTML = '';
+                
+                // Create SVG
+                const svg = d3.select(container)
+                    .append('svg')
+                    .attr('width', width)
+                    .attr('height', height);
+                
+                // Create word cloud layout
+                const layout = d3.layout.cloud()
+                    .size([width, height])
+                    .words(words)
+                    .padding(5)
+                    .rotate(() => 0)
+                    .font('Arial')
+                    .fontSize(d => d.size)
+                    .on('end', draw);
+                
+                layout.start();
+                
+                function draw(words) {
+                    const g = svg.append('g')
+                        .attr('transform', `translate(${width/2},${height/2})`);
+                    
+                    g.selectAll('text')
+                        .data(words)
+                        .enter().append('text')
+                        .style('font-size', d => d.size + 'px')
+                        .style('font-family', 'Arial')
+                        .style('fill', d => d.color || '#667eea')
+                        .attr('text-anchor', 'middle')
+                        .attr('transform', d => `translate(${d.x},${d.y})rotate(${d.rotate})`)
+                        .text(d => d.text);
+                }
+            } catch (error) {
+                console.error('Word cloud rendering error:', error);
+                container.innerHTML = `
+                    <div style="padding: 20px; background: #fee; color: #c00; border-radius: 8px; text-align: center;">
+                        ⚠️ خطأ في عرض سحابة الكلمات: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        function formatDetailedAnalysis(text) {
+            text = text.replace(/\\n/g, '\n');
+            text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            
+            const paragraphs = text.split('\n').filter(p => p.trim());
+            return paragraphs.map(p => `<p style="margin-bottom: 12px;">${p}</p>`).join('');
+        }
+
+        function formatInsightResponse(data) {
+            let html = '<div class="insight-card">';
+
+            if (data.executive_summary) {
+                html += `
+                    <div class="insight-section">
+                        <div class="insight-title">📌 الملخص التنفيذي</div>
+                        <div class="executive-summary">${data.executive_summary}</div>
+                    </div>
+                `;
+            }
+
+            if (data.detailed_analysis) {
+                html += `
+                    <div class="insight-section">
+                        <div class="insight-title">📊 التحليل التفصيلي</div>
+                        <div class="detailed-analysis">${formatDetailedAnalysis(data.detailed_analysis)}</div>
+                    </div>
+                `;
+            }
+
+            if (data.key_metrics && data.key_metrics.length > 0) {
+                html += `
+                    <div class="insight-section">
+                        <div class="insight-title">📈 المؤشرات الرئيسية</div>
+                        <div class="key-metrics">
+                            ${data.key_metrics.map((metric, idx) => `
+                                <div class="metric-item">
+                                    <strong>${idx + 1}.</strong> ${metric}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Handle charts array structure with chart data
+            if (data.charts && Array.isArray(data.charts) && data.charts.length > 0) {
+                html += `
+                    <div class="insight-section">
+                        <div class="insight-title">📊 الرسوم البيانية</div>
+                        <div class="visualizations">
+                `;
+                
+                data.charts.forEach((chartConfig, idx) => {
+                    const chartId = `chart-${Date.now()}-${idx}`;
+                    const chartTitle = chartConfig.title || '';
+                    const chartType = chartConfig.chart_type || 'bar';
+                    html += `
+                        <div class="visualization-item">
+                            <div id="${chartId}" class="chart-render-container">
+                                <div style="text-align:center;padding:20px;color:#64748b;">
+                                    ${chartTitle ? `<h3 style="margin-bottom:10px;">${chartTitle}</h3>` : ''}
+                                    <div style="margin:20px 0;">📊 تحميل ${chartType === 'pie' ? 'دائري' : chartType === 'bar' ? 'عمودي' : 'رسم بياني'}...</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Render chart after DOM update with increased delay
+                    setTimeout(() => {
+                        renderChart(chartId, chartConfig);
+                    }, 500 * (idx + 1));
+                });
+                
+                html += `
+                        </div>
+                    </div>
+                `;
+            }
+            // Handle old visualizations structure for backward compatibility
+            if (data.visualizations && Array.isArray(data.visualizations) && data.visualizations.length > 0) {
+                html += `
+                    <div class="insight-section">
+                        <div class="insight-title">📊 الرسوم البيانية</div>
+                        <div class="visualizations">
+                `;
+                
+                data.visualizations.forEach((viz, idx) => {
+                    const chartId = `chart-${Date.now()}-${idx}`;
+                    html += `
+                        <div class="visualization-item">
+                            ${viz.chart_description ? `
+                                <div class="visualization-description">${viz.chart_description}</div>
+                            ` : ''}
+                            <div id="${chartId}" class="chart-render-container"></div>
+                        </div>
+                    `;
+                    
+                    // Render chart after DOM update with increased delay
+                    setTimeout(() => {
+                        console.log('Starting to render chart:', chartId);
+                        renderChart(chartId, viz.chart_html);
+                    }, 500 * (idx + 1));
+                });
+                
+                html += `
+                        </div>
+                    </div>
+                `;
+            }
+
+            if (data.recommendations && data.recommendations.length > 0) {
+                html += `
+                    <div class="insight-section">
+                        <div class="insight-title">💡 التوصيات</div>
+                        <div class="recommendations">
+                            ${data.recommendations.map((rec, idx) => `
+                                <div class="recommendation-item">
+                                    <strong>${idx + 1}.</strong> ${rec}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            html += '</div>';
+            return html;
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            
+            if (!message || !currentSurveyId) return;
+
+            input.disabled = true;
+            document.getElementById('sendButton').disabled = true;
+
+            addMessage(message, true);
+            input.value = '';
+
+            addLoadingMessage();
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        request: {
+                            survey_id: currentSurveyId,
+                            message: message,
+                            session_id: sessionId
+                        }
+                    })
+                });
+
+
+                removeLoadingMessage();
+
+                if (!response.ok) {
+                    throw new Error(`خطأ في الخادم: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log('Full API response:', data);
+                debugger;
+
+                const formattedResponse = formatInsightResponse(data);
+                addMessage(formattedResponse);
+
+            } catch (error) {
+                removeLoadingMessage();
+                console.error('Error:', error);
+                addMessage(`
+                    <div class="error-message">
+                        ❌ خطأ: ${error.message}
+                        <br><br>
+                        الرجاء التأكد من أن خادم API يعمل على ${API_URL}
+                    </div>
+                `);
+            } finally {
+                input.disabled = false;
+                document.getElementById('sendButton').disabled = false;
+                input.focus();
+            }
+        }
+
+        document.getElementById('messageInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        document.getElementById('messageInput').addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 150) + 'px';
+        });
+
+        document.getElementById('surveyIdInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                setSurveyId();
+            }
+        });
+    </script>
+</body>
+</html>
