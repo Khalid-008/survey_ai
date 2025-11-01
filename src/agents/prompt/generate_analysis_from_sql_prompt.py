@@ -80,8 +80,7 @@ Your goal is to analyze the correlation and relationships between how users answ
 ## Important Notes
 
 - The AnswerUniqueID field allows you to track how the SAME person answered different questions
-- Look for correlations like: "People who answered X to question 1 tended to answer Y to question 2"
-- Consider both positive and negative correlations
+- Look for patterns like: "People who answered X to question 1 tended to answer Y to question 2"
 - Identify any surprising or unexpected patterns
 - Be specific with percentages and counts when making claims
 

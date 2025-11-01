@@ -50,6 +50,45 @@ def survey_insight():
         # Parse charts from JSON strings to actual objects
         parsed_charts = []
         chart_type_stats = {}
+        invalid_charts_count = 0
+        
+        def validate_chart(chart):
+            """Validate that a chart has valid data structure"""
+            if not isinstance(chart, dict):
+                return False, "Chart is not a dictionary"
+            
+            chart_type = chart.get('chart_type')
+            if not chart_type:
+                return False, "Missing 'chart_type' field (required)"
+            
+            # Validate chart_type is a recognized type
+            valid_types = ['bar', 'line', 'doughnut', 'pie', 'scatter', 'bubble', 'radar', 'wordcloud']
+            if chart_type not in valid_types:
+                return False, f"Invalid chart_type '{chart_type}' (must be one of: {', '.join(valid_types)})"
+            
+            # Skip data validation for wordcloud charts
+            if chart_type == 'wordcloud':
+                return True, None
+            
+            data = chart.get('data', {})
+            if not isinstance(data, dict):
+                return False, "Missing or invalid 'data' field (must be an object)"
+            
+            # Check if datasets exists and is a non-empty array
+            datasets = data.get('datasets', [])
+            if not isinstance(datasets, list) or len(datasets) == 0:
+                return False, "Missing or empty 'datasets' array"
+            
+            # Check if each dataset has valid data
+            for ds_idx, dataset in enumerate(datasets):
+                if not isinstance(dataset, dict):
+                    return False, f"Dataset {ds_idx} is not a dictionary"
+                
+                ds_data = dataset.get('data', [])
+                if not isinstance(ds_data, list) or len(ds_data) == 0:
+                    return False, f"Dataset {ds_idx} has empty or missing 'data' array"
+            
+            return True, None
         
         for idx, chart_str in enumerate(response["charts"]):
             try:
@@ -64,14 +103,34 @@ def survey_insight():
                     print(f"Parsed {len(chart_data)} charts from this set")
                     for chart in chart_data:
                         chart_type = chart.get('chart_type', 'UNKNOWN')
-                        chart_type_stats[chart_type] = chart_type_stats.get(chart_type, 0) + 1
-                        print(f"  ✅ Chart type: {chart_type}, title: {chart.get('title')}")
-                    parsed_charts.extend(chart_data)
+                        
+                        # Validate chart before adding
+                        is_valid, error_msg = validate_chart(chart)
+                        if is_valid:
+                            chart_type_stats[chart_type] = chart_type_stats.get(chart_type, 0) + 1
+                            print(f"  ✅ Chart type: {chart_type}, title: {chart.get('title')}")
+                            parsed_charts.append(chart)
+                        else:
+                            invalid_charts_count += 1
+                            title = chart.get('title', 'Untitled')
+                            print(f"  ❌ Invalid chart skipped: {chart_type}, title: {title}")
+                            if error_msg:
+                                print(f"     Reason: {error_msg}")
                 else:
                     chart_type = chart_data.get('chart_type', 'UNKNOWN')
-                    chart_type_stats[chart_type] = chart_type_stats.get(chart_type, 0) + 1
-                    print(f"  ✅ Chart type: {chart_type}, title: {chart_data.get('title')}")
-                    parsed_charts.append(chart_data)
+                    
+                    # Validate chart before adding
+                    is_valid, error_msg = validate_chart(chart_data)
+                    if is_valid:
+                        chart_type_stats[chart_type] = chart_type_stats.get(chart_type, 0) + 1
+                        print(f"  ✅ Chart type: {chart_type}, title: {chart_data.get('title')}")
+                        parsed_charts.append(chart_data)
+                    else:
+                        invalid_charts_count += 1
+                        title = chart_data.get('title', 'Untitled')
+                        print(f"  ❌ Invalid chart skipped: {chart_type}, title: {title}")
+                        if error_msg:
+                            print(f"     Reason: {error_msg}")
                     
             except json.JSONDecodeError as e:
                 print(f"❌ Failed to parse chart JSON: {e}")
@@ -81,7 +140,11 @@ def survey_insight():
         print(f"\n📊 FINAL CHART TYPE STATISTICS:")
         for chart_type, count in sorted(chart_type_stats.items(), key=lambda x: x[1], reverse=True):
             print(f"  {chart_type}: {count} charts")
-        print(f"Total charts parsed: {len(parsed_charts)}\n")
+        print(f"Total charts parsed: {len(parsed_charts)}")
+        if invalid_charts_count > 0:
+            print(f"⚠️ Invalid charts filtered out: {invalid_charts_count}\n")
+        else:
+            print()
 
         return jsonify(OrderedDict([
             ("executive_summary", content["executive_summary"]),

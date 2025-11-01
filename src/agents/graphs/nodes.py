@@ -1,24 +1,22 @@
 import json
 from langchain_core.documents import Document
 from langchain_core.messages import trim_messages
-from opentelemetry.trace import status
 from llms.models import model, google_embeddings_model
 from agents.prompt.get_relevant_question_node_prompt import get_relevant_question_prompt
-from agents.prompt.supervisor_agent_prompt import supervisor_prompt
 from langgraph.types import Command
 from agents.graphs.setup import State
 from typing import Literal
 from data.operations import get_survey_questions, run_query
-from data.text_to_sql import get_quantitative_answers, get_qualitative_answers
+from data.sql_operations import get_quantitative_answers, get_qualitative_answers, get_correlation_query
 from langchain_core.messages import AIMessage
 from langchain_core.vectorstores import InMemoryVectorStore
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from agents.prompt.generate_analysis_from_rag_prompt import generate_analysis_from_qualitative_data_prompt
-from agents.prompt.data_type_agent_prompt import data_type_agent_prompt
 from agents.prompt.generate_analysis_from_sql_prompt import generate_analysis_from_quantitative_data_prompt
+from agents.prompt.generate_correlation_analysis_prompt import generate_correlation_analysis_prompt
 from agents.prompt.synthesis_agent_prompt import synthesis_agent_prompt
 from agents.prompt.visualization_generator_prompt import visualization_generator_from_quantitative_data_prompt, visualization_generator_from_qualitative_data_prompt
-from agents.prompt.chart_handling_prompt import chart_handling_prompt_function
+from agents.prompt.visualization_correlation_prompt import visualization_generator_for_correlation_prompt
 #######################################################################
 embeddings = google_embeddings_model
 vector_store = InMemoryVectorStore(embeddings)
@@ -35,7 +33,6 @@ def selected_messages_node(state: State):
         allow_partial=True,
     )
     return {"selected_messages": selected_messages}
-    
 
 def retrieve_survey_question(state: State) -> Command[Literal["get_relevant_question"]]:
     try:
@@ -112,8 +109,6 @@ def get_relevant_question(state: State) -> Command[Literal["get_answers"]]:
         print(f"User Query: {state['selected_messages'][-1].content if state.get('selected_messages') else 'No messages'}")
         raise RuntimeError(f"Server error: {str(e)}")
 
-# DATASET 
-# Process quantitative questions first (SQL), then qualitative questions (RAG)
 def get_answers(state: State) -> Command[Literal["generate_analysis_from_sql", "upload_rag", "synthesis_agent"]]:
     try:
         quantitative_questions = state.get("quantitative_questions", [])
@@ -146,12 +141,24 @@ def get_answers(state: State) -> Command[Literal["generate_analysis_from_sql", "
             query = get_quantitative_answers(quantitative_questions)
             print(f"📝 Generated SQL Query:\n{query}")
             quantitative_answers = run_query(query)
+
+            # Only perform correlation analysis if we have at least 2 quantitative questions
+            if len(quantitative_questions) >= 2:
+                correlation_query = get_correlation_query(quantitative_questions)
+                print(f"📝 Generated Correlation Query:\n{correlation_query}")
+                correlation_answers = run_query(correlation_query)
+            else:
+                print(f"⏭️ Skipping correlation analysis (requires at least 2 quantitative questions, found {len(quantitative_questions)})")
+                correlation_query = None
+                correlation_answers = None
             
             return Command(
                 goto="generate_analysis_from_sql",
                 update={
                     "quantitative_answers": quantitative_answers,
+                    "correlation_answers": correlation_answers,
                     "previous_query": query,
+                    "correlation_query": correlation_query,
                     "quantitative_processed": True,
                     "iteration_count": iteration_count
                 }
@@ -185,8 +192,6 @@ def get_answers(state: State) -> Command[Literal["generate_analysis_from_sql", "
         print(f"❌ ERROR in get_answers: {str(e)}")
         raise RuntimeError(f"Server error: {str(e)}")
 
-
-#############################################################################################
 def upload_rag(state: State) -> Command[Literal["generate_analysis_from_rag"]]:
     try:
         vector_store.delete()
@@ -234,11 +239,6 @@ def generate_analysis_from_rag(state: State) -> Command[Literal["get_answers"]]:
         
         analysis_response = model.invoke(formatted_prompt)
 
-        # Include actual raw data for visualization
-        # raw_data_str = f"Raw Data:\n{docs_content[:500]}..." if len(docs_content) > 500 else f"Raw Data:\n{docs_content}"
-        
-        # content = "User Question:" + state["selected_messages"][-1].content + " \n Related Survey Question:" + question['question_text'] + " \n Analysis:" + response.content + " \n" + raw_data_str
-
         # Generate charts for this question's analysis
         charts = state.get("charts", [])
         try:
@@ -281,7 +281,6 @@ def generate_analysis_from_rag(state: State) -> Command[Literal["get_answers"]]:
 
     except Exception as e:
         raise RuntimeError(f"Server error: {str(e)}")
-#############################################################################################
 
 def generate_analysis_from_sql(state: State) -> Command[Literal["get_answers"]]:
     """Analyze all quantitative questions together using the previous query results"""
@@ -292,6 +291,8 @@ def generate_analysis_from_sql(state: State) -> Command[Literal["get_answers"]]:
         user_question = state["selected_messages"][-1].content
         previous_query = state.get("previous_query", "")
         quantitative_answers = state.get("quantitative_answers", "")
+        correlation_answers = state.get("correlation_answers")
+        correlation_query = state.get("correlation_query", "")
         
         print(f"Analyzing {len(quantitative_questions)} quantitative questions")
         
@@ -309,53 +310,111 @@ def generate_analysis_from_sql(state: State) -> Command[Literal["get_answers"]]:
             data = json.loads(quantitative_answers) if quantitative_answers else {}
         else:
             data = quantitative_answers
-
-        # Invoke the analysis prompt
-        prompt = generate_analysis_from_quantitative_data_prompt.invoke(
-            {
-                "USER_QUESTION": user_question,
-                "QUANTITATIVE_QUESTIONS": questions_summary,
-                "QUESTION_IDS": ', '.join([f"'{qid}'" for qid in question_ids]),
-                "DATASET": json.dumps(data, ensure_ascii=False),
-                "PREVIOUS_QUERY": previous_query,
-            }
-        )
-
-        analysis_response = model.invoke(prompt)
         
-        print(f"✅ Generated quantitative analysis")
+        # Parse correlation answers
+        if isinstance(correlation_answers, str):
+            correlation_data = json.loads(correlation_answers) if correlation_answers else {}
+        else:
+            correlation_data = correlation_answers
+        
+        print(f"📊 Quantitative data size: {len(str(data))}")
+        print(f"🔗 Correlation data size: {len(str(correlation_data))}")
 
-        # Generate charts for quantitative analysis
+        all_analyses = []
         charts = state.get("charts", [])
+        
+        # 1. Generate regular quantitative analysis
+        print(f"📊 Generating regular quantitative analysis...")
         try:
-            print(f"🎨 Generating charts for quantitative analysis based on data structure...")
+            quant_prompt = generate_analysis_from_quantitative_data_prompt.invoke(
+                {
+                    "USER_QUESTION": user_question,
+                    "QUANTITATIVE_QUESTIONS": questions_summary,
+                    "QUESTION_IDS": ', '.join([f"'{qid}'" for qid in question_ids]),
+                    "DATASET": json.dumps(data, ensure_ascii=False),
+                    "PREVIOUS_QUERY": previous_query,
+                }
+            )
             
-            charts_prompt = visualization_generator_from_quantitative_data_prompt.invoke(
+            quant_analysis_response = model.invoke(quant_prompt)
+            all_analyses.append(quant_analysis_response.content)
+            print(f"✅ Generated quantitative analysis")
+            
+            # Generate charts for quantitative data
+            print(f"🎨 Generating charts for quantitative data...")
+            quant_charts_prompt = visualization_generator_from_quantitative_data_prompt.invoke(
                 {
                     "DATA_CONTENT": json.dumps(data, ensure_ascii=False)
                 }
             )
             
-            charts_response = model.invoke(charts_prompt)
+            quant_charts_response = model.invoke(quant_charts_prompt)
             
-            # Parse and log chart types
             try:
-                chart_json = json.loads(charts_response.content)
+                chart_json = json.loads(quant_charts_response.content)
                 if isinstance(chart_json, list) and len(chart_json) > 0:
                     chart_types = [chart.get('chart_type', 'UNKNOWN') for chart in chart_json]
                     print(f"📊 Quantitative: Generated {len(chart_json)} charts with types: {chart_types}")
+                charts.append(quant_charts_response.content)
             except json.JSONDecodeError as e:
-                print(f"❌ Failed to parse chart JSON: {e}")
-            
-            charts.append(charts_response.content)
-            
+                print(f"❌ Failed to parse quantitative chart JSON: {e}")  
         except Exception as e:
-            print(f"⚠️ Chart generation failed: {e}")
+            print(f"⚠️ Quantitative analysis failed: {e}")
+        
+        # 2. Generate correlation analysis (only if we have correlation data)
+        has_correlation_data = correlation_data is not None and (
+            (isinstance(correlation_data, dict) and len(correlation_data) > 0) or
+            (isinstance(correlation_data, list) and len(correlation_data) > 0) or
+            (isinstance(correlation_data, str) and correlation_data.strip())
+        )
+        
+        if has_correlation_data:
+            print(f"🔗 Generating correlation analysis...")
+            try:
+                
+                corr_prompt = generate_correlation_analysis_prompt.invoke(
+                    {
+                        "USER_QUESTION": user_question,
+                        "QUANTITATIVE_QUESTIONS": questions_summary,
+                        "QUESTION_IDS": ', '.join([f"'{qid}'" for qid in question_ids]),
+                        "CORRELATION_DATA": json.dumps(correlation_data, ensure_ascii=False),
+                        "PREVIOUS_QUERY": correlation_query,
+                    }
+                )
+                
+                corr_analysis_response = model.invoke(corr_prompt)
+                all_analyses.append(corr_analysis_response.content)
+                print(f"✅ Generated correlation analysis")
+                
+                # Generate charts for correlation data
+                print(f"🎨 Generating charts for correlation data...")
+                corr_charts_prompt = visualization_generator_for_correlation_prompt.invoke(
+                    {
+                        "CORRELATION_DATA": json.dumps(correlation_data, ensure_ascii=False)
+                    }
+                )
+                
+                corr_charts_response = model.invoke(corr_charts_prompt)
+                
+                try:
+                    chart_json = json.loads(corr_charts_response.content)
+                    if isinstance(chart_json, list) and len(chart_json) > 0:
+                        chart_types = [chart.get('chart_type', 'UNKNOWN') for chart in chart_json]
+                        print(f"🔗 Correlation: Generated {len(chart_json)} charts with types: {chart_types}")
+                    charts.append(corr_charts_response.content)
+                except json.JSONDecodeError as e:
+                    print(f"❌ Failed to parse correlation chart JSON: {e}")
+                    
+            except Exception as e:
+                print(f"⚠️ Correlation analysis failed: {e}")
+        
+        # Combine all analyses
+        combined_analysis = "\n\n---\n\n".join(all_analyses)
         
         return Command(
             update={
                 "messages": [
-                    AIMessage(content=analysis_response.content, name="generate_analysis_from_sql")
+                    AIMessage(content=combined_analysis, name="generate_analysis_from_sql")
                 ],
                 "charts": charts,
                 "iteration_count": state.get("iteration_count", 0)

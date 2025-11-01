@@ -43,7 +43,7 @@ User Query → Message Trimming → Retrieve Questions → Get Relevant Question
 - **src/agents/graphs/nodes.py** - All graph nodes
 - **src/agents/graphs/setup.py** - State schema
 - **src/data/operations.py** - Database operations
-- **src/data/text_to_sql.py** - Text-to-SQL conversion
+- **src/data/sql_operations.py** - Text-to-SQL conversion
 - **src/llms/models.py** - LLM and embeddings models
 - **src/helper/utils.py** - JSON extraction and utility functions
 
@@ -175,7 +175,7 @@ data = extract_json(llm_response)
 ### Database Query
 ```python
 from data.operations import run_query
-from data.text_to_sql import write_query
+from data.sql_operations import write_query
 query = write_query("natural language question")
 results = run_query(query)
 ```
@@ -213,7 +213,7 @@ survey_ai-1.1/
 │   │   ├── models.py        # Data models
 │   │   ├── connection.py    # DB connection
 │   │   ├── operations.py    # DB operations
-│   │   └── text_to_sql.py   # NL to SQL
+│   │   └── sql_operations.py   # NL to SQL
 │   ├── llms/
 │   │   └── models.py        # LLM configurations
 │   ├── helper/

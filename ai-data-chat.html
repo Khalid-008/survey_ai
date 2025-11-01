@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مساعد تحليل الاستبيانات</title>
+    <title>مساعد تحليل الاستبيانات - إصدار محسّن</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         * {
@@ -246,10 +246,6 @@
             text-align: right;
         }
 
-        .insight-section {
-            margin-bottom: 32px;
-        }
-
         .visualizations {
             width: 100%;
             display: grid;
@@ -262,7 +258,8 @@
             margin-bottom: 0;
         }
         
-        @media (max-width: 900px) {
+        /* ENHANCED: Better responsive grid */
+        @media (max-width: 1200px) {
             .visualizations {
                 grid-template-columns: 1fr;
             }
@@ -281,65 +278,61 @@
             border-right: 3px solid #0ea5e9;
         }
 
+        /* ENHANCED: Better chart container styling */
         .chart-render-container {
             width: 100%;
             overflow: visible;
             background: white;
             border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
             margin: 20px 0;
-            min-height: 400px;
+            min-height: 450px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
         }
         
         .chart-title {
             font-size: 18px;
             font-weight: 600;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
             color: #1e293b;
             text-align: center;
             width: 100%;
             direction: rtl;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #e5e7eb;
         }
 
-        /* Override inline styles from chart HTML - ensure proper sizing */
-        .chart-render-container .chart-widget {
-            max-width: 100% !important;
-            width: 100% !important;
-            margin: 0 auto 20px auto !important;
-            box-sizing: border-box !important;
-        }
-
-        .chart-render-container .wordcloud-widget {
-            max-width: 100% !important;
-            width: 100% !important;
-            margin: 0 auto 20px auto !important;
-            box-sizing: border-box !important;
-        }
-
+        /* ENHANCED: Better canvas sizing for different chart types */
         .chart-render-container canvas {
-            max-width: 800px !important;
+            max-width: 100% !important;
             width: 100% !important;
-            height: 450px !important;
+            min-height: 400px !important;
+            height: auto !important;
             box-sizing: border-box !important;
-            background: white;
+            background: transparent;
+        }
+
+        /* Special handling for doughnut/pie charts */
+        .chart-render-container.chart-type-doughnut canvas,
+        .chart-render-container.chart-type-pie canvas {
+            max-width: 500px !important;
+            min-height: 450px !important;
+        }
+
+        /* Special handling for scatter/bubble charts */
+        .chart-render-container.chart-type-scatter canvas,
+        .chart-render-container.chart-type-bubble canvas {
+            min-height: 500px !important;
         }
 
         .chart-render-container svg {
             max-width: 100% !important;
             width: 100% !important;
             height: auto !important;
-            box-sizing: border-box !important;
-        }
-
-        /* Ensure word cloud containers are properly sized */
-        .chart-render-container div[id] {
-            max-width: 100% !important;
-            width: 100% !important;
             box-sizing: border-box !important;
         }
 
@@ -442,12 +435,36 @@
             direction: rtl;
             text-align: right;
         }
+
+        /* ENHANCED: Chart loading state */
+        .chart-loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            color: #64748b;
+        }
+
+        .chart-loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #e5e7eb;
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 16px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
     <div class="chat-container">
         <div class="chat-header">
-            <h1>🤖 مساعد تحليل الاستبيانات</h1>
+            <h1>🤖 مساعد تحليل الاستبيانات - الإصدار المحسّن</h1>
             <div id="surveyIdSection">
                 <div class="survey-id-input">
                     <input 
@@ -592,6 +609,128 @@
             });
         }
 
+        // ENHANCED: Better callback handling for Chart.js
+        function processChartOptions(options) {
+            if (!options) return {};
+            
+            // Deep clone to avoid modifying original
+            const processed = JSON.parse(JSON.stringify(options));
+            
+            // Helper function to convert string functions to actual functions
+            function convertStringToFunction(str, context = '') {
+                if (typeof str !== 'string') return str;
+                
+                try {
+                    // Check if it's a function string
+                    if (str.trim().startsWith('function')) {
+                        // eslint-disable-next-line no-eval
+                        return eval(`(${str})`);
+                    }
+                    return str;
+                } catch (e) {
+                    console.warn(`Failed to parse ${context} callback:`, e);
+                    console.warn('Callback string:', str);
+                    return null;
+                }
+            }
+            
+            // Process callbacks in scales (x, y, r axes)
+            if (processed.scales) {
+                ['x', 'y', 'r'].forEach(axis => {
+                    if (processed.scales[axis]) {
+                        // Handle ticks callback
+                        if (processed.scales[axis].ticks?.callback) {
+                            const func = convertStringToFunction(
+                                processed.scales[axis].ticks.callback, 
+                                `${axis} ticks`
+                            );
+                            if (func) {
+                                processed.scales[axis].ticks.callback = func;
+                            } else {
+                                delete processed.scales[axis].ticks.callback;
+                            }
+                        }
+                        
+                        // Handle afterBuildTicks callback
+                        if (processed.scales[axis].afterBuildTicks) {
+                            const func = convertStringToFunction(
+                                processed.scales[axis].afterBuildTicks,
+                                `${axis} afterBuildTicks`
+                            );
+                            if (func) {
+                                processed.scales[axis].afterBuildTicks = func;
+                            } else {
+                                delete processed.scales[axis].afterBuildTicks;
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Process callbacks in plugins.tooltip
+            if (processed.plugins?.tooltip?.callbacks) {
+                Object.keys(processed.plugins.tooltip.callbacks).forEach(key => {
+                    const func = convertStringToFunction(
+                        processed.plugins.tooltip.callbacks[key],
+                        `tooltip ${key}`
+                    );
+                    if (func && typeof func === 'function') {
+                        processed.plugins.tooltip.callbacks[key] = func;
+                    } else {
+                        delete processed.plugins.tooltip.callbacks[key];
+                    }
+                });
+            }
+            
+            // Process callbacks in plugins.legend
+            if (processed.plugins?.legend?.labels?.generateLabels) {
+                const func = convertStringToFunction(
+                    processed.plugins.legend.labels.generateLabels,
+                    'legend generateLabels'
+                );
+                if (func) {
+                    processed.plugins.legend.labels.generateLabels = func;
+                } else {
+                    delete processed.plugins.legend.labels.generateLabels;
+                }
+            }
+            
+            // Process onHover and onClick callbacks
+            ['onHover', 'onClick'].forEach(eventName => {
+                if (processed[eventName]) {
+                    const func = convertStringToFunction(processed[eventName], eventName);
+                    if (func) {
+                        processed[eventName] = func;
+                    } else {
+                        delete processed[eventName];
+                    }
+                }
+            });
+            
+            // Process animation callbacks
+            if (processed.animation?.onProgress) {
+                const func = convertStringToFunction(processed.animation.onProgress, 'animation onProgress');
+                if (func) {
+                    processed.animation.onProgress = func;
+                } else {
+                    delete processed.animation.onProgress;
+                }
+            }
+            
+            if (processed.animation?.onComplete) {
+                const func = convertStringToFunction(processed.animation.onComplete, 'animation onComplete');
+                if (func) {
+                    processed.animation.onComplete = func;
+                } else {
+                    delete processed.animation.onComplete;
+                }
+            }
+            
+            console.log('✅ Processed chart options with callbacks converted');
+            return processed;
+        }
+
+        // ENHANCED: Better chart rendering with proper data structure handling
         async function renderChart(containerId, chartConfig) {
             const container = document.getElementById(containerId);
             if (!container) {
@@ -602,113 +741,193 @@
             try {
                 const chartType = chartConfig.chart_type || 'bar';
                 let chartData = chartConfig.data || {};
-                const chartOptions = chartConfig.options || {};
+                const chartOptions = processChartOptions(chartConfig.options || {});
                 const chartTitle = chartConfig.title || '';
                 
-                // Transform data structure to match Chart.js requirements
+                console.log('Rendering chart:', chartType, 'with config:', chartConfig);
+                
+                // Add chart type class for responsive styling
+                container.classList.add(`chart-type-${chartType}`);
+                
+                // ENHANCED: Merge labels from root level if not in data
+                if (chartConfig.labels && !chartData.labels) {
+                    chartData.labels = chartConfig.labels;
+                }
+                
+                // ENHANCED: Better data structure transformation
                 if (chartData.datasets === undefined && chartData.data && chartData.labels) {
-                    // API returns: { labels: [...], data: [...], backgroundColor: [...], label: "..." }
-                    // Chart.js needs: { labels: [...], datasets: [{ data: [...], backgroundColor: [...], label: "..." }] }
-                    let backgroundColor = chartData.backgroundColor || chartData.backgroundColors || '#667eea';
+                    // Transform old format to Chart.js format
+                    let backgroundColor = chartData.backgroundColor || chartData.backgroundColors || [];
+                    let borderColor = chartData.borderColor || chartData.borderColors || [];
                     
-                    // Ensure backgroundColor is an array matching data length
                     const dataLength = (chartData.data || []).length;
-                    if (Array.isArray(backgroundColor)) {
-                        // If array length doesn't match, pad or trim
+                    
+                    // Ensure arrays match data length
+                    if (!Array.isArray(backgroundColor)) {
+                        backgroundColor = Array(dataLength).fill(backgroundColor || '#667eea');
+                    } else {
                         while (backgroundColor.length < dataLength) {
                             backgroundColor.push('#cccccc');
                         }
-                        if (backgroundColor.length > dataLength) {
-                            backgroundColor = backgroundColor.slice(0, dataLength);
-                        }
-                    } else {
-                        // If single color, create array of that color
-                        backgroundColor = Array(dataLength).fill(backgroundColor);
+                    }
+                    
+                    if (!Array.isArray(borderColor)) {
+                        borderColor = backgroundColor.map(c => c);
                     }
                     
                     chartData = {
                         labels: chartData.labels,
                         datasets: [{
-                            label: chartData.label || 'Data',
+                            label: chartData.label || 'البيانات',
                             data: chartData.data || [],
-                            backgroundColor: backgroundColor
+                            backgroundColor: backgroundColor,
+                            borderColor: borderColor,
+                            borderWidth: chartData.borderWidth || 2
                         }]
                     };
                 }
                 
                 // Load Chart.js if needed
                 if (!window.Chart) {
+                    console.log('Loading Chart.js...');
                     await loadScriptDynamically('https://cdn.jsdelivr.net/npm/chart.js');
+                    await new Promise(resolve => setTimeout(resolve, 200));
                 }
                 
-                // Wait a bit more to ensure Chart.js is fully loaded
-                await new Promise(resolve => setTimeout(resolve, 100));
-                
-                // If word cloud, use D3.js
+                // Handle word cloud separately
                 if (chartType === 'wordcloud') {
                     if (!window.d3) {
                         await loadScriptDynamically('https://d3js.org/d3.v6.min.js');
                     }
                     
-                    // Load D3-cloud separately
                     if (!window.cloud) {
                         await loadScriptDynamically('https://cdn.jsdelivr.net/npm/d3-cloud@1.2.5/build/d3.layout.cloud.min.js');
                     }
                     
-                    // Render word cloud
                     renderWordCloud(container, chartData.words || []);
-                } else {
-                    // Clear any existing content
-                    container.innerHTML = '';
-                    
-                    // Add title if provided
-                    if (chartTitle) {
-                        const titleDiv = document.createElement('div');
-                        titleDiv.className = 'chart-title';
-                        titleDiv.textContent = chartTitle;
-                        container.appendChild(titleDiv);
-                    }
-                    
-                    // Create canvas element for standard charts with proper dimensions
-                    const canvas = document.createElement('canvas');
-                    canvas.style.width = '100%';
-                    canvas.style.height = '400px';
-                    canvas.style.display = 'block';
-                    canvas.style.maxWidth = '100%';
-                    container.appendChild(canvas);
-                    
-                    // Render standard Chart.js chart
-                    setTimeout(() => {
-                        try {
-                            const ctx = canvas.getContext('2d');
-                            if (!ctx) {
-                                throw new Error('Could not get 2D context from canvas');
-                            }
-                            
-                            // Validate chartData structure
-                            if (!chartData.labels || !chartData.datasets || !Array.isArray(chartData.datasets)) {
-                                throw new Error('Invalid chart data structure. Expected: {labels: [...], datasets: [...]}');
-                            }
-                            
-                            new Chart(ctx, {
-                                type: chartType,
-                                data: chartData,
-                                options: chartOptions
-                            });
-                        } catch (chartError) {
-                            container.innerHTML = `
-                                <div style="padding: 20px; background: #fee; color: #c00; border-radius: 8px; text-align: center; direction: rtl;">
-                                    ⚠️ خطأ في إنشاء الرسم البياني: ${chartError.message}
-                                </div>
-                            `;
-                        }
-                    }, 200);
+                    return;
                 }
+                
+                // Clear container
+                container.innerHTML = '';
+                
+                // Add title
+                if (chartTitle) {
+                    const titleDiv = document.createElement('div');
+                    titleDiv.className = 'chart-title';
+                    titleDiv.textContent = chartTitle;
+                    container.appendChild(titleDiv);
+                }
+                
+                // Create canvas wrapper for better responsive behavior
+                const canvasWrapper = document.createElement('div');
+                canvasWrapper.style.position = 'relative';
+                canvasWrapper.style.width = '100%';
+                canvasWrapper.style.minHeight = '400px';
+                
+                // Create canvas
+                const canvas = document.createElement('canvas');
+                canvasWrapper.appendChild(canvas);
+                container.appendChild(canvasWrapper);
+                
+                // ENHANCED: Render chart with better error handling
+                setTimeout(() => {
+                    try {
+                        const ctx = canvas.getContext('2d');
+                        if (!ctx) {
+                            throw new Error('Could not get 2D context from canvas');
+                        }
+                        
+                        // Validate data structure
+                        // Note: bubble, scatter, and some other chart types don't require labels
+                        const requiresLabels = !['bubble', 'scatter', 'line'].includes(chartType);
+                        
+                        // Final check: if labels are still missing, try to get from root config
+                        if (!chartData.labels && chartConfig.labels) {
+                            chartData.labels = chartConfig.labels;
+                        }
+                        
+                        if (requiresLabels && !chartData.labels) {
+                            console.error('Chart type requires labels but none provided:', chartType, chartData);
+                            console.error('Full chartConfig:', chartConfig);
+                            throw new Error('بنية البيانات غير صالحة للرسم البياني - تحتاج تسميات');
+                        }
+                        
+                        if (!chartData.datasets || !Array.isArray(chartData.datasets)) {
+                            console.error('Invalid chart data structure - missing or invalid datasets:', chartData);
+                            throw new Error('بنية البيانات غير صالحة للرسم البياني');
+                        }
+                        
+                        // Validate datasets array is not empty
+                        if (chartData.datasets.length === 0) {
+                            console.error('Empty datasets array:', chartData);
+                            throw new Error('لا توجد بيانات للعرض في الرسم البياني');
+                        }
+                        
+                        // Validate each dataset has data
+                        const validDatasets = chartData.datasets.filter(ds => ds && ds.data && Array.isArray(ds.data) && ds.data.length > 0);
+                        if (validDatasets.length === 0) {
+                            console.error('No valid datasets with data:', chartData);
+                            throw new Error('لا توجد بيانات صالحة للعرض');
+                        }
+                        
+                        // Use only valid datasets
+                        chartData.datasets = validDatasets;
+                        
+                        // Ensure responsive settings
+                        const finalOptions = {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            ...chartOptions
+                        };
+                        
+                        // Debug logging for bubble and scatter charts
+                        if (['bubble', 'scatter'].includes(chartType)) {
+                            console.log(`📊 Rendering ${chartType} chart:`, {
+                                datasetCount: chartData.datasets.length,
+                                firstDatasetSample: chartData.datasets[0]?.data?.slice(0, 3),
+                                hasCallbacks: {
+                                    tooltip: !!finalOptions.plugins?.tooltip?.callbacks,
+                                    xTicks: !!finalOptions.scales?.x?.ticks?.callback,
+                                    yTicks: !!finalOptions.scales?.y?.ticks?.callback
+                                }
+                            });
+                        }
+                        
+                        console.log('Creating Chart.js instance with:', {
+                            type: chartType,
+                            datasetCount: chartData.datasets?.length,
+                            hasLabels: !!chartData.labels,
+                            optionsKeys: Object.keys(finalOptions)
+                        });
+                        
+                        new Chart(ctx, {
+                            type: chartType,
+                            data: chartData,
+                            options: finalOptions
+                        });
+                        
+                        console.log(`✅ Chart rendered successfully: ${chartType}`);
+                        
+                    } catch (chartError) {
+                        console.error('Chart rendering error:', chartError);
+                        container.innerHTML = `
+                            <div style="padding: 20px; background: #fee; color: #c00; border-radius: 8px; text-align: center; direction: rtl;">
+                                ⚠️ خطأ في إنشاء الرسم البياني: ${chartError.message}
+                                <br><br>
+                                <details style="margin-top: 10px; text-align: right;">
+                                    <summary style="cursor: pointer;">تفاصيل تقنية</summary>
+                                    <pre style="text-align: left; font-size: 11px; margin-top: 10px; background: #fff; padding: 10px; border-radius: 4px; overflow-x: auto;">${JSON.stringify(chartConfig, null, 2)}</pre>
+                                </details>
+                            </div>
+                        `;
+                    }
+                }, 300);
 
             } catch (error) {
                 console.error('Chart rendering error:', error);
                 container.innerHTML = `
-                    <div style="padding: 20px; background: #fee; color: #c00; border-radius: 8px; text-align: center;">
+                    <div style="padding: 20px; background: #fee; color: #c00; border-radius: 8px; text-align: center; direction: rtl;">
                         ⚠️ خطأ في عرض الرسم البياني: ${error.message}
                     </div>
                 `;
@@ -718,23 +937,20 @@
         function renderWordCloud(container, words) {
             try {
                 if (!words || words.length === 0) {
-                    container.innerHTML = '<div style="padding:20px;text-align:center;">لا توجد بيانات للعرض</div>';
+                    container.innerHTML = '<div style="padding:20px;text-align:center;direction:rtl;">لا توجد بيانات للعرض</div>';
                     return;
                 }
                 
                 const width = container.clientWidth || 600;
                 const height = 500;
                 
-                // Clear container
                 container.innerHTML = '';
                 
-                // Create SVG
                 const svg = d3.select(container)
                     .append('svg')
                     .attr('width', width)
                     .attr('height', height);
                 
-                // Create word cloud layout
                 const layout = d3.layout.cloud()
                     .size([width, height])
                     .words(words)
@@ -763,7 +979,7 @@
             } catch (error) {
                 console.error('Word cloud rendering error:', error);
                 container.innerHTML = `
-                    <div style="padding: 20px; background: #fee; color: #c00; border-radius: 8px; text-align: center;">
+                    <div style="padding: 20px; background: #fee; color: #c00; border-radius: 8px; text-align: center; direction: rtl;">
                         ⚠️ خطأ في عرض سحابة الكلمات: ${error.message}
                     </div>
                 `;
@@ -814,7 +1030,7 @@
                 `;
             }
 
-            // Handle charts array structure with chart data
+            // ENHANCED: Handle charts with better error checking
             if (data.charts && Array.isArray(data.charts) && data.charts.length > 0) {
                 html += `
                     <div class="insight-section">
@@ -826,21 +1042,36 @@
                     const chartId = `chart-${Date.now()}-${idx}`;
                     const chartTitle = chartConfig.title || '';
                     const chartType = chartConfig.chart_type || 'bar';
+                    
+                    const chartTypeArabic = {
+                        'bar': 'عمودي',
+                        'line': 'خطي',
+                        'pie': 'دائري',
+                        'doughnut': 'حلقي',
+                        'scatter': 'انتشار',
+                        'bubble': 'فقاعي',
+                        'radar': 'راداري',
+                        'polarArea': 'قطبي'
+                    }[chartType] || 'بياني';
+                    
                     html += `
                         <div class="visualization-item">
                             <div id="${chartId}" class="chart-render-container">
-                                <div style="text-align:center;padding:20px;color:#64748b;">
-                                    ${chartTitle ? `<h3 style="margin-bottom:10px;">${chartTitle}</h3>` : ''}
-                                    <div style="margin:20px 0;">📊 تحميل ${chartType === 'pie' ? 'دائري' : chartType === 'bar' ? 'عمودي' : 'رسم بياني'}...</div>
+                                <div class="chart-loading">
+                                    <div class="chart-loading-spinner"></div>
+                                    <div style="font-size: 14px; color: #64748b;">
+                                        تحميل الرسم ${chartTypeArabic}...
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     `;
                     
-                    // Render chart after DOM update with increased delay
+                    // Stagger chart rendering
                     setTimeout(() => {
+                        console.log(`Rendering chart ${idx}:`, chartConfig);
                         renderChart(chartId, chartConfig);
-                    }, 500 * (idx + 1));
+                    }, 400 * (idx + 1));
                 });
                 
                 html += `
@@ -848,6 +1079,7 @@
                     </div>
                 `;
             }
+
             // Handle old visualizations structure for backward compatibility
             if (data.visualizations && Array.isArray(data.visualizations) && data.visualizations.length > 0) {
                 html += `
@@ -863,15 +1095,18 @@
                             ${viz.chart_description ? `
                                 <div class="visualization-description">${viz.chart_description}</div>
                             ` : ''}
-                            <div id="${chartId}" class="chart-render-container"></div>
+                            <div id="${chartId}" class="chart-render-container">
+                                <div class="chart-loading">
+                                    <div class="chart-loading-spinner"></div>
+                                    <div style="font-size: 14px;">جاري التحميل...</div>
+                                </div>
+                            </div>
                         </div>
                     `;
                     
-                    // Render chart after DOM update with increased delay
                     setTimeout(() => {
-                        console.log('Starting to render chart:', chartId);
                         renderChart(chartId, viz.chart_html);
-                    }, 500 * (idx + 1));
+                    }, 400 * (idx + 1));
                 });
                 
                 html += `
@@ -928,7 +1163,6 @@
                     })
                 });
 
-
                 removeLoadingMessage();
 
                 if (!response.ok) {
@@ -937,7 +1171,6 @@
 
                 const data = await response.json();
                 console.log('Full API response:', data);
-                debugger;
 
                 const formattedResponse = formatInsightResponse(data);
                 addMessage(formattedResponse);

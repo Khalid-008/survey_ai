@@ -20,6 +20,8 @@ class State(MessagesState):
     previous_query: str
     quantitative_answers: str
     qualitative_answers: str
+    correlation_answers: str
+    correlation_query: str
     context : list[str]
     data_type: str
     next_question: int
