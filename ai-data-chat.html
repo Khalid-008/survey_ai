@@ -171,16 +171,62 @@
             margin-bottom: 0;
         }
 
+        .insight-section-header {
+            cursor: pointer;
+            user-select: none;
+            padding: 12px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            direction: rtl;
+        }
+
+        .insight-section-header:hover {
+            background: #f1f5f9;
+        }
+
+        .insight-section-content {
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+
+        .insight-section-content.collapsed {
+            max-height: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+        }
+
+        .insight-section-content.expanded {
+            max-height: 5000px;
+            padding-top: 16px;
+        }
+
         .insight-title {
             font-weight: 600;
             color: #1e293b;
-            margin-bottom: 8px;
+            margin-bottom: 0;
             font-size: 16px;
             display: flex;
             align-items: center;
             gap: 8px;
             direction: rtl;
             text-align: right;
+            flex: 1;
+        }
+
+        .section-toggle {
+            font-size: 14px;
+            color: #667eea;
+            transition: transform 0.3s;
+            margin-left: 12px;
+        }
+
+        .section-toggle.collapsed {
+            transform: rotate(-90deg);
         }
 
         .insight-title::before {
@@ -287,7 +333,7 @@
             padding: 24px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
             margin: 20px 0;
-            min-height: 450px;
+            height: 500px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -306,27 +352,23 @@
             border-bottom: 2px solid #e5e7eb;
         }
 
-        /* ENHANCED: Better canvas sizing for different chart types */
+        /* ENHANCED: Better canvas sizing for different chart types - uniform height */
         .chart-render-container canvas {
             max-width: 100% !important;
             width: 100% !important;
-            min-height: 400px !important;
-            height: auto !important;
+            height: 400px !important;
+            max-height: 400px !important;
             box-sizing: border-box !important;
             background: transparent;
         }
 
-        /* Special handling for doughnut/pie charts */
+        /* All charts have uniform height */
         .chart-render-container.chart-type-doughnut canvas,
-        .chart-render-container.chart-type-pie canvas {
-            max-width: 500px !important;
-            min-height: 450px !important;
-        }
-
-        /* Special handling for scatter/bubble charts */
+        .chart-render-container.chart-type-pie canvas,
         .chart-render-container.chart-type-scatter canvas,
         .chart-render-container.chart-type-bubble canvas {
-            min-height: 500px !important;
+            height: 400px !important;
+            max-height: 400px !important;
         }
 
         .chart-render-container svg {
@@ -823,10 +865,13 @@
                 const canvasWrapper = document.createElement('div');
                 canvasWrapper.style.position = 'relative';
                 canvasWrapper.style.width = '100%';
-                canvasWrapper.style.minHeight = '400px';
+                canvasWrapper.style.height = '400px';
+                canvasWrapper.style.flex = '1';
                 
                 // Create canvas
                 const canvas = document.createElement('canvas');
+                canvas.style.height = '100%';
+                canvas.style.width = '100%';
                 canvasWrapper.appendChild(canvas);
                 container.appendChild(canvasWrapper);
                 
@@ -996,46 +1041,75 @@
 
         function formatInsightResponse(data) {
             let html = '<div class="insight-card">';
+            let sectionIndex = 0;
+            const timestamp = Date.now();
 
             if (data.executive_summary) {
+                const sectionId = `section-${timestamp}-${sectionIndex}`;
+                const isFirst = sectionIndex === 0;
                 html += `
                     <div class="insight-section">
-                        <div class="insight-title">📌 الملخص التنفيذي</div>
-                        <div class="executive-summary">${data.executive_summary}</div>
-                    </div>
-                `;
-            }
-
-            if (data.detailed_analysis) {
-                html += `
-                    <div class="insight-section">
-                        <div class="insight-title">📊 التحليل التفصيلي</div>
-                        <div class="detailed-analysis">${formatDetailedAnalysis(data.detailed_analysis)}</div>
-                    </div>
-                `;
-            }
-
-            if (data.key_metrics && data.key_metrics.length > 0) {
-                html += `
-                    <div class="insight-section">
-                        <div class="insight-title">📈 المؤشرات الرئيسية</div>
-                        <div class="key-metrics">
-                            ${data.key_metrics.map((metric, idx) => `
-                                <div class="metric-item">
-                                    <strong>${idx + 1}.</strong> ${metric}
-                                </div>
-                            `).join('')}
+                        <div class="insight-section-header" onclick="toggleSection('${sectionId}')">
+                            <div class="insight-title">📌 الملخص التنفيذي</div>
+                            <span class="section-toggle ${isFirst ? 'expanded' : 'collapsed'}">▼</span>
+                        </div>
+                        <div class="insight-section-content ${isFirst ? 'expanded' : 'collapsed'}" id="${sectionId}">
+                            <div class="executive-summary">${data.executive_summary}</div>
                         </div>
                     </div>
                 `;
+                sectionIndex++;
+            }
+
+            if (data.detailed_analysis) {
+                const sectionId = `section-${timestamp}-${sectionIndex}`;
+                html += `
+                    <div class="insight-section">
+                        <div class="insight-section-header" onclick="toggleSection('${sectionId}')">
+                            <div class="insight-title">📊 التحليل التفصيلي</div>
+                            <span class="section-toggle collapsed">▼</span>
+                        </div>
+                        <div class="insight-section-content collapsed" id="${sectionId}">
+                            <div class="detailed-analysis">${formatDetailedAnalysis(data.detailed_analysis)}</div>
+                        </div>
+                    </div>
+                `;
+                sectionIndex++;
+            }
+
+            if (data.key_metrics && data.key_metrics.length > 0) {
+                const sectionId = `section-${timestamp}-${sectionIndex}`;
+                html += `
+                    <div class="insight-section">
+                        <div class="insight-section-header" onclick="toggleSection('${sectionId}')">
+                            <div class="insight-title">📈 المؤشرات الرئيسية</div>
+                            <span class="section-toggle collapsed">▼</span>
+                        </div>
+                        <div class="insight-section-content collapsed" id="${sectionId}">
+                            <div class="key-metrics">
+                                ${data.key_metrics.map((metric, idx) => `
+                                    <div class="metric-item">
+                                        <strong>${idx + 1}.</strong> ${metric}
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                sectionIndex++;
             }
 
             // ENHANCED: Handle charts with better error checking
             if (data.charts && Array.isArray(data.charts) && data.charts.length > 0) {
+                const sectionId = `section-${timestamp}-${sectionIndex}`;
                 html += `
                     <div class="insight-section">
-                        <div class="insight-title">📊 الرسوم البيانية</div>
-                        <div class="visualizations">
+                        <div class="insight-section-header" onclick="toggleSection('${sectionId}')">
+                            <div class="insight-title">📊 الرسوم البيانية</div>
+                            <span class="section-toggle collapsed">▼</span>
+                        </div>
+                        <div class="insight-section-content collapsed" id="${sectionId}">
+                            <div class="visualizations">
                 `;
                 
                 data.charts.forEach((chartConfig, idx) => {
@@ -1075,17 +1149,24 @@
                 });
                 
                 html += `
+                            </div>
                         </div>
                     </div>
                 `;
+                sectionIndex++;
             }
 
             // Handle old visualizations structure for backward compatibility
             if (data.visualizations && Array.isArray(data.visualizations) && data.visualizations.length > 0) {
+                const sectionId = `section-${timestamp}-${sectionIndex}`;
                 html += `
                     <div class="insight-section">
-                        <div class="insight-title">📊 الرسوم البيانية</div>
-                        <div class="visualizations">
+                        <div class="insight-section-header" onclick="toggleSection('${sectionId}')">
+                            <div class="insight-title">📊 الرسوم البيانية</div>
+                            <span class="section-toggle collapsed">▼</span>
+                        </div>
+                        <div class="insight-section-content collapsed" id="${sectionId}">
+                            <div class="visualizations">
                 `;
                 
                 data.visualizations.forEach((viz, idx) => {
@@ -1110,21 +1191,29 @@
                 });
                 
                 html += `
+                            </div>
                         </div>
                     </div>
                 `;
+                sectionIndex++;
             }
 
             if (data.recommendations && data.recommendations.length > 0) {
+                const sectionId = `section-${timestamp}-${sectionIndex}`;
                 html += `
                     <div class="insight-section">
-                        <div class="insight-title">💡 التوصيات</div>
-                        <div class="recommendations">
-                            ${data.recommendations.map((rec, idx) => `
-                                <div class="recommendation-item">
-                                    <strong>${idx + 1}.</strong> ${rec}
-                                </div>
-                            `).join('')}
+                        <div class="insight-section-header" onclick="toggleSection('${sectionId}')">
+                            <div class="insight-title">💡 التوصيات</div>
+                            <span class="section-toggle collapsed">▼</span>
+                        </div>
+                        <div class="insight-section-content collapsed" id="${sectionId}">
+                            <div class="recommendations">
+                                ${data.recommendations.map((rec, idx) => `
+                                    <div class="recommendation-item">
+                                        <strong>${idx + 1}.</strong> ${rec}
+                                    </div>
+                                `).join('')}
+                            </div>
                         </div>
                     </div>
                 `;
@@ -1132,6 +1221,23 @@
 
             html += '</div>';
             return html;
+        }
+
+        function toggleSection(sectionId) {
+            const content = document.getElementById(sectionId);
+            const toggle = content.previousElementSibling.querySelector('.section-toggle');
+            
+            if (content.classList.contains('collapsed')) {
+                content.classList.remove('collapsed');
+                content.classList.add('expanded');
+                toggle.classList.remove('collapsed');
+                toggle.classList.add('expanded');
+            } else {
+                content.classList.remove('expanded');
+                content.classList.add('collapsed');
+                toggle.classList.remove('expanded');
+                toggle.classList.add('collapsed');
+            }
         }
 
         async function sendMessage() {
