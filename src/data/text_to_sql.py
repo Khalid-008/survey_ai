@@ -5,6 +5,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from typing_extensions import Annotated
 from typing_extensions import TypedDict
 from llms.models import llm
+import json
 
 # Build a URL-encoded connection string
 connection_str = urllib.parse.quote_plus(
@@ -38,8 +39,25 @@ def get_quantitative_answers(questions: list[dict]):
     Returns:
         SQL query that retrieves answers for ALL questions with AnswerUniqueID for correlation analysis
     """
+    # Import here to avoid circular dependency
+    from data.operations import get_distinct_answers_for_questions
+    
     # Extract all question IDs
     question_ids = [q.get('question_id') for q in questions]
+    
+    # FIRST: Get distinct answers for all questions
+    print(f"📊 Fetching distinct answers for {len(question_ids)} questions...")
+    distinct_answers_map = get_distinct_answers_for_questions(question_ids)
+    
+    # Format distinct answers for the prompt
+    distinct_answers_text = "\n\n".join([
+        f"Question ID: {qid}\n"
+        f"Question Text: {data['question_text']}\n"
+        f"Distinct Answers ({len(data['distinct_answers'])}):\n" + 
+        "\n".join([f"  - {answer}" for answer in data['distinct_answers'][:20]]) +
+        (f"\n  ... and {len(data['distinct_answers']) - 20} more" if len(data['distinct_answers']) > 20 else "")
+        for qid, data in distinct_answers_map.items()
+    ])
     
     # Format questions for the prompt
     formatted_questions = "\n".join([
@@ -48,37 +66,87 @@ def get_quantitative_answers(questions: list[dict]):
     ])
     
     prompt_text = f"""
-IMPORTANT: You must generate a SINGLE query that retrieves answers for ALL {len(questions)} questions listed below.
+IMPORTANT: You must generate a SINGLE COMPLETE query that retrieves answers for ALL {len(questions)} questions.
 
-All Question IDs that MUST be included in your query:
-{', '.join([f"'{qid}'" for qid in question_ids])}
+All Question IDs that MUST be included:
+{', '.join([f"N'{qid}'" for qid in question_ids])}
 
 Questions to analyze:
 {formatted_questions}
 
-CRITICAL REQUIREMENTS:
-1. Your query MUST include ALL {len(questions)} question IDs using IN clause or UNION
-2. MUST include AnswerUniqueID to correlate answers across questions
-3. Structure the result so we can see how each user (AnswerUniqueID) answered each question
-4. This enables finding relationships between user answers across different questions
+CRITICAL - ACTUAL DISTINCT ANSWERS FOUND IN DATABASE:
+{distinct_answers_text}
 
-Example approach for multiple questions:
-- Use WHERE T1.ID IN ('question-id-1', 'question-id-2', ...)
-- Group by AnswerUniqueID to see each user's responses
-- Include question text or ID to identify which question each answer belongs to
+⚠️ Use the EXACT answer values shown above in your CASE statements!
+
+REQUIREMENTS:
+1. Include ALL {len(questions)} question IDs using WHERE T1.ID IN (...)
+2. MUST include AnswerUniqueID to correlate answers
+3. Use the EXACT distinct answer values provided above
+4. Your query MUST be COMPLETE with both CTE and main SELECT
+5. Use N prefix for all string literals (Unicode support)
 """
     
-    prompt = quantitative_prompt_template.invoke(
-        {
-            "dialect": db.dialect,
-            "top_k": 5000,
-            "table_info": db.get_table_info(),
-            "input": prompt_text,
-        }
-    )
-    structured_llm = llm.with_structured_output(QueryOutput)
-    result = structured_llm.invoke(prompt)
-    return result["query"]
+    try:
+        prompt = quantitative_prompt_template.invoke(
+            {
+                "dialect": db.dialect,
+                "top_k": 5000,
+                "table_info": db.get_table_info(),
+                "input": prompt_text,
+            }
+        )
+        structured_llm = llm.with_structured_output(QueryOutput)
+        result = structured_llm.invoke(prompt)
+        query = result["query"]
+        
+        # Validate the generated query
+        if not query or len(query.strip()) < 50:
+            raise ValueError(f"Generated query is too short or empty: {query}")
+        
+        # Check if CTE query is complete (has both WITH clause and main SELECT)
+        query_upper = query.upper().strip()
+        if query_upper.startswith("WITH"):
+            # Count SELECT statements - should have at least 2 (one in CTE, one main)
+            select_count = query_upper.count("SELECT")
+            if select_count < 2:
+                raise ValueError(f"Incomplete CTE query - found only {select_count} SELECT statement(s)")
+            
+            # Check that closing parenthesis for CTE exists
+            if query.count("(") != query.count(")"):
+                raise ValueError(f"Unbalanced parentheses in CTE query")
+        
+        print(f"✅ Generated valid query ({len(query)} characters)")
+        return query
+        
+    except Exception as e:
+        print(f"❌ Error generating CTE query: {str(e)}")
+        print(f"🔄 Falling back to simpler query structure...")
+        
+        # Fallback: Generate a simpler query without CTE
+        placeholders = ', '.join([f"N'{qid}'" for qid in question_ids])
+        
+        # Build a simple aggregation query as fallback
+        fallback_query = f"""
+SELECT 
+    T1.ID as QuestionID,
+    T1.Question as QuestionText,
+    T2.Answer,
+    T2.AnswerUniqueID,
+    COUNT(*) as ResponseCount
+FROM 
+    SurveyQuestion AS T1
+JOIN 
+    SurveyAnswer AS T2 ON T1.ID = T2.SQID
+WHERE 
+    T1.ID IN ({placeholders})
+GROUP BY 
+    T1.ID, T1.Question, T2.Answer, T2.AnswerUniqueID
+ORDER BY 
+    T1.ID, ResponseCount DESC
+"""
+        print(f"✅ Using fallback query")
+        return fallback_query
 
 def get_qualitative_answers(questions: list[str]):
     """Generate SQL query to fetch information."""
@@ -208,144 +276,67 @@ qualitative_prompt_template = ChatPromptTemplate(
 quantitative_system_message = """
 You are an AI assistant that generates syntactically correct {dialect} queries for analyzing multiple survey questions together.
 
-## CRITICAL: Multiple Questions Handling - PIVOT QUERY REQUIRED
-When multiple questions are provided, you MUST:
-1. **USE A CTE (WITH clause) with PIVOT structure** - This is MANDATORY
-2. **GROUP BY AnswerUniqueID** in the CTE - Each row = one respondent
-3. **Use MAX(CASE WHEN T1.ID = 'question-id' THEN T2.Answer END)** for each question
-4. **Include ALL question IDs** using WHERE T1.ID IN ('id1', 'id2', 'id3', ...)
-5. **Then analyze the pivoted data** in the main SELECT to show distributions and correlations
-
-**WHY PIVOT STRUCTURE IS MANDATORY:**
-- Enables correlation analysis (see how same users answered different questions)
-- Perfect for generating insights and reports
-- Makes it easy to calculate distributions and percentages
-- Allows finding patterns between questions
-
-## Core Instructions:
-- Create ONE query that retrieves answers for ALL questions provided
-- **ALWAYS include AnswerUniqueID** to track individual user responses
-- Return columns: Question (or QuestionID), AnswerUniqueID, Answer (and any aggregate info)
-- Enable correlation analysis by grouping with AnswerUniqueID
-- Never query for all columns - be selective
-- Always exclude AnswerDate column
-- Do not return SQID column
-- Use SELECT TOP {top_k} for SQL Server
-
-## Database-Specific Syntax:
-### For SQL Server (mssql):
-- Use `SELECT TOP {top_k} ...` instead of `LIMIT`
-- Follow SQL Server syntax conventions
-- Use STRING_AGG for concatenation if needed
-- For Unicode strings: Always prefix string literals with N
-- For STRING_ESCAPE with Unicode: Use STRING_ESCAPE(T2.Answer, 'json')
+## CRITICAL REQUIREMENTS:
+1. **ALWAYS use CTE (WITH clause) with PIVOT structure**
+2. **GROUP BY AnswerUniqueID** in the CTE (each row = one respondent)
+3. **Use MAX(CASE WHEN T1.ID = N'question-id' THEN T2.Answer END)** for each question
+4. **Include ALL question IDs** using WHERE T1.ID IN (...)
+5. **Main SELECT must analyze the pivoted data** showing distributions and percentages
+6. **Prefix ALL string literals with N** for Unicode support (Arabic text)
+7. **Use ONLY the actual distinct answer values** provided in the input - DO NOT GUESS!
 
 ## Available Tables:
 {table_info}
 
-## REQUIRED Query Structure for Multiple Quantitative Questions:
-
-**YOU MUST USE THIS PIVOT-STYLE CTE APPROACH:**
-
-This structure is MANDATORY because it:
-- Groups by AnswerUniqueID (each row = one respondent)
-- Enables correlation analysis between questions
-- Makes it easy to find patterns in how users answered different questions
-- Perfect for generating insights and reports
-
-### REQUIRED Structure:
+## MANDATORY Query Structure:
 
 ```sql
 WITH SurveyPivot AS (
     SELECT 
         T2.AnswerUniqueID,
-        MAX(CASE WHEN T1.ID = N'question-id-1' THEN T2.Answer END) AS [Question1_Name],
-        MAX(CASE WHEN T1.ID = N'question-id-2' THEN T2.Answer END) AS [Question2_Name],
-        MAX(CASE WHEN T1.ID = N'question-id-3' THEN T2.Answer END) AS [Question3_Name]
+        MAX(CASE WHEN T1.ID = N'question-id-1' THEN T2.Answer END) AS [Q1_Name],
+        MAX(CASE WHEN T1.ID = N'question-id-2' THEN T2.Answer END) AS [Q2_Name]
     FROM 
         SurveyQuestion AS T1
     JOIN 
         SurveyAnswer AS T2 ON T1.ID = T2.SQID
     WHERE 
-        T1.ID IN (N'question-id-1', N'question-id-2', N'question-id-3')
+        T1.ID IN (N'question-id-1', N'question-id-2')
     GROUP BY 
         T2.AnswerUniqueID
 )
--- Now analyze the pivoted results
 SELECT 
-    COUNT(*) AS [Total_Responses],
+    COUNT(*) AS Total_Responses,
+    COUNT([Q1_Name]) AS Q1_Count,
+    COUNT([Q2_Name]) AS Q2_Count,
     
-    -- Count responses for each question
-    COUNT([Question1_Name]) AS [Question1_Count],
-    COUNT([Question2_Name]) AS [Question2_Count],
-    
-    -- Breakdown by answer categories
-    SUM(CASE WHEN [Question1_Name] LIKE N'1%' THEN 1 ELSE 0 END) AS [Q1_Category1],
-    SUM(CASE WHEN [Question1_Name] LIKE N'2%' THEN 1 ELSE 0 END) AS [Q1_Category2],
-    
-    SUM(CASE WHEN [Question2_Name] LIKE N'1%' THEN 1 ELSE 0 END) AS [Q2_Category1],
-    SUM(CASE WHEN [Question2_Name] LIKE N'2%' THEN 1 ELSE 0 END) AS [Q2_Category2],
+    -- Use EXACT distinct answer values from input, NOT assumptions!
+    -- Example: If you see 'موبايلي' in distinct answers, use N'%موبايلي%'
+    SUM(CASE WHEN [Q1_Name] LIKE N'%actual-answer-value%' THEN 1 ELSE 0 END) AS Q1_Answer1,
+    SUM(CASE WHEN [Q2_Name] = N'actual-answer-value' THEN 1 ELSE 0 END) AS Q2_Answer1,
     
     -- Percentages
-    CAST(SUM(CASE WHEN [Question1_Name] LIKE N'1%' THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT([Question1_Name]), 0) AS DECIMAL(5,2)) AS [Q1_Category1_Percent],
-    CAST(SUM(CASE WHEN [Question2_Name] LIKE N'1%' THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT([Question2_Name]), 0) AS DECIMAL(5,2)) AS [Q2_Category1_Percent]
+    CAST(SUM(CASE WHEN [Q1_Name] LIKE N'%actual-value%' THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT([Q1_Name]), 0) AS DECIMAL(5,2)) AS Q1_Percent
 FROM SurveyPivot;
 ```
 
-### Example with Real Question IDs:
+## SQL Server Syntax:
+- Use `SELECT TOP {top_k} ...` (not LIMIT)
+- Use `N'text'` for Unicode strings
+- Never query AnswerDate or return SQID
 
-```sql
-WITH SurveyPivot AS (
-    SELECT 
-        T2.AnswerUniqueID,
-        MAX(CASE WHEN T1.ID = N'90973574-FA33-479B-A74F-DE3C31AE1A0E' 
-                 THEN T2.Answer END) AS [ServiceTime],
-        MAX(CASE WHEN T1.ID = N'3B6F2CE9-4C1E-4A26-914A-944140610DF9' 
-                 THEN T2.Answer END) AS [DeliveryAgent]
-    FROM 
-        SurveyQuestion AS T1
-    JOIN 
-        SurveyAnswer AS T2 ON T1.ID = T2.SQID
-    WHERE 
-        T1.ID IN (
-            N'90973574-FA33-479B-A74F-DE3C31AE1A0E',
-            N'3B6F2CE9-4C1E-4A26-914A-944140610DF9'
-        )
-    GROUP BY 
-        T2.AnswerUniqueID
-)
--- Analyze correlations and distributions
-SELECT 
-    COUNT(*) AS [Total_Responses],
-    COUNT(ServiceTime) AS [ServiceTime_Responses],
-    COUNT(DeliveryAgent) AS [DeliveryAgent_Responses],
-    
-    -- Distribution for Service Time
-    SUM(CASE WHEN ServiceTime LIKE N'1%' THEN 1 ELSE 0 END) AS [Excellent_ServiceTime],
-    SUM(CASE WHEN ServiceTime LIKE N'2%' THEN 1 ELSE 0 END) AS [Good_ServiceTime],
-    SUM(CASE WHEN ServiceTime LIKE N'3%' THEN 1 ELSE 0 END) AS [Average_ServiceTime],
-    SUM(CASE WHEN ServiceTime LIKE N'4%' THEN 1 ELSE 0 END) AS [Poor_ServiceTime],
-    
-    -- Distribution for Delivery Agent
-    SUM(CASE WHEN DeliveryAgent LIKE N'1%' THEN 1 ELSE 0 END) AS [Excellent_Agent],
-    SUM(CASE WHEN DeliveryAgent LIKE N'2%' THEN 1 ELSE 0 END) AS [Good_Agent],
-    SUM(CASE WHEN DeliveryAgent LIKE N'3%' THEN 1 ELSE 0 END) AS [Average_Agent],
-    SUM(CASE WHEN DeliveryAgent LIKE N'4%' THEN 1 ELSE 0 END) AS [Poor_Agent],
-    
-    -- Percentages
-    CAST(SUM(CASE WHEN ServiceTime LIKE N'1%' THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(ServiceTime), 0) AS DECIMAL(5,2)) AS [Excellent_ServiceTime_Percent],
-    CAST(SUM(CASE WHEN DeliveryAgent LIKE N'1%' THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(DeliveryAgent), 0) AS DECIMAL(5,2)) AS [Excellent_Agent_Percent]
-FROM SurveyPivot;
-```
+## CRITICAL: Answer Values
+You will receive actual distinct answer values for each question. Use them EXACTLY in your CASE statements:
+- If distinct answers show 'موبайلي', use N'%موبايلي%', NOT 'Mobily'
+- If distinct answers show '1 - ممتاز', use N'1%', NOT guesses
+- Match the EXACT format provided in the input
 
-## CRITICAL Reminders:
-- **MUST USE CTE WITH PIVOT STRUCTURE** - This is the required format
-- **MUST GROUP BY AnswerUniqueID** in the CTE
-- **MUST include ALL question IDs** provided in the input using IN clause
-- **Use MAX(CASE WHEN T1.ID = N'question-id' THEN T2.Answer END)** for each question
-- **Always prefix Unicode strings with N** (e.g., N'question-id', N'1%')
-- **Analyze the pivoted data** to show distributions, percentages, and correlations
-- **The goal:** See patterns in how users answered different questions together
+Your query MUST:
+✓ Have complete CTE with GROUP BY AnswerUniqueID
+✓ Have complete main SELECT with aggregations
+✓ Include ALL provided question IDs
+✓ Use N prefix for all string literals
+✓ Use actual distinct answer values from input
 """
 
 quantitative_prompt_template = ChatPromptTemplate(

@@ -33,7 +33,6 @@ def survey_insight():
         try:
             content = extract_json(response["content"])
             print(f"✓ Successfully parsed main content JSON")
-            print(f"Json content: {content}")
         except Exception as e:
             print(f"✗ Failed to parse main content as JSON: {e}")
             print(f"Raw content: {response['content'][:500]}")
@@ -56,7 +55,6 @@ def survey_insight():
             try:
                 print(f"\n🔍 PARSING CHART SET {idx+1}:")
                 print(f"Raw string length: {len(chart_str)}")
-                print(f"First 100 chars: {chart_str[:100]}")
                 
                 # Parse the JSON string to get the actual chart objects
                 chart_data = json.loads(chart_str)

@@ -67,7 +67,6 @@ def get_relevant_question(state: State) -> Command[Literal["get_answers"]]:
         prompt = get_relevant_question_prompt.invoke({"dataset": dataset_str, "message": user_query})
         result = model.invoke(prompt)
         content = result.content
-        print(f"Model Response: {content[:500]}...")  # Log first 500 chars
         
         json_start = content.find('{')
         json_end = content.rfind('}') + 1
