@@ -356,6 +356,8 @@ Before submitting, verify:
 □ All JSON is valid and properly formatted
 □ Each chart has: chart_type, data, options, title
 □ Colors follow the sentiment/category rules
+□ **ALL TITLES ARE IN ARABIC** (no English titles allowed)
+□ **Correct terminology used: "بطاقات شحن" = recharge cards (not shipment)**
 □ Titles are descriptive and meaningful
 □ Data values are accurate and match the source
 □ For wordclouds: 80-120 words included
@@ -451,6 +453,8 @@ def _create_qualitative_visualization_prompt(analysis_content, data_content, pre
 2. **IF YOU RETURN 2 CHARTS, THEY MUST BE DIFFERENT TYPES**
 3. **RETURN ONLY RAW JSON - NO MARKDOWN, NO TEXT, NO EXPLANATIONS**
 4. **START WITH [ AND END WITH ] - NOTHING ELSE**
+5. 🔴 **ALL CHART TITLES MUST BE IN ARABIC** 🔴
+6. **USE CORRECT TERMINOLOGY: "بطاقات شحن" = RECHARGE CARDS (NOT SHIPMENT)**
 
 ═══════════════════════════════════════════════════════════════════════════════
 
@@ -468,10 +472,10 @@ Your response must be EXACTLY in this format (no variations allowed):
 - ❌ NO more than 2 charts EVER
 
 **Valid single chart example:**
-[{"chart_type":"pie","data":{"labels":["A","B"],"datasets":[{"label":"Test","data":[60,40],"backgroundColor":["#10b981","#ef4444"]}]},"options":{"responsive":true,"maintainAspectRatio":false},"title":"Distribution"}]
+[{"chart_type":"pie","data":{"labels":["أ","ب"],"datasets":[{"label":"اختبار","data":[60,40],"backgroundColor":["#10b981","#ef4444"]}]},"options":{"responsive":true,"maintainAspectRatio":false},"title":"التوزيع"}]
 
 **Valid two-chart example (DIFFERENT types):**
-[{"chart_type":"doughnut","data":{"labels":["X","Y"],"datasets":[{"label":"Satisfaction","data":[80,20],"backgroundColor":["#10b981","#ef4444"]}]},"options":{"responsive":true,"maintainAspectRatio":false},"title":"Satisfaction Rate"},{"chart_type":"wordcloud","data":{"words":[{"text":"excellent","size":90,"color":"#10b981"},{"text":"good","size":70,"color":"#fbbf24"},{"text":"poor","size":50,"color":"#ef4444"}]},"options":{"responsive":true,"height":500},"title":"Feedback Keywords"}]
+[{"chart_type":"doughnut","data":{"labels":["راضين","غير راضين"],"datasets":[{"label":"الرضا","data":[80,20],"backgroundColor":["#10b981","#ef4444"]}]},"options":{"responsive":true,"maintainAspectRatio":false},"title":"معدل الرضا"},{"chart_type":"wordcloud","data":{"words":[{"text":"ممتاز","size":90,"color":"#10b981"},{"text":"جيد","size":70,"color":"#fbbf24"},{"text":"ضعيف","size":50,"color":"#ef4444"}]},"options":{"responsive":true,"height":500},"title":"الكلمات الرئيسية"}]
 
 ═══════════════════════════════════════════════════════════════════════════════
 📊 CHART TYPE SELECTION - STRICT DECISION TREE
@@ -568,13 +572,13 @@ Data: "Excellent: 977 (87.8%), Good: 57 (5.1%), Poor: 42 (3.8%), Acceptable: 26 
 Question: "What are the top-selling products?"
 Data: "Product A: 1500 units, Product B: 1200 units, Product C: 900 units"
 → Return: 1 chart (bar)
-→ JSON: [{"chart_type":"bar","data":{"labels":["Product A","Product B","Product C"],"datasets":[{"label":"Units Sold","data":[1500,1200,900],"backgroundColor":"#667eea"}]},"options":{"responsive":true},"title":"Top 3 Best-Selling Products"}]
+→ JSON: [{"chart_type":"bar","data":{"labels":["منتج أ","منتج ب","منتج ج"],"datasets":[{"label":"الوحدات المباعة","data":[1500,1200,900],"backgroundColor":"#667eea"}]},"options":{"responsive":true},"title":"أفضل 3 منتجات مبيعاً"}]
 
 **SCENARIO 6: Monthly Trend**
 Question: "How did sales change over the year?"
 Data: "Jan: $50K, Feb: $55K, Mar: $60K, Apr: $58K, May: $65K"
 → Return: 1 chart (line)
-→ JSON: [{"chart_type":"line","data":{"labels":["Jan","Feb","Mar","Apr","May"],"datasets":[{"label":"Sales","data":[50,55,60,58,65],"borderColor":"#667eea","backgroundColor":"rgba(102,126,234,0.1)"}]},"options":{"responsive":true},"title":"Monthly Sales Trend"}]
+→ JSON: [{"chart_type":"line","data":{"labels":["يناير","فبراير","مارس","أبريل","مايو"],"datasets":[{"label":"المبيعات","data":[50,55,60,58,65],"borderColor":"#667eea","backgroundColor":"rgba(102,126,234,0.1)"}]},"options":{"responsive":true},"title":"اتجاه المبيعات الشهري"}]
 
 ═══════════════════════════════════════════════════════════════════════════════
 ⚠️ QUALITY CONTROL - AVOID MEANINGLESS CHARTS
@@ -590,10 +594,19 @@ Data: "Jan: $50K, Feb: $55K, Mar: $60K, Apr: $58K, May: $65K"
 **If the data is not suitable for visualization, return: []**
 
 **Chart Title Rules:**
+🔴 **CRITICAL: ALL CHART TITLES MUST BE IN ARABIC** 🔴
 ✅ Descriptive and meaningful: "نسبة رضا العملاء عن وقت التوصيل"
 ✅ Clear insight: "توزيع التقييمات حسب الفئة"
 ❌ Generic: "Category Distribution"
 ❌ Vague: "Chart 1"
+❌ English titles are NOT allowed
+
+**Important Terminology:**
+- "بطاقات شحن" = Recharge Cards (NOT shipment/shipping)
+- When data mentions "شحن" in context of cards/telecom, it means "recharge" not "shipping"
+- Correct: "عدد بطاقات الشحن حسب الشركة" (Recharge card count by company)
+- Correct: "توزيع مبيعات بطاقات الشحن" (Recharge card sales distribution)
+- Wrong: Using "shipment" or "shipping" for "بطاقات شحن"
 
 ═══════════════════════════════════════════════════════════════════════════════
 🎨 COLOR CODING RULES
@@ -672,6 +685,8 @@ Before you submit your response, verify ALL of these:
 □ For wordcloud: 80-120 words with text, size, and color fields
 □ For standard charts: labels array and datasets array present
 □ Colors follow sentiment rules (green=positive, red=negative, yellow=neutral)
+□ **ALL CHART TITLES ARE IN ARABIC** (no English titles allowed)
+□ **Correct terminology used: "بطاقات شحن" = recharge cards (not shipment)**
 □ Chart titles are meaningful and descriptive in Arabic
 □ Data values extracted from the underlying data (not fabricated)
 □ Each chart provides unique insights (no redundant visualizations)

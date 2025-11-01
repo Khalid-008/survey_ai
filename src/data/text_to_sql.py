@@ -148,19 +148,74 @@ ORDER BY
         print(f"✅ Using fallback query")
         return fallback_query
 
-def get_qualitative_answers(questions: list[str]):
-    """Generate SQL query to fetch information."""
-    prompt = qualitative_prompt_template.invoke(
-        {
-            "dialect": db.dialect,
-            "top_k": 5000,
-            "table_info": db.get_table_info(),
-            "input": questions,
-        }
-    )
-    structured_llm = llm.with_structured_output(QueryOutput)
-    result = structured_llm.invoke(prompt)
-    return result["query"]
+def get_qualitative_answers(question: dict):
+    """Generate SQL query to fetch information for a qualitative question.
+    
+    Args:
+        question: Dictionary containing question_id, question_text, question_type
+        
+    Returns:
+        SQL query string to retrieve answers for the specified question
+    """
+    # Format the question properly for the LLM
+    # The prompt prefers question_id over question_text (more reliable, avoids Unicode issues)
+    question_id = question.get('question_id')
+    question_text = question.get('question_text', 'N/A')
+    
+    formatted_input = f"""
+Question ID: {question_id}
+Question Text: {question_text}
+
+Please generate a query that:
+1. Uses the question_id ('{question_id}') for filtering (WHERE T1.ID = N'{question_id}')
+2. Returns the question text and all answers in a grouped format
+3. Uses STRING_AGG to combine answers into a JSON-like array format
+"""
+    
+    try:
+        prompt = qualitative_prompt_template.invoke(
+            {
+                "dialect": db.dialect,
+                "top_k": 5000,
+                "table_info": db.get_table_info(),
+                "input": formatted_input,
+            }
+        )
+        structured_llm = llm.with_structured_output(QueryOutput)
+        result = structured_llm.invoke(prompt)
+        query = result["query"]
+        
+        # Validate the generated query
+        if not query or len(query.strip()) < 30:
+            raise ValueError(f"Generated query is too short or empty: {query}")
+        
+        # Basic validation for unclosed quotes
+        single_quotes = query.count("'")
+        if single_quotes % 2 != 0:
+            print(f"⚠️ WARNING: Query may have unclosed quotes: {query[:200]}...")
+            raise ValueError("Query has unclosed quotes")
+        
+        print(f"✅ Generated qualitative query ({len(query)} characters)")
+        print(f"Query preview: {query[:150]}...")
+        
+        return query
+        
+    except Exception as e:
+        print(f"❌ Error generating qualitative query: {str(e)}")
+        print(f"🔄 Using fallback query for question_id: {question_id}")
+        
+        # Fallback: Generate a simple, reliable query
+        fallback_query = f"""
+SELECT TOP 5000
+    T1.Question,
+    '[' + STRING_AGG('"' + STRING_ESCAPE(T2.Answer, 'json') + '"', ',') + ']' AS Answers
+FROM SurveyQuestion AS T1
+JOIN SurveyAnswer AS T2 ON T1.ID = T2.SQID
+WHERE T1.ID = N'{question_id}'
+GROUP BY T1.Question
+"""
+        print(f"✅ Using fallback query")
+        return fallback_query
 
 #===========================================================
 # For SQL Server (mssql):
