@@ -342,9 +342,15 @@ def generate_analysis_from_sql(state: State) -> Command[Literal["get_answers"]]:
             
             # Generate charts for quantitative data
             print(f"🎨 Generating charts for quantitative data...")
+            # Format questions text for chart titles
+            questions_text_for_charts = "\n".join([
+                f"السؤال {i+1}: {q['question_text']}" 
+                for i, q in enumerate(quantitative_questions)
+            ])
             quant_charts_prompt = visualization_generator_from_quantitative_data_prompt.invoke(
                 {
-                    "DATA_CONTENT": json.dumps(data, ensure_ascii=False)
+                    "DATA_CONTENT": json.dumps(data, ensure_ascii=False),
+                    "QUESTIONS_TEXT": questions_text_for_charts
                 }
             )
             
@@ -388,9 +394,15 @@ def generate_analysis_from_sql(state: State) -> Command[Literal["get_answers"]]:
                 
                 # Generate charts for correlation data
                 print(f"🎨 Generating charts for correlation data...")
+                # Format questions text for correlation chart titles
+                questions_text_for_corr_charts = "\n".join([
+                    f"السؤال {i+1}: {q['question_text']}" 
+                    for i, q in enumerate(quantitative_questions)
+                ])
                 corr_charts_prompt = visualization_generator_for_correlation_prompt.invoke(
                     {
-                        "CORRELATION_DATA": json.dumps(correlation_data, ensure_ascii=False)
+                        "CORRELATION_DATA": json.dumps(correlation_data, ensure_ascii=False),
+                        "QUESTIONS_TEXT": questions_text_for_corr_charts
                     }
                 )
                 

@@ -480,7 +480,39 @@ class CorrelationVisualizationGeneratorPrompt:
     """Wrapper class to maintain .invoke() compatibility"""
     def invoke(self, inputs):
         correlation_data = inputs.get("CORRELATION_DATA", "")
-        return _create_correlation_visualization_prompt(correlation_data)
+        questions_text = inputs.get("QUESTIONS_TEXT", "")
+        
+        prompt_messages = _create_correlation_visualization_prompt(correlation_data)
+        
+        # If questions text is provided, add it to emphasize using actual question text
+        if questions_text:
+            question_context = f"""
+
+═══════════════════════════════════════════════════════════════════════════════
+📋 ACTUAL QUESTION TEXT (USE IN CHART TITLES)
+═══════════════════════════════════════════════════════════════════════════════
+
+**THE ACTUAL SURVEY QUESTIONS BEING CORRELATED:**
+{questions_text}
+
+**CRITICAL: USE THE ACTUAL QUESTION TEXT IN CHART TITLES**
+- Extract question text from column names in the correlation data
+- If column names don't contain full question text, use the questions listed above
+- NEVER use placeholders like "السؤال الأول", "Question 1", "Q1", "[Question_1]"
+- ALWAYS use the actual question text or a meaningful abbreviation of it
+
+═══════════════════════════════════════════════════════════════════════════════
+"""
+            # Add the question context before "YOUR MISSION"
+            if len(prompt_messages) >= 2:
+                original_system_content = prompt_messages[0].content
+                original_system_content = original_system_content.replace(
+                    "═══════════════════════════════════════════════════════════════════════════════\n🎯 YOUR MISSION",
+                    question_context + "\n═══════════════════════════════════════════════════════════════════════════════\n🎯 YOUR MISSION"
+                )
+                prompt_messages[0].content = original_system_content
+        
+        return prompt_messages
 
 # Create the instance for correlation visualization
 visualization_generator_for_correlation_prompt = CorrelationVisualizationGeneratorPrompt()

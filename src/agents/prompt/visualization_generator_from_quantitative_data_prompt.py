@@ -378,6 +378,51 @@ class VisualizationGeneratorPrompt:
     """Wrapper class to maintain .invoke() compatibility"""
     def invoke(self, inputs):
         data_content = inputs.get("DATA_CONTENT", "")
+        questions_text = inputs.get("QUESTIONS_TEXT", "")
+        
+        # If questions text is provided, add it to the prompt
+        if questions_text:
+            system_content_addition = f"""
+
+═══════════════════════════════════════════════════════════════════════════════
+📋 QUESTION CONTEXT (CRITICAL FOR CHART TITLES)
+═══════════════════════════════════════════════════════════════════════════════
+
+**THE ACTUAL SURVEY QUESTIONS:**
+{questions_text}
+
+**CRITICAL TITLE REQUIREMENT:**
+- DO NOT use generic titles like "توزيع تقييم السؤال 1" or "Question 1"
+- ALWAYS include the ACTUAL question text in chart titles
+- Example: Instead of "توزيع تقييم السؤال 1", use "توزيع تقييم [ACTUAL QUESTION TEXT HERE]"
+- The question text is provided above - USE IT DIRECTLY in your chart titles
+
+**Example Good Titles:**
+✅ "توزيع تقييم: هل كان العملاء راضين عن وقت إيصال المنتج؟"
+✅ "توزيع الإجابات: برأيك هل ترى أن مبلغ عمولة التوصيل للإجهزة مجزٍ؟"
+✅ "مقارنة التقييمات: ما مدى رضاك عن خدمة التوصيل؟"
+
+**Example Bad Titles:**
+❌ "توزيع تقييم السؤال 1"
+❌ "Question 1 Distribution"
+❌ "توزيع الإجابات للسؤال الأول"
+
+═══════════════════════════════════════════════════════════════════════════════
+"""
+            # Modify the system content to include question context
+            original_prompt = _create_visualization_prompt(data_content)
+            # Add the question context after the data content section
+            if len(original_prompt) >= 2:
+                original_system_content = original_prompt[0].content
+                # Insert the question context before "YOUR MISSION"
+                original_system_content = original_system_content.replace(
+                    "═══════════════════════════════════════════════════════════════════════════════\n🎯 YOUR MISSION: STRATEGIC VISUALIZATION",
+                    system_content_addition + "\n═══════════════════════════════════════════════════════════════════════════════\n🎯 YOUR MISSION: STRATEGIC VISUALIZATION"
+                )
+                original_prompt[0].content = original_system_content
+            
+            return original_prompt
+        
         return _create_visualization_prompt(data_content)
 
 # Create the instance for general visualization
