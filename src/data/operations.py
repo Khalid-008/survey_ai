@@ -10,9 +10,10 @@ warnings.filterwarnings('ignore', message='.*SQLAlchemy connectable.*')
 
 def get_survey_questions(survey_id):
     query = """
-    SELECT q.ID as QuestionID, q.Question as Questions, q.Question_Type as QuestionType
+    SELECT q.ID as QuestionID, q.Question as Questions, q.Question_Type as QuestionType, a.Answer
     FROM [VMS].[dbo].[Survey] s
     INNER JOIN SurveyQuestion q ON q.SurveyID = s.ID
+    INNER JOIN SurveyAnswer a ON q.ID = a.SQID
     WHERE s.ID = ?
     """
     df = pd.read_sql(query, conn, params=[survey_id])

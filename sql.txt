@@ -1,6 +1,0 @@
-SELECT s.Subject, s.Description , q.Question, a.Answer
-  FROM [VMS].[dbo].[Survey] s
-  INNER JOIN SurveyQuestion q ON q.SurveyID = s.ID
-  INNER JOIN SurveyAnswer a ON a.SQID = q.ID
-  where s.ID = '617311F7-C70F-4E9F-BB2B-47C95C80D79D'
-
