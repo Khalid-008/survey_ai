@@ -1,8 +1,16 @@
-import pyodbc
+import mysql.connector
+import os
+from dotenv import load_dotenv
 
-conn = pyodbc.connect(
-    r"DRIVER={ODBC Driver 17 for SQL Server};"
-    r"SERVER=KHALID;"
-    r"DATABASE=VMS;"
-    r"Trusted_Connection=yes;"
-)
+load_dotenv()
+
+def get_conn():
+    return mysql.connector.connect(
+            host=os.getenv("DB_HOST"),
+            port=int(os.getenv("DB_PORT", 3306)),
+            user=os.getenv("DB_USER"),
+            password=os.getenv("DB_PASSWORD"),
+            database=os.getenv("DB_DATABASE"),
+            connection_timeout=60,
+            buffered=True
+        )

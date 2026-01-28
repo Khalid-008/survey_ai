@@ -31,4 +31,5 @@ def survey_insight():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host="0.0.0.0", port="5566")
+    print("Starting Survey AI Flask server...")
+    app.run(debug=True, host="0.0.0.0", port=5566)
