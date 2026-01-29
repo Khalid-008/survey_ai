@@ -4,7 +4,7 @@ import nest_asyncio
 from flask import Flask, abort, jsonify
 from flask_cors import CORS
 from collections import OrderedDict
-from helper.utils import get_request_body, extract_json
+from helper.utils import get_request_body
 from agents.graphs.workflow import create_survey_insight_workflow
 
 nest_asyncio.apply()

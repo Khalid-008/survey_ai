@@ -13,20 +13,20 @@ from data.operations import get_survey_questions
 
 #     return query 
 
-def get_survey_questions(survey_id: str) -> dict:
-    """
-    Retrieves all questions for a given survey ID.
+# def get_survey_questions(survey_id: str) -> dict:
+#     """
+#     Retrieves all questions for a given survey ID.
 
-    Args:
-        survey_id (str): The unique identifier of the survey.
+#     Args:
+#         survey_id (str): The unique identifier of the survey.
 
-    Returns:
-        dict: A dictionary containing the survey questions.
-    """
-    questions_json = get_survey_questions(survey_id)
-    import json
-    try:
-        return json.loads(questions_json)
-    except Exception:
-        return {"error": "Failed to parse survey questions."}
+#     Returns:
+#         dict: A dictionary containing the survey questions.
+#     """
+#     questions_json = get_survey_questions(survey_id)
+#     import json
+#     try:
+#         return json.loads(questions_json)
+#     except Exception:
+#         return {"error": "Failed to parse survey questions."}
 
