@@ -149,7 +149,7 @@ def extract_entities_batch(texts: List[str], model: Any, batch_size: int = 16) -
 
     try:
         print(f"🔍 Processing NER in batches (batch_size={batch_size})...")
-        batched_entities = model.predict_entities(valid_texts, labels, threshold=0.3)
+        batched_entities = model.batch_predict_entities(valid_texts, labels, threshold=0.3, batch_size=batch_size)
         
         for idx, entities in zip(valid_indices, batched_entities):
             all_results[idx] = convert_ner_to_native(entities)
@@ -341,3 +341,8 @@ def run_enrichment_pipeline(df: pd.DataFrame) -> pd.DataFrame:
     df["topic_id"] = topic_ids
     
     return df
+
+# ============================================================================
+# Analsysis Functions
+# ============================================================================
+
