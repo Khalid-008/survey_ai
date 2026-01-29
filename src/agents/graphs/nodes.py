@@ -160,11 +160,11 @@ def convert_ner_to_native(ner_results):
     return native_results
 
 
-def extract_entities_with_gliner(text, model):
-    """Extract entities using GLiNER with predefined Arabic labels."""
-    if not text or str(text).strip() == "" or str(text).lower() == "no answer":
+def extract_entities_batch(texts: List[str], model: Any, batch_size: int = 16) -> List[List[Dict[str, Any]]]:
+    """Extract entities using GLiNER with batch processing."""
+    if not texts:
         return []
-    
+
     # Define entity labels in Arabic
     labels = [
         "شخص",      # Person
@@ -176,12 +176,33 @@ def extract_entities_with_gliner(text, model):
         "حدث"       # Event
     ]
     
+    # Filter indices for valid texts
+    valid_indices = [
+        i for i, t in enumerate(texts) 
+        if t and str(t).strip() and str(t).lower() != "no answer"
+    ]
+    valid_texts = [str(texts[i]) for i in valid_indices]
+    
+    # Initialize results with empty lists
+    all_results = [[] for _ in range(len(texts))]
+    
+    if not valid_texts:
+        return all_results
+
     try:
-        entities = model.predict_entities(str(text), labels, threshold=0.3)
-        return convert_ner_to_native(entities)
+        print(f"🔍 Processing NER in batches (batch_size={batch_size})...")
+        # GLiNER predict_entities supports lists
+        batched_entities = model.predict_entities(valid_texts, labels, threshold=0.3)
+        
+        # GLiNER returns a list of lists of dictionaries
+        for idx, entities in zip(valid_indices, batched_entities):
+            all_results[idx] = convert_ner_to_native(entities)
+            
     except Exception as e:
-        print(f"⚠️ Error extracting entities: {str(e)}")
-        return []
+        print(f"⚠️ Error in batch entity extraction: {str(e)}")
+        # Fallback to empty results already initialized
+        
+    return all_results
 
 
 # ============================================================================
@@ -451,24 +472,34 @@ def enrich_data(state: State):
         sentiment_pipeline = get_sentiment_pipeline()
         ner_model = get_ner_model()
         
-        # Apply Sentiment Analysis
-        print("📊 Applying sentiment analysis...")
-        survey_df["sentiment"] = survey_df["Answer_normalized"].apply(
-            lambda x: sentiment_pipeline(str(x))[0]["label"] 
-            if x and str(x).strip() and str(x).lower() != "no answer" 
-            else "neutral"
-        )
+        # Apply Sentiment Analysis in Batches
+        print("📊 Applying batched sentiment analysis...")
+        answer_texts = survey_df["Answer_normalized"].astype(str).tolist()
         
-        # Apply GLiNER NER
-        print("🏷️  Applying GLiNER NER (Named Entity Recognition)...")
-        survey_df["entities"] = survey_df["Answer_normalized"].apply(
-            lambda x: extract_entities_with_gliner(x, ner_model)
-        )
+        # Filter valid texts for sentiment
+        valid_sent_indices = [
+            i for i, t in enumerate(answer_texts) 
+            if t and t.strip() and t.lower() != "no answer"
+        ]
+        valid_sent_texts = [answer_texts[i] for i in valid_sent_indices]
+        
+        sentiments = ["neutral"] * len(answer_texts)
+        if valid_sent_texts:
+            print(f"🧪 Processing {len(valid_sent_texts)} sentiments in batches...")
+            sent_results = sentiment_pipeline(valid_sent_texts, batch_size=32)
+            for idx, res in zip(valid_sent_indices, sent_results):
+                sentiments[idx] = res["label"]
+        
+        survey_df["sentiment"] = sentiments
+        
+        # Apply GLiNER NER in Batches
+        print("🏷️  Applying batched GLiNER NER...")
+        survey_df["entities"] = extract_entities_batch(answer_texts, ner_model, batch_size=16)
 
         # Apply Topic Extraction
         print("🔍 Applying topic extraction...")
         topic_labels, topic_ids, keywords_map = extract_topics_from_texts(
-            survey_df["Answer_normalized"].tolist()
+            answer_texts
         )
         survey_df["topic_label"] = topic_labels
         survey_df["topic_id"] = topic_ids
