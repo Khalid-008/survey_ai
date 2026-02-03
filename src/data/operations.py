@@ -23,6 +23,7 @@ def get_survey_df(survey_id):
         result = pd.read_sql(f"""SELECT 
                 a.external_id as ExternalID,
                 s.survey_number as SurveyNumber,
+                s.subject as SurveyTitle,
                 q.id as QuestionID, 
                 q.question_ar as Questions, 
                 q.question_type as QuestionType, 

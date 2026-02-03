@@ -32,7 +32,7 @@ from agents.prompt.visualization_correlation_prompt import visualization_generat
 from analytics_pipeline.pipeline import (
     normalize_arabic, 
     convert_arabic_time_to_24h,
-    run_enrichment_pipeline
+    run_full_analysis_pipeline
 )
 
 warnings.filterwarnings('ignore')
@@ -142,26 +142,96 @@ def enrich_data(state: State):
                 "messages": [AIMessage(content="Survey data is empty, skipping enrichment.")]
             }
         
-        # Run the full analytics pipeline
-        survey_df = run_enrichment_pipeline(survey_df)
+        # Get survey title (fallback to ID if SurveyTitle column is missing)
+        survey_title = survey_df["SurveyTitle"].iloc[0] if "SurveyTitle" in survey_df.columns else f"Survey {state['survey_id']}"
         
-        print(f"✅ Enrichment completed successfully!")
+        # We will process TEXT_INPUT questions one by one
+        enriched_groups = []
+        all_pipeline_results = {}
+        
+        # Group by QuestionID to process each question separately
+        for question_id, group_df in survey_df.groupby("QuestionID"):
+            question_type = group_df["QuestionType"].iloc[0]
+            question_text = group_df["Questions"].iloc[0]
+            
+            if question_type == "TEXT_INPUT":
+                print(f"🔍 Analyzing TEXT_INPUT question [{question_id}]: {question_text[:50]}...")
+                try:
+                    # Run the full analytics pipeline for this specific question
+                    pipeline_results = run_full_analysis_pipeline(group_df, survey_title, question_text)
+                    enriched_groups.append(pipeline_results['enriched_df'])
+                    all_pipeline_results[question_id] = pipeline_results
+                except Exception as e:
+                    print(f"⚠️ Error analyzing question {question_id}: {str(e)}")
+                    enriched_groups.append(group_df)
+            else:
+                # For non-TEXT_INPUT, we just keep the data as is (or could add default columns)
+                # But to maintain consistency, we should ensure columns exist
+                temp_df = group_df.copy()
+                if "sentiment" not in temp_df.columns: temp_df["sentiment"] = "neutral"
+                if "entities" not in temp_df.columns: temp_df["entities"] = "[]"
+                if "topic_label" not in temp_df.columns: temp_df["topic_label"] = "متنوع"
+                if "topic_id" not in temp_df.columns: temp_df["topic_id"] = -1
+                enriched_groups.append(temp_df)
+        
+        # Reconstruct the full DataFrame
+        survey_df = pd.concat(enriched_groups, ignore_index=True)
+        
+        print(f"✅ Enrichment completed successfully for {len(all_pipeline_results)} TEXT_INPUT questions!")
         
         # ====================================================================
-        # SAVE ENRICHED DATA (ONLY AFTER ENRICHMENT)
+        # SAVE ENRICHED DATA AND COMPREHENSIVE ANALYSIS REPORT
         # ====================================================================
         if not os.path.exists("exports"):
             os.makedirs("exports")
             
-        csv_path = f"exports/survey_data_enriched_{state['survey_id']}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+        csv_path = f"exports/survey_data_enriched_{state['survey_id']}_{timestamp}.csv"
+        report_path = f"exports/analysis_report_{state['survey_id']}_{timestamp}.txt"
+        
         try:
-            # Convert entities to string for CSV export
+            # Save enriched CSV
             survey_df_export = survey_df.copy()
-            survey_df_export["entities"] = survey_df_export["entities"].apply(str)
+            # Ensure entities is string for CSV
+            if "entities" in survey_df_export.columns:
+                survey_df_export["entities"] = survey_df_export["entities"].apply(lambda x: str(x) if isinstance(x, (list, dict)) else x)
             survey_df_export.to_csv(csv_path, index=False, encoding="utf-8-sig")
             print(f"💾 Enriched data exported to: {csv_path}")
+            
+            # Save comprehensive text report
+            with open(report_path, 'w', encoding='utf-8') as f:
+                f.write("="*80 + "\n")
+                f.write(f"تقرير تحليل الاستبيان الشامل - {survey_title}\n")
+                f.write(f"Survey ID: {state['survey_id']}\n")
+                f.write(f"التاريخ: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                f.write("="*80 + "\n\n")
+                
+                for q_id, results in all_pipeline_results.items():
+                    q_text = results.get('survey_question', f"Question {q_id}")
+                    f.write(f"📌 تحليل السؤال: {q_text}\n")
+                    f.write("-" * 40 + "\n")
+                    
+                    f.write("📊 توزيع المشاعر:\n")
+                    f.write(f"{results['sentiment_distribution'].to_string()}\n\n")
+                    
+                    f.write("📌 أهم المواضيع السلبية:\n")
+                    f.write(f"{results['top_topics_by_sentiment'].to_string()}\n\n")
+                    
+                    if 'topics_analysis' in results:
+                        f.write("🤖 تحليل المواضيع:\n")
+                        f.write(f"{results['topics_analysis']}\n\n")
+                    
+                    if 'entities_analysis' in results:
+                        f.write("🤖 تحليل الكيانات:\n")
+                        f.write(f"{results['entities_analysis']}\n\n")
+                    
+                    f.write("\n" + "="*40 + "\n\n")
+            
+            print(f"💾 Analysis report saved to: {report_path}")
+            
         except Exception as e:
-            print(f"⚠️ Could not export CSV: {str(e)}")
+            print(f"⚠️ Could not export data/report: {str(e)}")
+            print(traceback.format_exc())
         
         # Convert back to list of dicts for state
         enriched_data = survey_df.to_dict(orient="records")
@@ -170,7 +240,7 @@ def enrich_data(state: State):
             "survey_data": enriched_data,
             "messages": [
                 AIMessage(
-                    content=f"Data enriched successfully with sentiment analysis, NER, and topic extraction for {len(enriched_data)} records. Exported to {csv_path}"
+                    content=f"Data enriched successfully for {len(all_pipeline_results)} TEXT_INPUT questions. Exported to {csv_path} and analysis report to {report_path}"
                 )
             ]
         }
