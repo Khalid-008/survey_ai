@@ -1,36 +1,27 @@
-import sys
 import os
-import re
+import sys
 import datetime
 import traceback
-import pandas as pd
 import warnings
-import numpy as np
-from typing import Literal, List, Tuple, Dict, Any
+from typing import Literal, Dict, Any, List, Optional
+from dataclasses import dataclass
 
-# Add the 'src' directory to sys.path to resolve absolute imports when running directly
+import pandas as pd
+import numpy as np
+from langchain_core.messages import AIMessage
+from langgraph.types import Command
+
+# Configure path for imports
 current_file_path = os.path.abspath(__file__)
 src_dir = os.path.dirname(os.path.dirname(os.path.dirname(current_file_path)))
 if src_dir not in sys.path:
     sys.path.insert(0, src_dir)
 
-from langchain_core.documents import Document
-from langchain_core.messages import trim_messages, AIMessage
-from llms.models import model, google_embeddings_model
-from agents.prompt.get_relevant_question_node_prompt import get_relevant_question_prompt
-from langgraph.types import Command
+from llms.models import model
 from agents.graphs.setup import State
 from data.operations import get_survey_df
-from agents.prompt.generate_analysis_from_rag_prompt import generate_analysis_from_qualitative_data_prompt
-from agents.prompt.generate_analysis_from_sql_prompt import generate_analysis_from_quantitative_data_prompt
-from agents.prompt.generate_correlation_analysis_prompt import generate_correlation_analysis_prompt
-from agents.prompt.visualization_generator_prompt import (
-    visualization_generator_from_quantitative_data_prompt, 
-    visualization_generator_from_qualitative_data_prompt
-)
-from agents.prompt.visualization_correlation_prompt import visualization_generator_for_correlation_prompt
 from analytics_pipeline.pipeline import (
-    normalize_arabic, 
+    normalize_arabic,
     convert_arabic_time_to_24h,
     run_full_analysis_pipeline
 )
@@ -38,263 +29,497 @@ from agents.prompt.synthesis_agent_prompt import synthesis_agent_prompt
 
 warnings.filterwarnings('ignore')
 
+
 # ============================================================================
-# MAIN WORKFLOW NODES
+# CONFIGURATION & CONSTANTS
 # ============================================================================
 
-def retrieve_survey_question(state: State):
-    """
-    CLEANING LAYER: Retrieve and clean survey data.
-    Data is NOT saved here - only cleaned and returned.
-    """
-    try:
-        survey_df = get_survey_df(state["survey_id"])
-        print(f"Total rows before cleaning: {len(survey_df)}")
-        
-        # Apply 24h conversion BEFORE stripping AM/PM in normalize_arabic
-        survey_df["Answer_normalized"] = survey_df["Answer"].apply(convert_arabic_time_to_24h)
-        
-        # Apply general normalization
-        survey_df["Answer_normalized"] = survey_df["Answer_normalized"].apply(normalize_arabic)
+ANSWER_MAPPING = {
+    "نوعا ما": "محايد",
+    "الى حد ما": "محايد",
+    "نعم": "1",
+    "لا": "0"
+}
 
-        # Handle null values
-        survey_df["Answer_normalized"] = survey_df["Answer_normalized"].fillna("NO ANSWER")
+CLEANING_PATTERNS = [
+    (r"\bمن\b", ""),
+    (r"\bالى\b", "-"),
+    (r"\bم\b", ""),
+    (r"\bص\b", ""),
+    (r"\s+", " ")
+]
 
-        # Lowercase & trim
-        survey_df["Answer_normalized"] = (
-            survey_df["Answer_normalized"]
+EXPORTS_DIR = "exports"
+DEFAULT_SENTIMENT = "neutral"
+DEFAULT_TOPIC = "متنوع"
+DEFAULT_TOPIC_ID = -1
+
+
+# ============================================================================
+# DATA CLASSES
+# ============================================================================
+
+@dataclass
+class SurveyMetrics:
+    """Metrics for tracking survey data processing."""
+    rows_before_cleaning: int
+    rows_after_cleaning: int
+    text_input_questions: int
+    enriched_questions: int
+    failed_questions: int
+
+
+# ============================================================================
+# DATA CLEANING UTILITIES
+# ============================================================================
+
+class SurveyDataCleaner:
+    """Handles all survey data cleaning operations."""
+    
+    @staticmethod
+    def normalize_answers(df: pd.DataFrame) -> pd.DataFrame:
+        """Apply normalization pipeline to survey answers."""
+        df = df.copy()
+        
+        # Time conversion must happen before general normalization
+        df["Answer_normalized"] = df["Answer"].apply(convert_arabic_time_to_24h)
+        df["Answer_normalized"] = df["Answer_normalized"].apply(normalize_arabic)
+        
+        # Handle missing values
+        df["Answer_normalized"] = df["Answer_normalized"].fillna("NO ANSWER")
+        
+        # Case normalization
+        df["Answer_normalized"] = (
+            df["Answer_normalized"]
             .str.lower()
             .str.strip()
         )
-
-        # Map answers
-        mapping = {
-            "نوعا ما": "محايد",
-            "الى حد ما": "محايد",
-            "نعم": "1",
-            "لا": "0"
-        }
-        survey_df["Answer_normalized"] = survey_df["Answer_normalized"].replace(mapping)
-
-        # Clean time ranges and specific letters
-        survey_df["Answer_normalized"] = (
-            survey_df["Answer_normalized"]
-            .str.replace(r"\bمن\b", "", regex=True)
-            .str.replace(r"\bالى\b", "-", regex=True)
-            .str.replace(r"\bم\b", "", regex=True)
-            .str.replace(r"\bص\b", "", regex=True)
-            .str.replace(r"\s+", " ", regex=True)
-            .str.strip()
-        )
         
-        # Remove duplicates
-        survey_df = survey_df.drop_duplicates(
-            subset=["QuestionID", "Answer_normalized"]
-        )
+        return df
+    
+    @staticmethod
+    def apply_answer_mapping(df: pd.DataFrame) -> pd.DataFrame:
+        """Map common Arabic responses to standardized values."""
+        df = df.copy()
+        df["Answer_normalized"] = df["Answer_normalized"].replace(ANSWER_MAPPING)
+        return df
+    
+    @staticmethod
+    def clean_text_patterns(df: pd.DataFrame) -> pd.DataFrame:
+        """Remove unwanted patterns from text."""
+        df = df.copy()
+        
+        for pattern, replacement in CLEANING_PATTERNS:
+            df["Answer_normalized"] = df["Answer_normalized"].str.replace(
+                pattern, replacement, regex=True
+            )
+        
+        df["Answer_normalized"] = df["Answer_normalized"].str.strip()
+        return df
+    
+    @staticmethod
+    def remove_duplicates(df: pd.DataFrame) -> pd.DataFrame:
+        """Remove duplicate responses for the same question."""
+        return df.drop_duplicates(subset=["QuestionID", "Answer_normalized"])
+    
+    @classmethod
+    def clean_survey_data(cls, df: pd.DataFrame) -> pd.DataFrame:
+        """Execute full cleaning pipeline."""
+        df = cls.normalize_answers(df)
+        df = cls.apply_answer_mapping(df)
+        df = cls.clean_text_patterns(df)
+        df = cls.remove_duplicates(df)
+        return df
 
-        print(f"Total rows after cleaning: {len(survey_df)}")
 
-        # Check if empty
-        if survey_df.empty:
-            print(f"No data found for survey ID {state['survey_id']}")
-            return {
-                "survey_data": [],
-                "analysis_results": {},
-                "messages": [
-                    AIMessage(content=f"No data found for survey ID {state['survey_id']}. Analysis skipped.")
-                ]
-            }
+# ============================================================================
+# DATA ENRICHMENT UTILITIES
+# ============================================================================
 
-        # Convert to dict (NOT SAVED YET)
-        survey_data = survey_df.to_dict(orient="records")
-
-        return {
-            "survey_data": survey_data,
-            "analysis_results": {},
-            "messages": [
-                AIMessage(
-                    content=f"Survey data retrieved and cleaned successfully for survey ID {state['survey_id']}. Ready for analysis."
-                )
-            ]
-        }
-
-    except Exception as e:
-        raise RuntimeError(f"Server error: {str(e)}")
-
-
-def enrich_data(state: State):
-    """
-    ENRICHMENT LAYER: Apply sentiment analysis, NER, and topic extraction.
-    Data is SAVED ONLY AFTER enrichment is complete.
-    """
-    try:
-        # Convert list of dicts to DataFrame
-        if not state.get("survey_data"):
-            print("No survey data to enrich.")
-            return {
-                "survey_data": [],
-                "messages": [AIMessage(content="No survey data available for enrichment.")]
-            }
+class SurveyDataEnricher:
+    """Handles NLP enrichment of survey data."""
+    
+    @staticmethod
+    def add_default_enrichment_columns(df: pd.DataFrame) -> pd.DataFrame:
+        """Add default enrichment columns for non-TEXT_INPUT questions."""
+        df = df.copy()
+        
+        if "sentiment" not in df.columns:
+            df["sentiment"] = DEFAULT_SENTIMENT
+        if "entities" not in df.columns:
+            df["entities"] = "[]"
+        if "topic_label" not in df.columns:
+            df["topic_label"] = DEFAULT_TOPIC
+        if "topic_id" not in df.columns:
+            df["topic_id"] = DEFAULT_TOPIC_ID
             
-        survey_df = pd.DataFrame(state["survey_data"])
+        return df
+    
+    @staticmethod
+    def enrich_text_question(
+        df: pd.DataFrame,
+        survey_title: str,
+        question_text: str,
+        question_id: str
+    ) -> Dict[str, Any]:
+        """
+        Run full analytics pipeline on a TEXT_INPUT question.
         
-        if survey_df.empty:
-            print("Survey DataFrame is empty.")
-            return {
-                "survey_data": [],
-                "messages": [AIMessage(content="Survey data is empty, skipping enrichment.")]
-            }
+        Returns:
+            Dict containing enriched_df and analysis results
+        """
+        print(f"🔍 Analyzing TEXT_INPUT question [{question_id}]: {question_text[:50]}...")
         
-        # Get survey title (fallback to ID if SurveyTitle column is missing)
-        survey_title = survey_df["SurveyTitle"].iloc[0] if "SurveyTitle" in survey_df.columns else f"Survey {state['survey_id']}"
+        try:
+            results = run_full_analysis_pipeline(df, survey_title, question_text)
+            results['survey_question'] = question_text
+            results['survey_title'] = survey_title
+            results['question_id'] = question_id
+            
+            print(f"✅ Question {question_id} analyzed successfully")
+            return results
+            
+        except Exception as e:
+            print(f"⚠️ Error analyzing question {question_id}: {str(e)}")
+            raise
+    
+    @classmethod
+    def process_survey_questions(
+        cls,
+        survey_df: pd.DataFrame,
+        survey_title: str
+    ) -> tuple[pd.DataFrame, Dict[str, Any], SurveyMetrics]:
+        """
+        Process all survey questions, enriching TEXT_INPUT types.
         
-        # We will process TEXT_INPUT questions one by one
+        Returns:
+            Tuple of (enriched_df, analysis_results, metrics)
+        """
         enriched_groups = []
-        all_pipeline_results = {}
+        all_analysis_results = {}
+        text_input_count = 0
+        enriched_count = 0
+        failed_count = 0
         
-        # Group by QuestionID to process each question separately
         for question_id, group_df in survey_df.groupby("QuestionID"):
             question_type = group_df["QuestionType"].iloc[0]
             question_text = group_df["Questions"].iloc[0]
             
             if question_type == "TEXT_INPUT":
-                print(f"🔍 Analyzing TEXT_INPUT question [{question_id}]: {question_text[:50]}...")
+                text_input_count += 1
                 try:
-                    # Run the full analytics pipeline for this specific question
-                    pipeline_results = run_full_analysis_pipeline(group_df, survey_title, question_text)
-                    pipeline_results['survey_question'] = question_text
-                    pipeline_results['survey_title'] = survey_title
-                    enriched_groups.append(pipeline_results['enriched_df'])
-                    all_pipeline_results[question_id] = pipeline_results
+                    results = cls.enrich_text_question(
+                        group_df, survey_title, question_text, str(question_id)
+                    )
+                    enriched_groups.append(results['enriched_df'])
+                    all_analysis_results[str(question_id)] = results
+                    enriched_count += 1
+                    
                 except Exception as e:
-                    print(f"⚠️ Error analyzing question {question_id}: {str(e)}")
-                    enriched_groups.append(group_df)
+                    print(f"⚠️ Failed to enrich question {question_id}, using raw data")
+                    enriched_groups.append(cls.add_default_enrichment_columns(group_df))
+                    failed_count += 1
             else:
-                # For non-TEXT_INPUT, we just keep the data as is (or could add default columns)
-                # But to maintain consistency, we should ensure columns exist
-                temp_df = group_df.copy()
-                if "sentiment" not in temp_df.columns: temp_df["sentiment"] = "neutral"
-                if "entities" not in temp_df.columns: temp_df["entities"] = "[]"
-                if "topic_label" not in temp_df.columns: temp_df["topic_label"] = "متنوع"
-                if "topic_id" not in temp_df.columns: temp_df["topic_id"] = -1
-                enriched_groups.append(temp_df)
+                # Non-TEXT_INPUT questions get default enrichment columns
+                enriched_groups.append(cls.add_default_enrichment_columns(group_df))
         
-        # Reconstruct the full DataFrame
-        survey_df = pd.concat(enriched_groups, ignore_index=True)
+        enriched_df = pd.concat(enriched_groups, ignore_index=True)
         
-        print(f"✅ Enrichment completed successfully for {len(all_pipeline_results)} TEXT_INPUT questions!")
+        metrics = SurveyMetrics(
+            rows_before_cleaning=0,  # Set by caller
+            rows_after_cleaning=0,   # Set by caller
+            text_input_questions=text_input_count,
+            enriched_questions=enriched_count,
+            failed_questions=failed_count
+        )
         
-        # Convert back to list of dicts for state
-        enriched_data = survey_df.to_dict(orient="records")
+        return enriched_df, all_analysis_results, metrics
+
+
+# ============================================================================
+# RESULT SERIALIZATION
+# ============================================================================
+
+class ResultSerializer:
+    """Handles serialization of analysis results."""
+    
+    @staticmethod
+    def make_serializable(results: Dict[str, Any]) -> Dict[str, Any]:
+        """Convert analysis results to JSON-serializable format."""
+        serialized = {}
         
-        # Prepare serializable analysis results
-        serializable_analysis = {}
-        for q_id, results in all_pipeline_results.items():
-            q_results = results.copy()
-            # Remove DataFrame to avoid redundancy and serialization issues
+        for q_id, q_results in results.items():
+            q_results = q_results.copy()
+            
+            # Remove DataFrame to avoid redundancy
             if 'enriched_df' in q_results:
                 del q_results['enriched_df']
             
-            # Convert pandas Series/DataFrames to dicts
+            # Convert pandas objects to dicts
             for key, value in q_results.items():
                 if isinstance(value, (pd.DataFrame, pd.Series)):
                     q_results[key] = value.to_dict()
             
-            serializable_analysis[str(q_id)] = q_results
-
-        return {
-            "survey_data": enriched_data,
-            "analysis_results": serializable_analysis,
-            "messages": [
-                AIMessage(
-                    content=f"Data enriched successfully for {len(all_pipeline_results)} TEXT_INPUT questions. Proceeding to synthesis."
-                )
-            ]
-        }
+            serialized[str(q_id)] = q_results
         
-    except Exception as e:
-        print(f"⚠️ Non-fatal ERROR in enrich_data: {str(e)}")
-        print(traceback.format_exc())
-        return {
-            "survey_data": state.get("survey_data", []),
-            "analysis_results": state.get("analysis_results", {}),
-            "messages": [
-                AIMessage(
-                    content=f"Warning: Data enrichment failed ({str(e)}), but proceeding with workflow using basic data."
-                )
-            ]
-        }
+        return serialized
 
-def synthesis_agent(state: State) -> Command[Literal["__end__"]]:
-    """
-    SYNTHESIS LAYER: Process all analysis results into a single executive report.
-    """
-    try:
-        print(f"=== SYNTHESIS AGENT ===")
-        print(f"Processing final synthesis for survey ID: {state['survey_id']}")
 
-        analysis_results = state.get("analysis_results", {})
-        if not analysis_results:
-            return Command(
-                update={"messages": [AIMessage(content="No analysis results found to synthesize.", name="synthesis_agent")]},
-                goto="__end__"
-            )
+# ============================================================================
+# SYNTHESIS UTILITIES
+# ============================================================================
 
-        # Get survey subject/title from the first result
-        first_result = next(iter(analysis_results.values()))
-        survey_title = first_result.get("survey_title", f"Survey {state['survey_id']}")
-
-        # Format analysis data for the LLM
-        analytics_messages = []
+class SynthesisReportGenerator:
+    """Generates executive summary reports."""
+    
+    @staticmethod
+    def format_analytics_messages(analysis_results: Dict[str, Any]) -> List[str]:
+        """Format analysis results into messages for synthesis."""
+        messages = []
+        
         for q_id, results in analysis_results.items():
             q_text = results.get("survey_question", f"Question {q_id}")
             sentiment_dist = results.get("sentiment_distribution", "N/A")
             topics_analysis = results.get("topics_analysis", "")
             entities_analysis = results.get("entities_analysis", "")
             
-            msg = f"Question: {q_text}\n"
-            msg += f"Sentiment Distribution: {sentiment_dist}\n"
-            if topics_analysis:
-                msg += f"Topics Analysis: {topics_analysis}\n"
-            if entities_analysis:
-                msg += f"Entities Analysis: {entities_analysis}\n"
+            msg_parts = [f"Question: {q_text}"]
+            msg_parts.append(f"Sentiment Distribution: {sentiment_dist}")
             
-            analytics_messages.append(msg)
+            if topics_analysis:
+                msg_parts.append(f"Topics Analysis: {topics_analysis}")
+            if entities_analysis:
+                msg_parts.append(f"Entities Analysis: {entities_analysis}")
+            
+            messages.append("\n".join(msg_parts))
+        
+        return messages
+    
+    @staticmethod
+    def save_report(content: str, survey_id: str) -> str:
+        """Save executive summary to file."""
+        os.makedirs(EXPORTS_DIR, exist_ok=True)
+        
+        timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f"executive_summary_{survey_id}_{timestamp}.txt"
+        filepath = os.path.join(EXPORTS_DIR, filename)
+        
+        with open(filepath, 'w', encoding='utf-8') as f:
+            f.write(content)
+        
+        print(f"💾 Executive summary saved to: {filepath}")
+        return filepath
 
-        # Invoke the synthesis prompt
+
+# ============================================================================
+# WORKFLOW NODES
+# ============================================================================
+
+def retrieve_survey_question(state: State) -> Dict[str, Any]:
+    """
+    STAGE 1: Retrieve and clean survey data.
+    
+    This is the data cleaning layer - no enrichment happens here.
+    """
+    try:
+        survey_id = state["survey_id"]
+        survey_df = get_survey_df(survey_id)
+        
+        rows_before = len(survey_df)
+        print(f"📊 Loaded {rows_before} rows for survey {survey_id}")
+        
+        # Clean the data
+        survey_df = SurveyDataCleaner.clean_survey_data(survey_df)
+        
+        rows_after = len(survey_df)
+        print(f"✨ Cleaned data: {rows_after} rows ({rows_before - rows_after} duplicates removed)")
+        
+        # Validate data
+        if survey_df.empty:
+            return {
+                "survey_data": [],
+                "analysis_results": {},
+                "messages": [
+                    AIMessage(content=f"No data found for survey {survey_id}. Analysis skipped.")
+                ]
+            }
+        
+        # Convert to dict (not saved yet - just prepared)
+        survey_data = survey_df.to_dict(orient="records")
+        
+        return {
+            "survey_data": survey_data,
+            "analysis_results": {},
+            "messages": [
+                AIMessage(
+                    content=f"Survey data retrieved and cleaned: {rows_after} responses ready for analysis."
+                )
+            ]
+        }
+        
+    except Exception as e:
+        error_msg = f"Failed to retrieve survey data: {str(e)}"
+        print(f"❌ {error_msg}")
+        print(traceback.format_exc())
+        raise RuntimeError(error_msg)
+
+
+def enrich_data(state: State) -> Dict[str, Any]:
+    """
+    STAGE 2: Apply NLP enrichment to survey data.
+    
+    Processes TEXT_INPUT questions with sentiment analysis, NER, and topic extraction.
+    Data is saved only after enrichment is complete.
+    """
+    try:
+        # Validate input
+        if not state.get("survey_data"):
+            return {
+                "survey_data": [],
+                "messages": [AIMessage(content="No survey data available for enrichment.")]
+            }
+        
+        survey_df = pd.DataFrame(state["survey_data"])
+        
+        if survey_df.empty:
+            return {
+                "survey_data": [],
+                "messages": [AIMessage(content="Survey data is empty, skipping enrichment.")]
+            }
+        
+        # Get survey metadata
+        survey_title = (
+            survey_df["SurveyTitle"].iloc[0] 
+            if "SurveyTitle" in survey_df.columns 
+            else f"Survey {state['survey_id']}"
+        )
+        
+        print(f"🔬 Starting enrichment for: {survey_title}")
+        
+        # Process all questions
+        enriched_df, analysis_results, metrics = SurveyDataEnricher.process_survey_questions(
+            survey_df, survey_title
+        )
+        
+        # Report metrics
+        print(f"📈 Enrichment complete:")
+        print(f"   • TEXT_INPUT questions: {metrics.text_input_questions}")
+        print(f"   • Successfully enriched: {metrics.enriched_questions}")
+        print(f"   • Failed: {metrics.failed_questions}")
+        
+        # Serialize results
+        enriched_data = enriched_df.to_dict(orient="records")
+        serializable_analysis = ResultSerializer.make_serializable(analysis_results)
+        
+        return {
+            "survey_data": enriched_data,
+            "analysis_results": serializable_analysis,
+            "messages": [
+                AIMessage(
+                    content=f"Data enriched: {metrics.enriched_questions}/{metrics.text_input_questions} "
+                            f"TEXT_INPUT questions analyzed successfully."
+                )
+            ]
+        }
+        
+    except Exception as e:
+        error_msg = f"Enrichment failed: {str(e)}"
+        print(f"⚠️ {error_msg}")
+        print(traceback.format_exc())
+        
+        # Non-fatal error: proceed with basic data
+        return {
+            "survey_data": state.get("survey_data", []),
+            "analysis_results": state.get("analysis_results", {}),
+            "messages": [
+                AIMessage(
+                    content=f"Warning: {error_msg}. Proceeding with basic data."
+                )
+            ]
+        }
+
+
+def synthesis_agent(state: State) -> Command[Literal["__end__"]]:
+    """
+    STAGE 3: Generate executive summary report.
+    
+    Synthesizes all analysis results into a cohesive executive summary.
+    """
+    try:
+        print("=" * 60)
+        print("SYNTHESIS AGENT")
+        print("=" * 60)
+        print(f"Survey ID: {state['survey_id']}")
+        
+        analysis_results = state.get("analysis_results", {})
+        
+        if not analysis_results:
+            return Command(
+                update={
+                    "messages": [
+                        AIMessage(
+                            content="No analysis results to synthesize.",
+                            name="synthesis_agent"
+                        )
+                    ]
+                },
+                goto="__end__"
+            )
+        
+        # Extract survey metadata
+        first_result = next(iter(analysis_results.values()))
+        survey_title = first_result.get("survey_title", f"Survey {state['survey_id']}")
+        
+        print(f"Survey: {survey_title}")
+        print(f"Questions analyzed: {len(analysis_results)}")
+        
+        # Format analytics for LLM
+        analytics_messages = SynthesisReportGenerator.format_analytics_messages(
+            analysis_results
+        )
+        
+        # Generate synthesis
         prompt_messages = synthesis_agent_prompt.invoke({
             "survey_subject": survey_title,
             "analytics_messages": analytics_messages
         })
-
+        
         response = model.invoke(prompt_messages)
         synthesis_content = response.content
-
-        # Save the executive report as a text file
-        if not os.path.exists("exports"):
-            os.makedirs("exports")
         
-        timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-        report_path = f"exports/executive_summary_{state['survey_id']}_{timestamp}.txt"
+        # Save report
+        report_path = SynthesisReportGenerator.save_report(
+            synthesis_content,
+            state['survey_id']
+        )
         
-        with open(report_path, 'w', encoding='utf-8') as f:
-            f.write(synthesis_content)
-        
-        print(f"💾 Executive summary saved to: {report_path}")
+        print("✅ Synthesis complete")
         
         return Command(
             update={
                 "messages": [
-                    AIMessage(content=synthesis_content, name="synthesis_agent")
-                ],
+                    AIMessage(
+                        content=synthesis_content,
+                        name="synthesis_agent"
+                    )
+                ]
             },
             goto="__end__"
         )
-
+        
     except Exception as e:
-        print(f"⚠️ Error in synthesis_agent: {str(e)}")
+        error_msg = f"Synthesis failed: {str(e)}"
+        print(f"❌ {error_msg}")
         print(traceback.format_exc())
+        
         return Command(
-            update={"messages": [AIMessage(content=f"Synthesis failed: {str(e)}", name="synthesis_agent")]},
+            update={
+                "messages": [
+                    AIMessage(
+                        content=error_msg,
+                        name="synthesis_agent"
+                    )
+                ]
+            },
             goto="__end__"
         )
