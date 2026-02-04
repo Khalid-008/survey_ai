@@ -98,6 +98,7 @@ def retrieve_survey_question(state: State):
             print(f"No data found for survey ID {state['survey_id']}")
             return {
                 "survey_data": [],
+                "analysis_results": {},
                 "messages": [
                     AIMessage(content=f"No data found for survey ID {state['survey_id']}. Analysis skipped.")
                 ]
@@ -108,6 +109,7 @@ def retrieve_survey_question(state: State):
 
         return {
             "survey_data": survey_data,
+            "analysis_results": {},
             "messages": [
                 AIMessage(
                     content=f"Survey data retrieved and cleaned successfully for survey ID {state['survey_id']}. Ready for analysis."
@@ -236,8 +238,24 @@ def enrich_data(state: State):
         # Convert back to list of dicts for state
         enriched_data = survey_df.to_dict(orient="records")
         
+        # Prepare serializable analysis results
+        serializable_analysis = {}
+        for q_id, results in all_pipeline_results.items():
+            q_results = results.copy()
+            # Remove DataFrame to avoid redundancy and serialization issues
+            if 'enriched_df' in q_results:
+                del q_results['enriched_df']
+            
+            # Convert pandas Series/DataFrames to dicts
+            for key, value in q_results.items():
+                if isinstance(value, (pd.DataFrame, pd.Series)):
+                    q_results[key] = value.to_dict()
+            
+            serializable_analysis[str(q_id)] = q_results
+
         return {
             "survey_data": enriched_data,
+            "analysis_results": serializable_analysis,
             "messages": [
                 AIMessage(
                     content=f"Data enriched successfully for {len(all_pipeline_results)} TEXT_INPUT questions. Exported to {csv_path} and analysis report to {report_path}"
@@ -250,6 +268,7 @@ def enrich_data(state: State):
         print(traceback.format_exc())
         return {
             "survey_data": state.get("survey_data", []),
+            "analysis_results": state.get("analysis_results", {}),
             "messages": [
                 AIMessage(
                     content=f"Warning: Data enrichment failed ({str(e)}), but proceeding with workflow using basic data."

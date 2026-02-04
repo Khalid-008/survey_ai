@@ -12,6 +12,7 @@ class State(MessagesState):
     survey_id: Any
     questions : list[dict]
     survey_data: list[dict]
+    analysis_results: dict[str, Any]
 
 # Memory
 memory = MemorySaver()
