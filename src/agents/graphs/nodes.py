@@ -34,6 +34,7 @@ from analytics_pipeline.pipeline import (
     convert_arabic_time_to_24h,
     run_full_analysis_pipeline
 )
+from agents.prompt.synthesis_agent_prompt import synthesis_agent_prompt
 
 warnings.filterwarnings('ignore')
 
@@ -161,6 +162,8 @@ def enrich_data(state: State):
                 try:
                     # Run the full analytics pipeline for this specific question
                     pipeline_results = run_full_analysis_pipeline(group_df, survey_title, question_text)
+                    pipeline_results['survey_question'] = question_text
+                    pipeline_results['survey_title'] = survey_title
                     enriched_groups.append(pipeline_results['enriched_df'])
                     all_pipeline_results[question_id] = pipeline_results
                 except Exception as e:
@@ -180,60 +183,6 @@ def enrich_data(state: State):
         survey_df = pd.concat(enriched_groups, ignore_index=True)
         
         print(f"✅ Enrichment completed successfully for {len(all_pipeline_results)} TEXT_INPUT questions!")
-        
-        # ====================================================================
-        # SAVE ENRICHED DATA AND COMPREHENSIVE ANALYSIS REPORT
-        # ====================================================================
-        if not os.path.exists("exports"):
-            os.makedirs("exports")
-            
-        timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-        csv_path = f"exports/survey_data_enriched_{state['survey_id']}_{timestamp}.csv"
-        report_path = f"exports/analysis_report_{state['survey_id']}_{timestamp}.txt"
-        
-        try:
-            # Save enriched CSV
-            survey_df_export = survey_df.copy()
-            # Ensure entities is string for CSV
-            if "entities" in survey_df_export.columns:
-                survey_df_export["entities"] = survey_df_export["entities"].apply(lambda x: str(x) if isinstance(x, (list, dict)) else x)
-            survey_df_export.to_csv(csv_path, index=False, encoding="utf-8-sig")
-            print(f"💾 Enriched data exported to: {csv_path}")
-            
-            # Save comprehensive text report
-            with open(report_path, 'w', encoding='utf-8') as f:
-                f.write("="*80 + "\n")
-                f.write(f"تقرير تحليل الاستبيان الشامل - {survey_title}\n")
-                f.write(f"Survey ID: {state['survey_id']}\n")
-                f.write(f"التاريخ: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-                f.write("="*80 + "\n\n")
-                
-                for q_id, results in all_pipeline_results.items():
-                    q_text = results.get('survey_question', f"Question {q_id}")
-                    f.write(f"📌 تحليل السؤال: {q_text}\n")
-                    f.write("-" * 40 + "\n")
-                    
-                    f.write("📊 توزيع المشاعر:\n")
-                    f.write(f"{results['sentiment_distribution'].to_string()}\n\n")
-                    
-                    f.write("📌 أهم المواضيع السلبية:\n")
-                    f.write(f"{results['top_topics_by_sentiment'].to_string()}\n\n")
-                    
-                    if 'topics_analysis' in results:
-                        f.write("🤖 تحليل المواضيع:\n")
-                        f.write(f"{results['topics_analysis']}\n\n")
-                    
-                    if 'entities_analysis' in results:
-                        f.write("🤖 تحليل الكيانات:\n")
-                        f.write(f"{results['entities_analysis']}\n\n")
-                    
-                    f.write("\n" + "="*40 + "\n\n")
-            
-            print(f"💾 Analysis report saved to: {report_path}")
-            
-        except Exception as e:
-            print(f"⚠️ Could not export data/report: {str(e)}")
-            print(traceback.format_exc())
         
         # Convert back to list of dicts for state
         enriched_data = survey_df.to_dict(orient="records")
@@ -258,7 +207,7 @@ def enrich_data(state: State):
             "analysis_results": serializable_analysis,
             "messages": [
                 AIMessage(
-                    content=f"Data enriched successfully for {len(all_pipeline_results)} TEXT_INPUT questions. Exported to {csv_path} and analysis report to {report_path}"
+                    content=f"Data enriched successfully for {len(all_pipeline_results)} TEXT_INPUT questions. Proceeding to synthesis."
                 )
             ]
         }
@@ -275,3 +224,77 @@ def enrich_data(state: State):
                 )
             ]
         }
+
+def synthesis_agent(state: State) -> Command[Literal["__end__"]]:
+    """
+    SYNTHESIS LAYER: Process all analysis results into a single executive report.
+    """
+    try:
+        print(f"=== SYNTHESIS AGENT ===")
+        print(f"Processing final synthesis for survey ID: {state['survey_id']}")
+
+        analysis_results = state.get("analysis_results", {})
+        if not analysis_results:
+            return Command(
+                update={"messages": [AIMessage(content="No analysis results found to synthesize.", name="synthesis_agent")]},
+                goto="__end__"
+            )
+
+        # Get survey subject/title from the first result
+        first_result = next(iter(analysis_results.values()))
+        survey_title = first_result.get("survey_title", f"Survey {state['survey_id']}")
+
+        # Format analysis data for the LLM
+        analytics_messages = []
+        for q_id, results in analysis_results.items():
+            q_text = results.get("survey_question", f"Question {q_id}")
+            sentiment_dist = results.get("sentiment_distribution", "N/A")
+            topics_analysis = results.get("topics_analysis", "")
+            entities_analysis = results.get("entities_analysis", "")
+            
+            msg = f"Question: {q_text}\n"
+            msg += f"Sentiment Distribution: {sentiment_dist}\n"
+            if topics_analysis:
+                msg += f"Topics Analysis: {topics_analysis}\n"
+            if entities_analysis:
+                msg += f"Entities Analysis: {entities_analysis}\n"
+            
+            analytics_messages.append(msg)
+
+        # Invoke the synthesis prompt
+        prompt_messages = synthesis_agent_prompt.invoke({
+            "survey_subject": survey_title,
+            "analytics_messages": analytics_messages
+        })
+
+        response = model.invoke(prompt_messages)
+        synthesis_content = response.content
+
+        # Save the executive report as a text file
+        if not os.path.exists("exports"):
+            os.makedirs("exports")
+        
+        timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+        report_path = f"exports/executive_summary_{state['survey_id']}_{timestamp}.txt"
+        
+        with open(report_path, 'w', encoding='utf-8') as f:
+            f.write(synthesis_content)
+        
+        print(f"💾 Executive summary saved to: {report_path}")
+        
+        return Command(
+            update={
+                "messages": [
+                    AIMessage(content=synthesis_content, name="synthesis_agent")
+                ],
+            },
+            goto="__end__"
+        )
+
+    except Exception as e:
+        print(f"⚠️ Error in synthesis_agent: {str(e)}")
+        print(traceback.format_exc())
+        return Command(
+            update={"messages": [AIMessage(content=f"Synthesis failed: {str(e)}", name="synthesis_agent")]},
+            goto="__end__"
+        )

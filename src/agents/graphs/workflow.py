@@ -4,7 +4,8 @@ from langchain_core.messages import HumanMessage, AIMessage
 from helper.tracer import tracer_provider
 from agents.graphs.nodes import (
     retrieve_survey_question,
-    enrich_data
+    enrich_data,
+    synthesis_agent
 )
 
 langfuse = tracer_provider()
@@ -16,10 +17,11 @@ def create_survey_insight_workflow(survey_id: int, user_message: str, session_id
 
     builder.add_node("retrieve_survey_question", retrieve_survey_question)
     builder.add_node("enrich_data", enrich_data)
+    builder.add_node("synthesis_agent", synthesis_agent)
 
     builder.add_edge(START, "retrieve_survey_question")
     builder.add_edge("retrieve_survey_question", "enrich_data")
-    builder.add_edge("enrich_data", END)
+    builder.add_edge("enrich_data", "synthesis_agent")
 
     graph = builder.compile(checkpointer=memory)
 
