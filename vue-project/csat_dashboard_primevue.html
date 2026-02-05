@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>PrimeVue + CDN</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+</head>
+
+<body>
+    <div id="app">
+        <p-datepicker v-model="date"></p-datepicker>
+        <br /><br />
+        {{ date }}
+    </div>
+
+    <script>
+        const { createApp, ref } = Vue;
+
+        const app = createApp({
+            setup() {
+                const date = ref();
+                return {
+                    date
+                };
+            },
+            data() {
+                return {
+                    // بيانات مخطط المشاعر
+                    sentimentData: {
+                        labels: ['إيجابي', 'سلبي', 'محايد'],
+                        datasets: [{
+                            data: [65.4, 17.66, 16.91],
+                            backgroundColor: ['#10b981', '#ef4444', '#f59e0b'],
+                            borderWidth: 3,
+                            borderColor: '#fff'
+                        }]
+                    },
+
+                    // بيانات الشكاوى
+                    complaintsData: {
+                        labels: ['الشرائح', 'الاتصالات', 'المندوب', 'الشركات'],
+                        datasets: [{
+                            label: 'عدد التكرارات',
+                            data: [37, 20, 18, 5],
+                            backgroundColor: ['#ef4444', '#f59e0b', '#3b82f6', '#8b5cf6'],
+                            borderRadius: 8
+                        }]
+                    },
+
+                    // بيانات المواضيع
+                    topicsData: {
+                        labels: ['نقص الشرائح', 'مشكلات التطبيق', 'استجابة المندوبين', 'قنوات التوريد', 'المسابقات', 'مواضيع أخرى'],
+                        datasets: [{
+                            data: [31, 16, 15, 5, 7, 26],
+                            backgroundColor: [
+                                'rgba(239, 68, 68, 0.7)',
+                                'rgba(245, 158, 11, 0.7)',
+                                'rgba(59, 130, 246, 0.7)',
+                                'rgba(139, 92, 246, 0.7)',
+                                'rgba(16, 185, 129, 0.7)',
+                                'rgba(107, 114, 128, 0.7)'
+                            ],
+                            borderWidth: 2,
+                            borderColor: '#fff'
+                        }]
+                    },
+
+                    // بيانات الرؤى
+                    insightsData: {
+                        labels: ['نقص الشرائح', 'عدم استجابة المندوبين', 'مشكلات التطبيق', 'قنوات توريد واحدة', 'تأخر إعلانات المسابقات'],
+                        datasets: [
+                            {
+                                label: 'التكرار (%)',
+                                data: [31, 15, 16, 5, 7],
+                                backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                                borderColor: '#ef4444',
+                                borderWidth: 2,
+                                pointBackgroundColor: '#ef4444',
+                                pointRadius: 5
+                            },
+                            {
+                                label: 'الأثر التجاري (تقديري)',
+                                data: [90, 75, 70, 85, 45],
+                                backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                                borderColor: '#3b82f6',
+                                borderWidth: 2,
+                                pointBackgroundColor: '#3b82f6',
+                                pointRadius: 5
+                            }
+                        ]
+                    },
+
+                    // بيانات الجدول الزمني
+                    timelineData: {
+                        labels: ['سياسة العمولات', 'نظام التتبع', 'إعلان المسابقات', 'استقرار التطبيق', 'مخزون الشرائح', 'تنويع الموردين'],
+                        datasets: [{
+                            label: 'عدد الأسابيع',
+                            data: [3, 4, 4, 6, 10, 14],
+                            backgroundColor: [
+                                '#10b981',
+                                '#10b981',
+                                '#f59e0b',
+                                '#f59e0b',
+                                '#ef4444',
+                                '#ef4444'
+                            ],
+                            borderRadius: 8
+                        }]
+                    },
+
+                    // بيانات مؤشرات الأداء
+                    kpiData: {
+                        labels: ['توافر الشرائح', 'استجابة المندوب', 'استقرار التطبيق', 'دفع العمولات', 'مشاركة المسابقات', 'CSAT العام'],
+                        datasets: [{
+                            label: 'الهدف المستهدف (%)',
+                            data: [95, 100, 97, 100, 120, 80],
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            tension: 0.4,
+                            fill: true,
+                            pointRadius: 6,
+                            pointHoverRadius: 8
+                        }]
+                    },
+
+                    // خيارات عامة
+                    chartOptions: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    padding: 15,
+                                    font: { size: 14 }
+                                }
+                            }
+                        }
+                    },
+
+                    // خيارات الأعمدة الأفقية
+                    horizontalBarOptions: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                grid: { color: 'rgba(0,0,0,0.05)' }
+                            }
+                        }
+                    },
+
+                    // خيارات الرادار
+                    radarOptions: {
+                        responsive: true,
+                        plugins: {
+                            legend: { position: 'bottom' }
+                        },
+                        scales: {
+                            r: {
+                                beginAtZero: true,
+                                max: 100
+                            }
+                        }
+                    },
+
+                    // خيارات الأعمدة العمودية
+                    barOptions: {
+                        responsive: true,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'الأسابيع'
+                                }
+                            }
+                        }
+                    },
+
+                    // خيارات الخط
+                    lineOptions: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'bottom'
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 130,
+                                title: {
+                                    display: true,
+                                    text: 'النسبة المئوية (%)'
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            components: {
+                Chart: PrimeVue.Chart
+            }
+
+
+        });
+
+        app.use(PrimeVue.Config, {
+            theme: {
+                preset: PrimeUIX.Themes.Aura
+            }
+        });
+
+        app.component('p-datepicker', PrimeVue.DatePicker);
+
+        app.mount('#app');
+    </script>
+
+</body>
+
+</html>
