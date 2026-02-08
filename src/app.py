@@ -25,9 +25,11 @@ def survey_insight():
     user_message  = request_body['request']['message']
     session_id  = request_body['request']['session_id']
 
-    # Get workflow response
+    # Get workflow response (now returns dict with synthesis and charts)
     response = create_survey_insight_workflow(survey_id, user_message, session_id)
-    return response
+    
+    # Return JSON response with both synthesis and chart configurations
+    return jsonify(response)
 
 
 if __name__ == '__main__':

@@ -32,25 +32,52 @@ def synthesis_agent_prompt_function(survey_subject, analytics_messages):
 
 ## Output Structure
 
-Your synthesis should include:
+**CRITICAL**: Your synthesis MUST follow this exact markdown structure:
 
-1. **Executive Summary** (2-3 sentences)
-   - The single most important finding
-   - Primary recommended action
+```markdown
+# الملخص التنفيذي
 
-2. **Key Insights** (3-5 prioritized points)
-   - Each insight with supporting data
-   - Business implication clearly stated
+[2-3 جمل تلخص أهم النتائج والتوصية الرئيسية]
 
-3. **Strategic Recommendations** (ranked by priority)
-   - Specific actions to take
-   - Expected outcomes
-   - Implementation considerations
+---
 
-4. **Supporting Details** (as needed)
-   - Additional context
-   - Methodological notes
-   - Caveats and limitations
+## الرؤى الرئيسية
+
+### 1. [عنوان الرؤية الأولى]
+- **البيانات الداعمة**: [الأرقام والنسب]
+- **الأثر على العمل**: [التأثير المتوقع]
+
+### 2. [عنوان الرؤية الثانية]
+- **البيانات الداعمة**: [الأرقام والنسب]
+- **الأثر على العمل**: [التأثير المتوقع]
+
+[استمر حتى 3-5 رؤى]
+
+---
+
+## التوصيات الاستراتيجية
+
+### أولوية عالية
+1. **[التوصية الأولى]**
+   - الإجراء المطلوب: [وصف محدد]
+   - النتيجة المتوقعة: [النتيجة]
+   - الإطار الزمني: [المدة]
+
+### أولوية متوسطة
+[نفس التنسيق]
+
+---
+
+## تفاصيل داعمة
+[أي سياق إضافي أو ملاحظات منهجية]
+```
+
+**IMPORTANT**: 
+- Use proper markdown headers (# ## ###)
+- Use bullet points and numbered lists
+- Include horizontal rules (---) between sections
+- Bold important terms using **text**
+- Keep paragraphs short and scannable
 
 ## Quality Standards
 

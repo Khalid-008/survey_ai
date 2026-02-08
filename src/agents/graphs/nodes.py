@@ -3,6 +3,8 @@ import sys
 import datetime
 import traceback
 import warnings
+import json
+import re
 from typing import Literal, Dict, Any, List, Optional
 from dataclasses import dataclass
 
@@ -26,6 +28,7 @@ from analytics_pipeline.pipeline import (
     run_full_analysis_pipeline
 )
 from agents.prompt.synthesis_agent_prompt import synthesis_agent_prompt
+from agents.prompt.chart_generation_prompt import chart_generation_prompt
 
 warnings.filterwarnings('ignore')
 
@@ -518,6 +521,213 @@ def synthesis_agent(state: State) -> Command[Literal["__end__"]]:
                     AIMessage(
                         content=error_msg,
                         name="synthesis_agent"
+                    )
+                ]
+            },
+            goto="__end__"
+        )
+
+
+# ============================================================================
+# CHART GENERATION UTILITIES
+# ============================================================================
+
+def extract_json_from_response(response_text: str) -> List[Dict[str, Any]]:
+    """
+    Extract JSON array from LLM response, handling markdown code blocks and extra text.
+    
+    Args:
+        response_text: Raw response from LLM
+        
+    Returns:
+        Parsed JSON array of chart configurations
+    """
+    # Remove markdown code blocks
+    response_text = re.sub(r'```json\s*', '', response_text)
+    response_text = re.sub(r'```\s*', '', response_text)
+    
+    # Try to find JSON array pattern
+    json_match = re.search(r'\[.*\]', response_text, re.DOTALL)
+    if json_match:
+        json_str = json_match.group(0)
+    else:
+        json_str = response_text.strip()
+    
+    try:
+        charts = json.loads(json_str)
+        if isinstance(charts, list):
+            return charts
+        elif isinstance(charts, dict):
+            return [charts]
+        else:
+            raise ValueError("Parsed JSON is neither list nor dict")
+    except json.JSONDecodeError as e:
+        print(f"⚠️ Failed to parse JSON: {e}")
+        print(f"Response text: {response_text[:500]}")
+        return []
+
+
+def format_analysis_summary(analysis_results: Dict[str, Any]) -> str:
+    """
+    Format analysis results into a concise summary for chart generation.
+    
+    Args:
+        analysis_results: Dictionary of analysis results from enrichment
+        
+    Returns:
+        Formatted string summary
+    """
+    summary_parts = []
+    
+    for q_id, results in analysis_results.items():
+        q_text = results.get("survey_question", f"Question {q_id}")
+        
+        # Sentiment distribution
+        sentiment_dist = results.get("sentiment_distribution", {})
+        if sentiment_dist:
+            summary_parts.append(f"**السؤال**: {q_text}")
+            summary_parts.append(f"**توزيع المشاعر**: {sentiment_dist}")
+        
+        # Topic analysis
+        topics_analysis = results.get("topics_analysis", "")
+        if topics_analysis:
+            summary_parts.append(f"**تحليل المواضيع**: {topics_analysis}")
+        
+        # Entity analysis
+        entities_analysis = results.get("entities_analysis", "")
+        if entities_analysis:
+            summary_parts.append(f"**الكيانات المذكورة**: {entities_analysis}")
+        
+        # Top topics with counts
+        top_topics = results.get("top_topics", [])
+        if top_topics:
+            # Handle both list and dict formats
+            if isinstance(top_topics, dict):
+                topics_str = ", ".join([f"{topic} ({count})" for topic, count in list(top_topics.items())[:5]])
+            elif isinstance(top_topics, list):
+                topics_str = ", ".join([f"{t.get('topic', t.get('label', 'N/A'))} ({t.get('count', 0)})" for t in top_topics[:5]])
+            else:
+                topics_str = str(top_topics)
+            summary_parts.append(f"**أبرز المواضيع**: {topics_str}")
+        
+        # Top entities with counts
+        top_entities = results.get("top_entities", [])
+        if top_entities:
+            # Handle both list and dict formats
+            if isinstance(top_entities, dict):
+                entities_str = ", ".join([f"{entity} ({count})" for entity, count in list(top_entities.items())[:5]])
+            elif isinstance(top_entities, list):
+                entities_str = ", ".join([f"{e.get('entity', e.get('label', 'N/A'))} ({e.get('count', 0)})" for e in top_entities[:5]])
+            else:
+                entities_str = str(top_entities)
+            summary_parts.append(f"**أبرز الكيانات**: {entities_str}")
+        
+        summary_parts.append("---")
+    
+    return "\n".join(summary_parts)
+
+
+# ============================================================================
+# CHART GENERATION NODE
+# ============================================================================
+
+def generate_charts_agent(state: State) -> Command[Literal["__end__"]]:
+    """
+    STAGE 4: Generate chart configurations based on analysis results.
+    
+    Uses an LLM to intelligently create Chart.js configurations that match
+    the frontend Vue.js components.
+    """
+    try:
+        print("=" * 60)
+        print("CHART GENERATION AGENT")
+        print("=" * 60)
+        print(f"Survey ID: {state['survey_id']}")
+        
+        analysis_results = state.get("analysis_results", {})
+        
+        if not analysis_results:
+            print("⚠️ No analysis results available for chart generation")
+            return Command(
+                update={
+                    "chart_configs": [],
+                    "messages": [
+                        AIMessage(
+                            content="No analysis data available to generate charts.",
+                            name="chart_generation_agent"
+                        )
+                    ]
+                },
+                goto="__end__"
+            )
+        
+        # Extract survey metadata
+        first_result = next(iter(analysis_results.values()))
+        survey_title = first_result.get("survey_title", f"Survey {state['survey_id']}")
+        
+        print(f"Survey: {survey_title}")
+        print(f"Questions analyzed: {len(analysis_results)}")
+        
+        # Format analysis summary for LLM
+        analytics_summary = format_analysis_summary(analysis_results)
+        
+        print(f"Analytics summary length: {len(analytics_summary)} chars")
+        
+        # Generate chart configurations using LLM
+        prompt_messages = chart_generation_prompt.invoke({
+            "survey_subject": survey_title,
+            "analytics_summary": analytics_summary
+        })
+        
+        print("🤖 Invoking LLM for chart generation...")
+        response = model.invoke(prompt_messages)
+        response_text = response.content
+        
+        print(f"📥 LLM response length: {len(response_text)} chars")
+        
+        # Parse JSON response
+        chart_configs = extract_json_from_response(response_text)
+        
+        # Validate chart count (must be 4-6)
+        if len(chart_configs) < 4:
+            print(f"⚠️ Only {len(chart_configs)} charts generated, expected 4-6. Using what we have.")
+        elif len(chart_configs) > 6:
+            print(f"⚠️ {len(chart_configs)} charts generated, trimming to 6.")
+            chart_configs = chart_configs[:6]
+        
+        print(f"✅ Generated {len(chart_configs)} chart configurations")
+        
+        # Log chart types
+        for i, chart in enumerate(chart_configs):
+            chart_type = chart.get("type", "unknown")
+            chart_title = chart.get("title", "Untitled")
+            print(f"   {i+1}. {chart_type}: {chart_title}")
+        
+        return Command(
+            update={
+                "chart_configs": chart_configs,
+                "messages": [
+                    AIMessage(
+                        content=f"Generated {len(chart_configs)} chart configurations successfully.",
+                        name="chart_generation_agent"
+                    )
+                ]
+            },
+            goto="__end__"
+        )
+        
+    except Exception as e:
+        error_msg = f"Chart generation failed: {str(e)}"
+        print(f"❌ {error_msg}")
+        print(traceback.format_exc())
+        
+        return Command(
+            update={
+                "chart_configs": [],
+                "messages": [
+                    AIMessage(
+                        content=error_msg,
+                        name="chart_generation_agent"
                     )
                 ]
             },

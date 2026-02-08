@@ -129,6 +129,42 @@ export default {
                 ]
             },
 
+            // بيانات المخطط الدائري (جديد)
+            pieChartData: {
+                labels: ['تطبيق الهاتف', 'الموقع الإلكتروني', 'مركز الاتصال', 'الزيارات الميدانية'],
+                datasets: [
+                    {
+                        data: [45, 25, 20, 10],
+                        backgroundColor: [
+                            '#3b82f6',  // Blue
+                            '#10b981',  // Green
+                            '#f59e0b',  // Yellow
+                            '#ef4444'   // Red
+                        ],
+                        hoverBackgroundColor: [
+                            '#2563eb',
+                            '#059669',
+                            '#d97706',
+                            '#dc2626'
+                        ]
+                    }
+                ]
+            },
+            pieChartOptions: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            font: {
+                                family: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+                            }
+                        }
+                    }
+                }
+            },
+
 
             // خيارات عامة
             chartOptions: {
@@ -307,6 +343,11 @@ export default {
             <div class="chart-container">
                 <h3 class="chart-title">مؤشرات الأداء المستهدفة (KPIs)</h3>
                 <Chart type="bar" :data="chartData" :options="chartOptions" class="h-[30rem]" />
+            </div>
+
+            <div class="chart-container">
+                <h3 class="chart-title">توزيع قنوات التواصل</h3>
+                <Chart type="pie" :data="pieChartData" :options="pieChartOptions" class="w-full md:w-[30rem]" />
             </div>
         </div>
     </div>

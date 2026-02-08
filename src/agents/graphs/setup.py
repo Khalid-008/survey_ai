@@ -13,6 +13,7 @@ class State(MessagesState):
     questions : list[dict]
     survey_data: list[dict]
     analysis_results: dict[str, Any]
+    chart_configs: list[dict]  # Store generated chart configurations
 
 # Memory
 memory = MemorySaver()

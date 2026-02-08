@@ -5,7 +5,8 @@ from helper.tracer import tracer_provider
 from agents.graphs.nodes import (
     retrieve_survey_question,
     enrich_data,
-    synthesis_agent
+    synthesis_agent,
+    generate_charts_agent
 )
 
 langfuse = tracer_provider()
@@ -18,10 +19,12 @@ def create_survey_insight_workflow(survey_id: int, user_message: str, session_id
     builder.add_node("retrieve_survey_question", retrieve_survey_question)
     builder.add_node("enrich_data", enrich_data)
     builder.add_node("synthesis_agent", synthesis_agent)
+    builder.add_node("generate_charts_agent", generate_charts_agent)
 
     builder.add_edge(START, "retrieve_survey_question")
     builder.add_edge("retrieve_survey_question", "enrich_data")
     builder.add_edge("enrich_data", "synthesis_agent")
+    builder.add_edge("synthesis_agent", "generate_charts_agent")
 
     graph = builder.compile(checkpointer=memory)
 
@@ -43,10 +46,16 @@ def create_survey_insight_workflow(survey_id: int, user_message: str, session_id
         print(f"Error during graph invocation: {str(e)}")
         raise
 
-    # Return the last AI message content
+    # Return both synthesis text and chart configurations
+    synthesis_text = ""
     for message in reversed(final_response["messages"]):
-        if isinstance(message, AIMessage):
-            return message.content
-
-    print("Workflow completed but no AI response was found in messages")
-    return "Workflow completed but no response was generated."
+        if isinstance(message, AIMessage) and message.name == "synthesis_agent":
+            synthesis_text = message.content
+            break
+    
+    chart_configs = final_response.get("chart_configs", [])
+    
+    return {
+        "synthesis": synthesis_text,
+        "charts": chart_configs
+    }
