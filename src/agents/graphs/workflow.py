@@ -1,7 +1,7 @@
 from langgraph.graph import StateGraph, START, END
 from agents.graphs.setup import State, memory
 from langchain_core.messages import HumanMessage, AIMessage
-from helper.tracer import tracer_provider
+# from helper.tracer import tracer_provider
 from agents.graphs.nodes import (
     retrieve_survey_question,
     enrich_data,
@@ -9,7 +9,7 @@ from agents.graphs.nodes import (
     generate_charts_agent
 )
 
-langfuse = tracer_provider()
+# langfuse = tracer_provider()
 
 def create_survey_insight_workflow(survey_id: int, user_message: str, session_id: str):
     print(f"Creating workflow for survey_id: {survey_id}, session_id: {session_id}")
