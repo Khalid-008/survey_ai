@@ -17,6 +17,7 @@ from umap import UMAP
 from hdbscan import HDBSCAN
 from sklearn.feature_extraction.text import CountVectorizer
 from bertopic.vectorizers import ClassTfidfTransformer
+from tqdm import tqdm
 
 # Add parent directory to path for imports
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -37,14 +38,15 @@ class ModelConfig:
     topic_model: str = "CAMeL-Lab/bert-base-arabic-camelbert-da"
     sentiment_batch_size: int = 32
     ner_batch_size: int = 16
+    chunk_size: int = 5000  # Process large datasets in chunks to avoid memory issues
 
 
 @dataclass
 class AnalysisConfig:
     """Configuration for analysis parameters."""
-    min_topic_size: int = 2
-    top_n_items: int = 5
-    top_n_words: int = 10
+    min_topic_size: int = 15
+    top_n_items: int = 15
+    top_n_words: int = 15
     sentiment_filter: str = 'negative'
 
 
@@ -239,8 +241,20 @@ class SentimentAnalyzer:
         self.config = config or ModelConfig()
         self.pipeline = _model_cache.get_sentiment_pipeline(self.config)
     
-    def analyze_batch(self,texts: List[str],default_sentiment: str = "neutral") -> List[str]:
+    def analyze_batch(self, texts: List[str], default_sentiment: str = "neutral") -> List[str]:
+        """
+        Analyze sentiment for a list of texts with progress tracking and chunked processing.
+        
+        Args:
+            texts: List of text strings to analyze
+            default_sentiment: Default sentiment for invalid/empty texts
+            
+        Returns:
+            List of sentiment labels
+        """
         print(f"📊 Analyzing sentiment for {len(texts)} texts...")
+        
+        # Filter valid texts and track their indices
         valid_indices = [
             i for i, t in enumerate(texts)
             if t and str(t).strip() and str(t).lower() != "no answer"
@@ -251,20 +265,40 @@ class SentimentAnalyzer:
         sentiments = [default_sentiment] * len(texts)
         
         if not valid_texts:
+            print("⚠️ No valid texts to analyze")
             return sentiments
         
+        print(f"   Valid texts: {len(valid_texts)}/{len(texts)}")
+        
         try:
-            # Batch processing
-            results = self.pipeline(valid_texts, batch_size=self.config.sentiment_batch_size)
+            # Process in chunks to avoid memory issues with large datasets
+            chunk_size = self.config.chunk_size
+            all_results = []
+            
+            # Create progress bar
+            num_chunks = (len(valid_texts) + chunk_size - 1) // chunk_size
+            
+            with tqdm(total=len(valid_texts), desc="   Sentiment Analysis", unit="text") as pbar:
+                for i in range(0, len(valid_texts), chunk_size):
+                    chunk = valid_texts[i:i + chunk_size]
+                    
+                    # Process chunk with batch_size
+                    chunk_results = self.pipeline(chunk, batch_size=self.config.sentiment_batch_size)
+                    all_results.extend(chunk_results)
+                    
+                    # Update progress bar
+                    pbar.update(len(chunk))
             
             # Map results back to original indices
-            for idx, result in zip(valid_indices, results):
+            for idx, result in zip(valid_indices, all_results):
                 sentiments[idx] = result["label"]
             
             print(f"✅ Sentiment analysis complete")
             
         except Exception as e:
             print(f"⚠️ Error in sentiment analysis: {str(e)}")
+            import traceback
+            traceback.print_exc()
         
         return sentiments
 
@@ -307,9 +341,21 @@ class NamedEntityRecognizer:
         
         return native_entities
     
-    def extract_batch(self,texts: List[str],labels: List[str] = None,threshold: float = 0.3) -> List[List[Dict[str, Any]]]:
+    def extract_batch(self, texts: List[str], labels: List[str] = None, threshold: float = 0.3) -> List[List[Dict[str, Any]]]:
+        """
+        Extract named entities from texts with progress tracking and chunked processing.
+        
+        Args:
+            texts: List of text strings to process
+            labels: Entity labels to extract
+            threshold: Confidence threshold for entity extraction
+            
+        Returns:
+            List of entity lists for each text
+        """
         labels = labels or NER_LABELS
         print(f"🏷️  Extracting entities from {len(texts)} texts...")
+        
         # Filter valid texts
         valid_indices = [
             i for i, t in enumerate(texts)
@@ -321,25 +367,42 @@ class NamedEntityRecognizer:
         all_results = [[] for _ in range(len(texts))]
         
         if not valid_texts:
+            print("⚠️ No valid texts to process")
             return all_results
         
+        print(f"   Valid texts: {len(valid_texts)}/{len(texts)}")
+        
         try:
-            # Batch prediction
-            batched_entities = self.model.batch_predict_entities(
-                valid_texts,
-                labels,
-                threshold=threshold,
-                batch_size=self.config.ner_batch_size
-            )
+            # Process in chunks
+            chunk_size = self.config.chunk_size
+            all_batched_entities = []
+            
+            with tqdm(total=len(valid_texts), desc="   NER Extraction", unit="text") as pbar:
+                for i in range(0, len(valid_texts), chunk_size):
+                    chunk = valid_texts[i:i + chunk_size]
+                    
+                    # Batch prediction for chunk
+                    chunk_entities = self.model.batch_predict_entities(
+                        chunk,
+                        labels,
+                        threshold=threshold,
+                        batch_size=self.config.ner_batch_size
+                    )
+                    all_batched_entities.extend(chunk_entities)
+                    
+                    # Update progress bar
+                    pbar.update(len(chunk))
             
             # Map results back to original indices
-            for idx, entities in zip(valid_indices, batched_entities):
+            for idx, entities in zip(valid_indices, all_batched_entities):
                 all_results[idx] = self.convert_to_native_types(entities)
             
             print(f"✅ Entity extraction complete")
             
         except Exception as e:
             print(f"⚠️ Error in entity extraction: {str(e)}")
+            import traceback
+            traceback.print_exc()
         
         return all_results
 
@@ -407,6 +470,7 @@ class ArabicTopicExtractor:
             Self for method chaining
         """
         print(f"⏳ Training topic model on {len(documents)} documents...")
+        print("   This may take several minutes for large datasets...")
         
         self.topic_model = BERTopic(
             embedding_model=self.embedding_model,
@@ -421,10 +485,15 @@ class ArabicTopicExtractor:
         )
         
         try:
-            self.topic_model.fit_transform(documents)
+            with tqdm(total=3, desc="   Topic Modeling", unit="stage") as pbar:
+                pbar.set_description("   Generating embeddings")
+                self.topic_model.fit_transform(documents)
+                pbar.update(3)
             print("✅ Topic model trained successfully")
         except Exception as e:
             print(f"⚠️ Error training topic model: {str(e)}")
+            import traceback
+            traceback.print_exc()
             self.topic_model = None
         
         return self
