@@ -29,8 +29,8 @@ def create_survey_insight_workflow(survey_id: int, user_message: str, session_id
     graph = builder.compile(checkpointer=memory)
 
     config = {"configurable": {"thread_id": session_id}, "recursion_limit": 100}
-    if langfuse:
-        config["callbacks"] = [langfuse]
+    # if langfuse:
+    #     config["callbacks"] = [langfuse]
 
     print("Invoking graph...")
     try:
