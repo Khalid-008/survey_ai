@@ -31,7 +31,8 @@ def get_survey_df(survey_id):
             FROM ms_survey_service.survey s
             INNER JOIN ms_survey_service.survey_question q ON q.survey_id = s.id
             INNER JOIN ms_survey_service.survey_answer a ON q.id = a.survey_question_id
-            WHERE s.survey_number = '{survey_id}'""", conn)
+            WHERE s.survey_number = '{survey_id}'
+            """, conn)
         
         print(f"DEBUG: get_survey_df({survey_id}) returned {len(result)} rows")
         return result
