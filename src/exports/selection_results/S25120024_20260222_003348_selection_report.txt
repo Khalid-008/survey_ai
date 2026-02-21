@@ -1,0 +1,178 @@
+SELECTION PIPELINE REPORT
+Survey   : S25120024
+Generated: 2026-02-22 00:33:48
+======================================================================
+
+── QUESTIONS & DISTINCT ANSWERS ──
+
+Q296: بشكل عام، ما مدى رضاك عن خدماتنا؟
+  Type   : EMOJIS
+  Distinct answers (5):
+    • 1
+    • 2
+    • 3
+    • 4
+    • 5
+
+Q297: ما مدى رضاك عن أداء مندوب المبيعات الذي قام بخدمتك؟
+  Type   : EMOJIS
+  Distinct answers (5):
+    • 1
+    • 2
+    • 3-Acceptable/مقبول
+    • 4
+    • 5
+
+Q298: ما مدى رضاك عن سرعة ودقة تنفيذ طلبك في الوقت المحدد؟
+  Type   : EMOJIS
+  Distinct answers (5):
+    • 1
+    • 2
+    • 3
+    • 4
+    • 5
+
+Q299: ما مدى احتمالية أن توصي بشركة قنوات كمورد لزميل أو شريك تجاري؟
+  Type   : MULTIPLE_CHOICE
+  Distinct answers (5):
+    • 397
+    • 398
+    • 398,397
+    • 399
+    • 399,397
+
+
+── SELECTION ANALYSIS SQL ──
+WITH ResponsePivot AS (
+    SELECT
+        sa.submission_id,
+        MAX(CASE WHEN sa.survey_question_id = 296 THEN sa.answer END) AS q296_answer,
+        MAX(CASE WHEN sa.survey_question_id = 297 THEN sa.answer END) AS q297_answer,
+        MAX(CASE WHEN sa.survey_question_id = 298 THEN sa.answer END) AS q298_answer,
+        MAX(CASE WHEN sa.survey_question_id = 299 THEN sa.answer END) AS q299_answer
+    FROM ms_survey_service.survey_answer sa
+    WHERE sa.survey_question_id IN (296, 297, 298, 299)
+    GROUP BY sa.submission_id
+)
+
+SELECT 296 AS question_id,
+       q296_answer AS answer,
+       cnt AS answer_count,
+       CAST(cnt * 100.0 / SUM(cnt) OVER () AS DECIMAL(5,2)) AS answer_pct
+FROM (
+    SELECT q296_answer, COUNT(*) AS cnt
+    FROM ResponsePivot
+    WHERE q296_answer IS NOT NULL
+    GROUP BY q296_answer
+) AS sub296
+
+UNION ALL
+
+SELECT 297 AS question_id,
+       q297_answer AS answer,
+       cnt AS answer_count,
+       CAST(cnt * 100.0 / SUM(cnt) OVER () AS DECIMAL(5,2)) AS answer_pct
+FROM (
+    SELECT q297_answer, COUNT(*) AS cnt
+    FROM ResponsePivot
+    WHERE q297_answer IS NOT NULL
+    GROUP BY q297_answer
+) AS sub297
+
+UNION ALL
+
+SELECT 298 AS question_id,
+       q298_answer AS answer,
+       cnt AS answer_count,
+       CAST(cnt * 100.0 / SUM(cnt) OVER () AS DECIMAL(5,2)) AS answer_pct
+FROM (
+    SELECT q298_answer, COUNT(*) AS cnt
+    FROM ResponsePivot
+    WHERE q298_answer IS NOT NULL
+    GROUP BY q298_answer
+) AS sub298
+
+UNION ALL
+
+SELECT 299 AS question_id,
+       q299_answer AS answer,
+       cnt AS answer_count,
+       CAST(cnt * 100.0 / SUM(cnt) OVER () AS DECIMAL(5,2)) AS answer_pct
+FROM (
+    SELECT q299_answer, COUNT(*) AS cnt
+    FROM ResponsePivot
+    WHERE q299_answer IS NOT NULL
+    GROUP BY q299_answer
+) AS sub299
+
+ORDER BY question_id, answer_count DESC;
+
+── SELECTION ANALYSIS RESULT ──
+ question_id             answer  answer_count  answer_pct
+         296                  5          2456       88.57
+         296                  1           108        3.89
+         296                  3            98        3.53
+         296                  4            85        3.07
+         296                  2            26        0.94
+         297                  5          2566       92.54
+         297                  1            95        3.43
+         297                  4            67        2.42
+         297                  2            24        0.87
+         297 3-Acceptable/مقبول            21        0.76
+         298                  5          2530       91.24
+         298                  1           112        4.04
+         298                  4            65        2.34
+         298                  3            33        1.19
+         298                  2            33        1.19
+
+(15 rows)
+
+
+── CORRELATION SQL ──
+WITH pivot AS (
+    SELECT
+        submission_id,
+        MAX(CASE WHEN survey_question_id = 296 THEN answer END) AS q296_answer,
+        MAX(CASE WHEN survey_question_id = 297 THEN answer END) AS q297_answer,
+        MAX(CASE WHEN survey_question_id = 298 THEN answer END) AS q298_answer,
+        MAX(CASE WHEN survey_question_id = 299 THEN answer END) AS q299_answer
+    FROM ms_survey_service.survey_answer
+    WHERE (survey_question_id = 296 AND answer IN ('1','2','3','4','5'))
+       OR (survey_question_id = 297 AND answer IN ('1','2','3-Acceptable/مقبول','4','5'))
+       OR (survey_question_id = 298 AND answer IN ('1','2','3','4','5'))
+       OR (survey_question_id = 299 AND answer IN ('397','398','398,397','399','399,397'))
+    GROUP BY submission_id
+)
+SELECT
+    src.`بشكل عام، ما مدى رضاك عن خدماتنا؟`,
+    src.`ما مدى رضاك عن أداء مندوب المبيعات الذي قام بخدمتك؟`,
+    src.`ما مدى رضاك عن سرعة ودقة تنفيذ طلبك في الوقت المحدد؟`,
+    src.`ما مدى احتمالية أن توصي بشركة قنوات كمورد لزميل أو شريك تجاري؟`,
+    COUNT(*) AS ResponseCount,
+    CAST(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER () AS DECIMAL(5,2)) AS PercentageOfTotal,
+    CAST(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER (PARTITION BY q296_answer) AS DECIMAL(5,2)) AS PercentageWithinQ1
+FROM (
+    SELECT
+        q296_answer,
+        q297_answer,
+        q298_answer,
+        q299_answer,
+        q296_answer AS `بشكل عام، ما مدى رضاك عن خدماتنا؟`,
+        q297_answer AS `ما مدى رضاك عن أداء مندوب المبيعات الذي قام بخدمتك؟`,
+        q298_answer AS `ما مدى رضاك عن سرعة ودقة تنفيذ طلبك في الوقت المحدد؟`,
+        q299_answer AS `ما مدى احتمالية أن توصي بشركة قنوات كمورد لزميل أو شريك تجاري؟`
+    FROM pivot
+    WHERE q296_answer IS NOT NULL
+      AND q297_answer IS NOT NULL
+      AND q298_answer IS NOT NULL
+      AND q299_answer IS NOT NULL
+) AS src
+GROUP BY
+    src.`بشكل عام، ما مدى رضاك عن خدماتنا؟`,
+    src.`ما مدى رضاك عن أداء مندوب المبيعات الذي قام بخدمتك؟`,
+    src.`ما مدى رضاك عن سرعة ودقة تنفيذ طلبك في الوقت المحدد؟`,
+    src.`ما مدى احتمالية أن توصي بشركة قنوات كمورد لزميل أو شريك تجاري؟`
+ORDER BY ResponseCount DESC;
+
+── CORRELATION RESULT ──
+(empty)

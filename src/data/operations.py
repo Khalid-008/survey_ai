@@ -45,20 +45,27 @@ def get_selection_questions_data(survey_number: str) -> pd.DataFrame:
     تجلب جميع الأسئلة غير النصية (غير TEXT_INPUT) مع إجاباتها
     المرتبطة بالاستبيان المحدد بـ survey_number.
 
+    تستخدم COALESCE(sa.answer, sa.selected_options_id) لتغطية:
+    - أسئلة الخيار الفردي  (answer)
+    - أسئلة الاختيار المتعدد (قد تُخزَّن في selected_options_id)
+
     العمود الناتج:
         question_id     : معرّف السؤال
         question_ar     : نص السؤال بالعربية
         question_type   : نوع السؤال
-        answer          : إجابة المستجيب
-        submission_id   : معرّف الاستجابة الواحدة (يربط بين الأسئلة)
+        answer          : إجابة المستجيب (من answer أو selected_options_id)
+        submission_id   : معرّف الاستجابة الواحدة
     """
     query = """
         SELECT
-            sq.id          AS question_id,
-            sq.question_ar AS question_ar,
-            sq.question_type AS question_type,
-            sa.answer      AS answer,
-            sa.submission_id AS submission_id
+            sq.id               AS question_id,
+            sq.question_ar      AS question_ar,
+            sq.question_type    AS question_type,
+            COALESCE(
+                NULLIF(TRIM(sa.answer), ''),
+                NULLIF(TRIM(sa.selected_options_id), '')
+            )                   AS answer,
+            sa.submission_id    AS submission_id
         FROM ms_survey_service.survey_question sq
         INNER JOIN ms_survey_service.survey_answer sa
             ON sq.id = sa.survey_question_id
@@ -68,16 +75,24 @@ def get_selection_questions_data(survey_number: str) -> pd.DataFrame:
             LIMIT 1
         )
         AND UPPER(sq.question_type) != 'TEXT_INPUT'
-        AND sa.answer IS NOT NULL
-        AND sa.answer != ''
+        AND COALESCE(
+            NULLIF(TRIM(sa.answer), ''),
+            NULLIF(TRIM(sa.selected_options_id), '')
+        ) IS NOT NULL
     """
     conn = get_conn()
     try:
         df = pd.read_sql(query, conn, params=(survey_number,))
-        print(f"DEBUG: get_selection_questions_data({survey_number}) returned {len(df)} rows")
+        if not df.empty:
+            types = df["question_type"].unique().tolist()
+            print(f"DEBUG: get_selection_questions_data({survey_number}) → "
+                  f"{len(df)} rows | types: {types}")
+        else:
+            print(f"DEBUG: get_selection_questions_data({survey_number}) → 0 rows")
         return df
     finally:
         conn.close()
+
 
 
 def execute_raw_query(query: str) -> pd.DataFrame:

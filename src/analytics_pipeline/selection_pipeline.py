@@ -4,6 +4,7 @@ import re
 import json
 import warnings
 from collections import defaultdict
+from datetime import datetime
 from typing import Any
 
 import pandas as pd
@@ -19,6 +20,92 @@ from llms.models import model
 from data.operations import get_selection_questions_data, execute_raw_query
 
 warnings.filterwarnings("ignore")
+
+EXPORTS_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "exports", "selection_results"
+)
+os.makedirs(EXPORTS_DIR, exist_ok=True)
+
+
+# ============================================================================
+# FILE EXPORT
+# حفظ النتائج في ملف للمراجعة
+# ============================================================================
+
+def _save_results_to_file(
+    survey_number: str,
+    grouped: dict,
+    distinct: dict,
+    selection_sql: str,
+    selection_result: pd.DataFrame,
+    correlation_sql: str,
+    correlation_result: pd.DataFrame,
+    errors: list
+) -> str:
+    """
+    يحفظ الكويريات والنتائج في ملف نصي + CSV للمراجعة.
+    يُرجع مسار الملف الرئيسي.
+    """
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    base_name = f"{survey_number}_{ts}"
+
+    # ── ملف النص الرئيسي ─────────────────────────────────────────────────────
+    txt_path = os.path.join(EXPORTS_DIR, f"{base_name}_selection_report.txt")
+    with open(txt_path, "w", encoding="utf-8") as f:
+        f.write(f"SELECTION PIPELINE REPORT\n")
+        f.write(f"Survey   : {survey_number}\n")
+        f.write(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+        f.write("=" * 70 + "\n\n")
+
+        # معلومات الأسئلة والإجابات المميزة
+        f.write("── QUESTIONS & DISTINCT ANSWERS ──\n")
+        for qid, info in grouped.items():
+            f.write(f"\nQ{qid}: {info['text']}\n")
+            f.write(f"  Type   : {info['type']}\n")
+            f.write(f"  Distinct answers ({len(distinct.get(qid, []))}):\n")
+            for ans in distinct.get(qid, []):
+                f.write(f"    • {ans}\n")
+
+        # كويري التحليل الفردي
+        f.write("\n\n── SELECTION ANALYSIS SQL ──\n")
+        f.write(selection_sql if selection_sql else "(not generated)")
+        f.write("\n\n── SELECTION ANALYSIS RESULT ──\n")
+        if not selection_result.empty:
+            f.write(selection_result.to_string(index=False))
+            f.write(f"\n\n({len(selection_result)} rows)\n")
+        else:
+            f.write("(empty)\n")
+
+        # كويري العلاقة
+        f.write("\n\n── CORRELATION SQL ──\n")
+        f.write(correlation_sql if correlation_sql else "(not generated)")
+        f.write("\n\n── CORRELATION RESULT ──\n")
+        if not correlation_result.empty:
+            f.write(correlation_result.to_string(index=False))
+            f.write(f"\n\n({len(correlation_result)} rows)\n")
+        else:
+            f.write("(empty)\n")
+
+        # الأخطاء
+        if errors:
+            f.write("\n\n── ERRORS ──\n")
+            for err in errors:
+                f.write(f"  • {err}\n")
+
+    # ── ملفات CSV (إن وُجدت نتائج) ───────────────────────────────────────────
+    if not selection_result.empty:
+        csv_sel = os.path.join(EXPORTS_DIR, f"{base_name}_selection_result.csv")
+        selection_result.to_csv(csv_sel, index=False, encoding="utf-8-sig")
+        print(f"📄 Selection CSV  : {csv_sel}")
+
+    if not correlation_result.empty:
+        csv_cor = os.path.join(EXPORTS_DIR, f"{base_name}_correlation_result.csv")
+        correlation_result.to_csv(csv_cor, index=False, encoding="utf-8-sig")
+        print(f"📄 Correlation CSV: {csv_cor}")
+
+    print(f"📄 Report TXT     : {txt_path}")
+    return txt_path
 
 
 # ============================================================================
@@ -355,7 +442,7 @@ def run_selection_pipeline(survey_number: str) -> dict[str, Any]:
             print(f"❌ {err}")
             result["errors"].append(err)
 
-    # ── ملخص ─────────────────────────────────────────────────────────────────
+    # ── ملخص + حفظ ──────────────────────────────────────────────────────────
     print(f"\n{'='*60}")
     print(f"✅ SELECTION PIPELINE COMPLETE — Survey: {survey_number}")
     print(f"   Questions analyzed : {result['questions_count']}")
@@ -367,4 +454,18 @@ def run_selection_pipeline(survey_number: str) -> dict[str, Any]:
             print(f"      • {err}")
     print(f"{'='*60}\n")
 
+    # حفظ النتائج في ملف للمراجعة
+    report_path = _save_results_to_file(
+        survey_number=survey_number,
+        grouped=grouped,
+        distinct=distinct,
+        selection_sql=result["selection_sql"],
+        selection_result=result["selection_result"],
+        correlation_sql=result["correlation_sql"],
+        correlation_result=result["correlation_result"],
+        errors=result["errors"]
+    )
+    result["report_path"] = report_path
+
     return result
+
