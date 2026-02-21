@@ -20,9 +20,13 @@ from data.operations import get_survey_df
 from agents.prompt.synthesis_agent_prompt import synthesis_agent_prompt
 from agents.prompt.chart_generation_prompt import chart_generation_prompt
 
-# استيراد الأدوات من الملفات المنفصلة
+# معالجة بيانات النصوص
 from analytics_pipeline.data_processing.data_cleaner import clean_survey_data
 from analytics_pipeline.data_processing.data_enricher import process_survey_questions
+
+# معالجة بيانات الخيارات
+from analytics_pipeline.selection_pipeline import run_selection_pipeline
+
 from helper.utils import make_serializable
 from analytics_pipeline.util.synthesis_utils import format_analytics_messages, save_report
 from analytics_pipeline.util.chart_utils import extract_json_from_response, format_analysis_summary
@@ -31,48 +35,39 @@ warnings.filterwarnings('ignore')
 
 
 # ============================================================================
-# WORKFLOW NODES
+# NODE 1 — RETRIEVE SURVEY QUESTIONS
+# استرجاع أسئلة الاستبيان
 # ============================================================================
-
 
 def retrieve_survey_question(state: State) -> Dict[str, Any]:
     """
-    STAGE 1: استرجاع وتنظيف بيانات الاستبيان.
-
-    هذه طبقة تنظيف البيانات - لا يحدث إثراء هنا.
+    STAGE 1: استرجاع بيانات الاستبيان الخام من قاعدة البيانات.
+    لا يحدث أي إثراء أو تنظيف هنا — فقط تحميل البيانات.
     """
     try:
         survey_id = state["survey_id"]
         survey_df = get_survey_df(survey_id)
 
-        rows_before = len(survey_df)
-        print(f"📊 Loaded {rows_before} rows for survey {survey_id}")
+        rows = len(survey_df)
+        print(f"📊 Loaded {rows} rows for survey {survey_id}")
 
-        # تنظيف البيانات
-        survey_df = clean_survey_data(survey_df)
-
-        rows_after = len(survey_df)
-        print(f"✨ Cleaned data: {rows_after} rows ({rows_before - rows_after} duplicates removed)")
-
-        # التحقق من البيانات
         if survey_df.empty:
             return {
                 "survey_data": [],
-                "analysis_results": {},
                 "messages": [
                     AIMessage(content=f"No data found for survey {survey_id}. Analysis skipped.")
                 ]
             }
 
-        # تحويل إلى قاموس (لم يُحفظ بعد - مجرد تحضير)
         survey_data = survey_df.to_dict(orient="records")
 
         return {
             "survey_data": survey_data,
             "analysis_results": {},
+            "selection_results": {},
             "messages": [
                 AIMessage(
-                    content=f"Survey data retrieved and cleaned: {rows_after} responses ready for analysis."
+                    content=f"Survey data retrieved: {rows} rows ready for analysis."
                 )
             ]
         }
@@ -84,54 +79,161 @@ def retrieve_survey_question(state: State) -> Dict[str, Any]:
         raise RuntimeError(error_msg)
 
 
-def enrich_data(state: State) -> Dict[str, Any]:
-    """
-    STAGE 2: تطبيق إثراء NLP على بيانات الاستبيان.
+# ============================================================================
+# NODE 2 — ANALYZE SELECTION QUESTIONS
+# تحليل أسئلة الخيارات
+# ============================================================================
 
-    يعالج أسئلة TEXT_INPUT بتحليل المشاعر وNER واستخراج المواضيع.
-    البيانات تُحفظ فقط بعد اكتمال الإثراء.
+def analyze_selection_questions(state: State) -> Dict[str, Any]:
+    """
+    STAGE 2: تحليل أسئلة الخيارات (غير TEXT_INPUT) باستخدام
+    selection_pipeline الذي يولّد كويريات MySQL عبر وكيلين LLM:
+      - وكيل 1: يولّد كويري توزيع الإجابات لكل سؤال
+      - وكيل 2: يولّد كويري العلاقة بين الأسئلة
+    ثم ينفّذ الكويريين ويحفظ النتائج في الـ state.
     """
     try:
-        # التحقق من المدخلات
+        survey_id = state["survey_id"]
+
+        print("=" * 60)
+        print("SELECTION ANALYSIS NODE")
+        print("=" * 60)
+        print(f"Survey ID: {survey_id}")
+
+        # تشغيل مسار تحليل الخيارات
+        pipeline_result = run_selection_pipeline(survey_id)
+
+        # تحويل DataFrames إلى قوائم قابلة للتسلسل
+        serializable_result = {
+            "questions_count": pipeline_result["questions_count"],
+            "distinct_per_question": pipeline_result["distinct_per_question"],
+            "selection_sql": pipeline_result["selection_sql"],
+            "correlation_sql": pipeline_result["correlation_sql"],
+            "selection_result": pipeline_result["selection_result"].to_dict(orient="records")
+                if not pipeline_result["selection_result"].empty else [],
+            "correlation_result": pipeline_result["correlation_result"].to_dict(orient="records")
+                if not pipeline_result["correlation_result"].empty else [],
+            "errors": pipeline_result["errors"]
+        }
+
+        q_count = pipeline_result["questions_count"]
+        sel_rows = len(pipeline_result["selection_result"])
+        cor_rows = len(pipeline_result["correlation_result"])
+
+        print(f"✅ Selection analysis complete: {q_count} questions, "
+              f"{sel_rows} analysis rows, {cor_rows} correlation rows")
+
+        return {
+            "selection_results": serializable_result,
+            "messages": [
+                AIMessage(
+                    content=(
+                        f"Selection analysis complete: {q_count} questions analyzed. "
+                        f"Analysis rows: {sel_rows}, Correlation rows: {cor_rows}."
+                    ),
+                    name="analyze_selection_questions"
+                )
+            ]
+        }
+
+    except Exception as e:
+        error_msg = f"Selection analysis failed: {str(e)}"
+        print(f"⚠️ {error_msg}")
+        print(traceback.format_exc())
+
+        # خطأ غير حرج — نكمل بدون نتائج خيارات
+        return {
+            "selection_results": {"errors": [error_msg]},
+            "messages": [
+                AIMessage(
+                    content=f"Warning: {error_msg}. Proceeding to text analysis.",
+                    name="analyze_selection_questions"
+                )
+            ]
+        }
+
+
+# ============================================================================
+# NODE 3 — ANALYZE TEXT QUESTIONS (ENRICH)
+# تحليل وإثراء أسئلة النصوص
+# ============================================================================
+
+def analyze_text_questions(state: State) -> Dict[str, Any]:
+    """
+    STAGE 3: تنظيف البيانات وإثراء أسئلة TEXT_INPUT بـ NLP.
+
+    أ) التنظيف — يُزيل التكرارات
+    ب) يتحقق من وجود أسئلة نصية
+    ج) إذا وُجدت → يُطبّق تحليل المشاعر، NER، واستخراج المواضيع
+    د) إذا لم توجد → يمرر البيانات كما هي
+    """
+    try:
+        print("=" * 60)
+        print("TEXT ANALYSIS NODE")
+        print("=" * 60)
+
         if not state.get("survey_data"):
             return {
                 "survey_data": [],
-                "messages": [AIMessage(content="No survey data available for enrichment.")]
+                "analysis_results": {},
+                "messages": [AIMessage(content="No survey data available for text analysis.")]
             }
 
         survey_df = pd.DataFrame(state["survey_data"])
-        
-        # سجلات لتصحيح المسار ومعرفة أنواع الأسئلة
-        print(f"🔬 Unique QuestionTypes found: {survey_df['QuestionType'].unique()}")
-        print(f"🔬 Starting enrichment for: {state.get('survey_title', 'Unknown Survey')}")
+
+        # أ) تنظيف البيانات
+        rows_before = len(survey_df)
+        print(f"📊 Loaded {rows_before} rows for survey {state['survey_id']}")
+
+        survey_df = clean_survey_data(survey_df)
+
+        rows_after = len(survey_df)
+        print(f"✨ Cleaned data: {rows_after} rows ({rows_before - rows_after} duplicates removed)")
 
         if survey_df.empty:
             return {
                 "survey_data": [],
-                "messages": [AIMessage(content="Survey data is empty, skipping enrichment.")]
+                "analysis_results": {},
+                "messages": [AIMessage(content="Survey data is empty after cleaning.")]
             }
 
-        # الحصول على بيانات الاستبيان الوصفية
+        # ب) التحقق من وجود أسئلة نصية
+        question_types = survey_df["QuestionType"].str.upper().str.strip().unique()
+        has_text_questions = "TEXT_INPUT" in question_types
+        print(f"🔬 Unique QuestionTypes: {list(question_types)}")
+        print(f"🔬 Has TEXT_INPUT questions: {has_text_questions}")
+
         survey_title = (
             survey_df["SurveyTitle"].iloc[0]
             if "SurveyTitle" in survey_df.columns
             else f"Survey {state['survey_id']}"
         )
 
-        print(f"🔬 Starting enrichment for: {survey_title}")
+        if not has_text_questions:
+            # لا توجد أسئلة نصية — نمرر البيانات بدون إثراء
+            print("ℹ️  No TEXT_INPUT questions found. Skipping NLP enrichment.")
+            survey_data = survey_df.to_dict(orient="records")
+            return {
+                "survey_data": survey_data,
+                "analysis_results": {},
+                "messages": [
+                    AIMessage(
+                        content="No TEXT_INPUT questions found. Skipping NLP enrichment."
+                    )
+                ]
+            }
 
-        # معالجة جميع الأسئلة
+        # ج) تطبيق إثراء NLP على أسئلة TEXT_INPUT
+        print(f"🔬 Starting enrichment for: {survey_title}")
         enriched_df, analysis_results, metrics = process_survey_questions(
             survey_df, survey_title
         )
 
-        # طباعة المقاييس
         print(f"📈 Enrichment complete:")
         print(f"   • TEXT_INPUT questions: {metrics.text_input_questions}")
         print(f"   • Successfully enriched: {metrics.enriched_questions}")
-        print(f"   • Failed: {metrics.failed_questions}")
+        print(f"   • Failed              : {metrics.failed_questions}")
 
-        # تسلسل النتائج
         enriched_data = enriched_df.to_dict(orient="records")
         serializable_analysis = make_serializable(analysis_results)
 
@@ -140,34 +242,39 @@ def enrich_data(state: State) -> Dict[str, Any]:
             "analysis_results": serializable_analysis,
             "messages": [
                 AIMessage(
-                    content=f"Data enriched: {metrics.enriched_questions}/{metrics.text_input_questions} "
-                            f"TEXT_INPUT questions analyzed successfully."
+                    content=(
+                        f"Text analysis complete: {metrics.enriched_questions}/"
+                        f"{metrics.text_input_questions} TEXT_INPUT questions analyzed."
+                    )
                 )
             ]
         }
 
     except Exception as e:
-        error_msg = f"Enrichment failed: {str(e)}"
+        error_msg = f"Text analysis failed: {str(e)}"
         print(f"⚠️ {error_msg}")
         print(traceback.format_exc())
 
-        # خطأ غير حرج: المتابعة بالبيانات الأساسية
+        # خطأ غير حرج — نكمل بالبيانات الأساسية
         return {
             "survey_data": state.get("survey_data", []),
             "analysis_results": state.get("analysis_results", {}),
             "messages": [
-                AIMessage(
-                    content=f"Warning: {error_msg}. Proceeding with basic data."
-                )
+                AIMessage(content=f"Warning: {error_msg}. Proceeding with basic data.")
             ]
         }
 
 
+# ============================================================================
+# NODE 4 — SYNTHESIS AGENT
+# وكيل التلخيص التنفيذي
+# ============================================================================
+
 def synthesis_agent(state: State) -> Dict[str, Any]:
     """
-    STAGE 3: توليد تقرير تنفيذي ملخّص.
-
-    يلخّص جميع نتائج التحليل في تقرير تنفيذي متكامل.
+    STAGE 4: توليد تقرير تنفيذي ملخّص يجمع نتائج:
+      - تحليل أسئلة الخيارات (selection_results)
+      - تحليل أسئلة النصوص (analysis_results)
     """
     try:
         print("=" * 60)
@@ -175,9 +282,10 @@ def synthesis_agent(state: State) -> Dict[str, Any]:
         print("=" * 60)
         print(f"Survey ID: {state['survey_id']}")
 
-        analysis_results = state.get("analysis_results", {})
+        analysis_results  = state.get("analysis_results", {})
+        selection_results = state.get("selection_results", {})
 
-        if not analysis_results:
+        if not analysis_results and not selection_results:
             return Command(
                 update={
                     "messages": [
@@ -189,17 +297,29 @@ def synthesis_agent(state: State) -> Dict[str, Any]:
                 }
             )
 
-        # استخراج بيانات الاستبيان الوصفية
-        first_result = next(iter(analysis_results.values()))
-        survey_title = first_result.get("survey_title", f"Survey {state['survey_id']}")
+        # استخراج عنوان الاستبيان
+        survey_title = f"Survey {state['survey_id']}"
+        if analysis_results:
+            first_result = next(iter(analysis_results.values()))
+            survey_title = first_result.get("survey_title", survey_title)
 
         print(f"Survey: {survey_title}")
-        print(f"Questions analyzed: {len(analysis_results)}")
+        print(f"Text questions analyzed  : {len(analysis_results)}")
+        print(f"Selection questions count: {selection_results.get('questions_count', 0)}")
 
-        # تنسيق التحليلات للنموذج اللغوي
+        # تنسيق التحليلات
         analytics_messages = format_analytics_messages(analysis_results)
 
-        # توليد التلخيص
+        # إضافة ملخص تحليل الخيارات إلى السياق إن وُجد
+        if selection_results.get("selection_result"):
+            sel_rows = selection_results["selection_result"]
+            analytics_messages += (
+                f"\n\n---\n## نتائج تحليل أسئلة الخيارات\n"
+                f"عدد الأسئلة: {selection_results.get('questions_count', 0)}\n"
+                f"عدد صفوف نتيجة التوزيع: {len(sel_rows)}\n"
+                f"عدد صفوف نتيجة الارتباط: {len(selection_results.get('correlation_result', []))}\n"
+            )
+
         prompt_messages = synthesis_agent_prompt.invoke({
             "survey_subject": survey_title,
             "analytics_messages": analytics_messages
@@ -208,18 +328,13 @@ def synthesis_agent(state: State) -> Dict[str, Any]:
         response = model.invoke(prompt_messages)
         synthesis_content = response.content
 
-        # حفظ التقرير
         report_path = save_report(synthesis_content, state['survey_id'])
-
         print("✅ Synthesis complete")
 
         return Command(
             update={
                 "messages": [
-                    AIMessage(
-                        content=synthesis_content,
-                        name="synthesis_agent"
-                    )
+                    AIMessage(content=synthesis_content, name="synthesis_agent")
                 ]
             }
         )
@@ -232,20 +347,21 @@ def synthesis_agent(state: State) -> Dict[str, Any]:
         return Command(
             update={
                 "messages": [
-                    AIMessage(
-                        content=error_msg,
-                        name="synthesis_agent"
-                    )
+                    AIMessage(content=error_msg, name="synthesis_agent")
                 ]
             }
         )
 
 
+# ============================================================================
+# NODE 5 — GENERATE CHARTS AGENT
+# وكيل توليد الرسوم البيانية
+# ============================================================================
+
 def generate_charts_agent(state: State) -> Command[Literal["__end__"]]:
     """
-    STAGE 4: توليد إعدادات الرسوم البيانية بناءً على نتائج التحليل.
-
-    يستخدم نموذج لغوي لإنشاء إعدادات Chart.js التي تتوافق مع مكونات Vue.js.
+    STAGE 5: توليد إعدادات الرسوم البيانية بناءً على نتائج التحليل.
+    يستخدم نموذج لغوي لإنشاء إعدادات Chart.js المتوافقة مع Vue.js.
     """
     try:
         print("=" * 60)
@@ -253,9 +369,10 @@ def generate_charts_agent(state: State) -> Command[Literal["__end__"]]:
         print("=" * 60)
         print(f"Survey ID: {state['survey_id']}")
 
-        analysis_results = state.get("analysis_results", {})
+        analysis_results  = state.get("analysis_results", {})
+        selection_results = state.get("selection_results", {})
 
-        if not analysis_results:
+        if not analysis_results and not selection_results:
             print("⚠️ No analysis results available for chart generation")
             return Command(
                 update={
@@ -270,19 +387,18 @@ def generate_charts_agent(state: State) -> Command[Literal["__end__"]]:
                 goto="__end__"
             )
 
-        # استخراج بيانات الاستبيان الوصفية
-        first_result = next(iter(analysis_results.values()))
-        survey_title = first_result.get("survey_title", f"Survey {state['survey_id']}")
+        # استخراج عنوان الاستبيان
+        survey_title = f"Survey {state['survey_id']}"
+        if analysis_results:
+            first_result = next(iter(analysis_results.values()))
+            survey_title = first_result.get("survey_title", survey_title)
 
         print(f"Survey: {survey_title}")
-        print(f"Questions analyzed: {len(analysis_results)}")
 
         # تنسيق ملخص التحليل للنموذج اللغوي
         analytics_summary = format_analysis_summary(analysis_results)
-
         print(f"Analytics summary length: {len(analytics_summary)} chars")
 
-        # توليد إعدادات الرسوم البيانية باستخدام النموذج اللغوي
         prompt_messages = chart_generation_prompt.invoke({
             "survey_subject": survey_title,
             "analytics_summary": analytics_summary
@@ -291,26 +407,19 @@ def generate_charts_agent(state: State) -> Command[Literal["__end__"]]:
         print("🤖 Invoking LLM for chart generation...")
         response = model.invoke(prompt_messages)
         response_text = response.content
-
         print(f"📥 LLM response length: {len(response_text)} chars")
 
-        # تحليل رد JSON
         chart_configs = extract_json_from_response(response_text)
 
-        # التحقق من عدد الرسوم (يجب أن يكون 4-6)
         if len(chart_configs) < 4:
-            print(f"⚠️ Only {len(chart_configs)} charts generated, expected 4-6. Using what we have.")
+            print(f"⚠️ Only {len(chart_configs)} charts generated, expected 4-6.")
         elif len(chart_configs) > 6:
             print(f"⚠️ {len(chart_configs)} charts generated, trimming to 6.")
             chart_configs = chart_configs[:6]
 
         print(f"✅ Generated {len(chart_configs)} chart configurations")
-
-        # طباعة أنواع الرسوم
         for i, chart in enumerate(chart_configs):
-            chart_type = chart.get("type", "unknown")
-            chart_title = chart.get("title", "Untitled")
-            print(f"   {i+1}. {chart_type}: {chart_title}")
+            print(f"   {i+1}. {chart.get('type','?')}: {chart.get('title','Untitled')}")
 
         return Command(
             update={
@@ -334,10 +443,7 @@ def generate_charts_agent(state: State) -> Command[Literal["__end__"]]:
             update={
                 "chart_configs": [],
                 "messages": [
-                    AIMessage(
-                        content=error_msg,
-                        name="chart_generation_agent"
-                    )
+                    AIMessage(content=error_msg, name="chart_generation_agent")
                 ]
             },
             goto="__end__"

@@ -38,3 +38,57 @@ def get_survey_df(survey_id):
         return result
     finally:
         conn.close()
+
+
+def get_selection_questions_data(survey_number: str) -> pd.DataFrame:
+    """
+    تجلب جميع الأسئلة غير النصية (غير TEXT_INPUT) مع إجاباتها
+    المرتبطة بالاستبيان المحدد بـ survey_number.
+
+    العمود الناتج:
+        question_id     : معرّف السؤال
+        question_ar     : نص السؤال بالعربية
+        question_type   : نوع السؤال
+        answer          : إجابة المستجيب
+        submission_id   : معرّف الاستجابة الواحدة (يربط بين الأسئلة)
+    """
+    query = """
+        SELECT
+            sq.id          AS question_id,
+            sq.question_ar AS question_ar,
+            sq.question_type AS question_type,
+            sa.answer      AS answer,
+            sa.submission_id AS submission_id
+        FROM ms_survey_service.survey_question sq
+        INNER JOIN ms_survey_service.survey_answer sa
+            ON sq.id = sa.survey_question_id
+        WHERE sq.survey_id = (
+            SELECT id FROM ms_survey_service.survey
+            WHERE survey_number = %s
+            LIMIT 1
+        )
+        AND UPPER(sq.question_type) != 'TEXT_INPUT'
+        AND sa.answer IS NOT NULL
+        AND sa.answer != ''
+    """
+    conn = get_conn()
+    try:
+        df = pd.read_sql(query, conn, params=(survey_number,))
+        print(f"DEBUG: get_selection_questions_data({survey_number}) returned {len(df)} rows")
+        return df
+    finally:
+        conn.close()
+
+
+def execute_raw_query(query: str) -> pd.DataFrame:
+    """
+    تنفّذ كويري MySQL خام وتُرجع النتائج كـ DataFrame.
+    تُستخدم لتشغيل الكويريات التي يولّدها الـ LLM.
+    """
+    conn = get_conn()
+    try:
+        df = pd.read_sql(query, conn)
+        print(f"DEBUG: execute_raw_query() returned {len(df)} rows, {len(df.columns)} columns")
+        return df
+    finally:
+        conn.close()
