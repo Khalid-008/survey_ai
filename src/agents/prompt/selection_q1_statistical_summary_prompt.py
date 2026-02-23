@@ -47,7 +47,13 @@ Output ONLY the SQL query wrapped in ```sql ... ``` fences. No explanations.
 """
 
 _HUMAN = """\
-Generate Query 1 (Statistical Summary) for the following survey questions:
+Generate Query 1 (Statistical Summary) for the following survey questions.
+
+Each question block includes:
+- **Distinct Answers**: all unique answer values found in the db.
+- **Sample Raw Answers (3 examples)**: real rows from `survey_answer` showing the exact column names
+  and values (question_id, question_ar, question_type, answer, submission_id).
+  Use these samples to understand the actual data format and field values before writing the query.
 
 {questions_block}
 

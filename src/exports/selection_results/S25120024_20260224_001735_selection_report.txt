@@ -1,0 +1,85 @@
+SELECTION PIPELINE REPORT
+Survey   : S25120024
+Generated: 2026-02-24 00:17:35
+======================================================================
+
+── DATABASE SCHEMA (MySQL 8) ──────────────────────────────────────────
+Table: ms_survey_service.survey
+  - id            INT           Primary key
+  - survey_number VARCHAR       Human-readable survey identifier
+  - subject_ar    VARCHAR       Survey title in Arabic
+
+Table: ms_survey_service.survey_question
+  - id            INT           Primary key
+  - survey_id     INT           FK → survey.id
+  - question_ar   VARCHAR       Question text in Arabic
+  - question_type VARCHAR       e.g. EMOJIS, MULTIPLE_CHOICE, TEXT_INPUT
+
+Table: ms_survey_service.survey_answer
+  - id                  INT     Primary key
+  - survey_question_id  INT     FK → survey_question.id
+  - answer              VARCHAR Single-choice / scale answer value
+  - selected_options_id VARCHAR Multi-choice answer value (when answer is NULL)
+  - submission_id       INT     Groups all answers from one respondent
+
+── QUESTIONS, DISTINCT ANSWERS & SAMPLE ROWS ──
+
+Q296: بشكل عام، ما مدى رضاك عن خدماتنا؟
+  Type   : EMOJIS
+  Distinct answers (5):
+    • 1
+    • 2
+    • 3
+    • 4
+    • 5
+  Sample rows (3 examples from survey_answer):
+    → {'question_id': 296, 'question_ar': 'بشكل عام، ما مدى رضاك عن خدماتنا؟', 'question_type': 'EMOJIS', 'answer': '1', 'submission_id': '504893F4-FF25-401F-8806-00006B34FEB3'}
+    → {'question_id': 296, 'question_ar': 'بشكل عام، ما مدى رضاك عن خدماتنا؟', 'question_type': 'EMOJIS', 'answer': '1', 'submission_id': 'EB9B5D40-EB85-4D33-A29B-6B0CEC7238AA'}
+    → {'question_id': 296, 'question_ar': 'بشكل عام، ما مدى رضاك عن خدماتنا؟', 'question_type': 'EMOJIS', 'answer': '1', 'submission_id': '5133B59F-5244-43E2-A363-EA7E81E93EC0'}
+
+Q297: ما مدى رضاك عن أداء مندوب المبيعات الذي قام بخدمتك؟
+  Type   : EMOJIS
+  Distinct answers (5):
+    • 1
+    • 2
+    • 3-Acceptable/مقبول
+    • 4
+    • 5
+  Sample rows (3 examples from survey_answer):
+    → {'question_id': 297, 'question_ar': 'ما مدى رضاك عن أداء مندوب المبيعات الذي قام بخدمتك؟', 'question_type': 'EMOJIS', 'answer': '1', 'submission_id': '61E39FA9-8403-43B9-A538-6BBBBCD41A19'}
+    → {'question_id': 297, 'question_ar': 'ما مدى رضاك عن أداء مندوب المبيعات الذي قام بخدمتك؟', 'question_type': 'EMOJIS', 'answer': '1', 'submission_id': '56B79AA5-80DB-4B0C-9B1B-1206A488F975'}
+    → {'question_id': 297, 'question_ar': 'ما مدى رضاك عن أداء مندوب المبيعات الذي قام بخدمتك؟', 'question_type': 'EMOJIS', 'answer': '1', 'submission_id': '4799862C-D8B1-4E93-8E7C-BB965579F73B'}
+
+Q298: ما مدى رضاك عن سرعة ودقة تنفيذ طلبك في الوقت المحدد؟
+  Type   : EMOJIS
+  Distinct answers (5):
+    • 1
+    • 2
+    • 3
+    • 4
+    • 5
+  Sample rows (3 examples from survey_answer):
+    → {'question_id': 298, 'question_ar': 'ما مدى رضاك عن سرعة ودقة تنفيذ طلبك في الوقت المحدد؟', 'question_type': 'EMOJIS', 'answer': '1', 'submission_id': '5D48A4C9-5A92-4211-96E1-48362BDCFF79'}
+    → {'question_id': 298, 'question_ar': 'ما مدى رضاك عن سرعة ودقة تنفيذ طلبك في الوقت المحدد؟', 'question_type': 'EMOJIS', 'answer': '1', 'submission_id': '642902C3-954D-41F1-8641-0F024A769F5A'}
+    → {'question_id': 298, 'question_ar': 'ما مدى رضاك عن سرعة ودقة تنفيذ طلبك في الوقت المحدد؟', 'question_type': 'EMOJIS', 'answer': '1', 'submission_id': 'EF4CDC6D-8F59-44E4-8B10-E3E8B1EEEE4B'}
+
+Q299: ما مدى احتمالية أن توصي بشركة قنوات كمورد لزميل أو شريك تجاري؟
+  Type   : MULTIPLE_CHOICE
+  Distinct answers (6):
+    • 397
+    • 397,398,399
+    • 398
+    • 398,397
+    • 399
+    • 399,397
+  Sample rows (3 examples from survey_answer):
+    → {'question_id': 299, 'question_ar': 'ما مدى احتمالية أن توصي بشركة قنوات كمورد لزميل أو شريك تجاري؟', 'question_type': 'MULTIPLE_CHOICE', 'answer': '397', 'submission_id': '97BB0D34-B53C-4EDA-A562-D96988C6C697'}
+    → {'question_id': 299, 'question_ar': 'ما مدى احتمالية أن توصي بشركة قنوات كمورد لزميل أو شريك تجاري؟', 'question_type': 'MULTIPLE_CHOICE', 'answer': '397', 'submission_id': '680240F3-0D7B-4062-B810-1C75979155D4'}
+    → {'question_id': 299, 'question_ar': 'ما مدى احتمالية أن توصي بشركة قنوات كمورد لزميل أو شريك تجاري؟', 'question_type': 'MULTIPLE_CHOICE', 'answer': '397', 'submission_id': '361DF36F-3BA3-4CAC-A505-E6558D452051'}
+
+
+── RESULT: Query 1 · Statistical Summary ──
+ AVG — بشكل عام، ما مدى رضاك عن خدماتنا؟  STDDEV — بشكل عام، ما مدى رضاك عن خدماتنا؟  Median — بشكل عام، ما مدى رضاك عن خدماتنا؟  AVG — ما مدى رضاك عن أداء مندوب المبيعات الذي قام بخدمتك؟  STDDEV — ما مدى رضاك عن أداء مندوب المبيعات الذي قام بخدمتك؟  Median — ما مدى رضاك عن أداء مندوب المبيعات الذي قام بخدمتك؟  AVG — ما مدى رضاك عن سرعة ودقة تنفيذ طلبك في الوقت المحدد؟  STDDEV — ما مدى رضاك عن سرعة ودقة تنفيذ طلبك في الوقت المحدد؟  Median — ما مدى رضاك عن سرعة ودقة تنفيذ طلبك في الوقت المحدد؟
+                                    4.72                                        0.89                                         5.0                                                        4.8                                                           0.8                                                           5.0                                                        4.76                                                           0.87                                                            5.0
+
+(1 rows)

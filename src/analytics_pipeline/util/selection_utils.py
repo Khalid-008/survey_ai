@@ -23,7 +23,7 @@ def extract_sql(text: str) -> str:
 
 # ── Questions block formatter ─────────────────────────────────────────────────
 
-def format_questions_block(grouped: dict, distinct: dict) -> str:
+def format_questions_block(grouped: dict, distinct: dict, sample_answers: dict | None = None) -> str:
     lines = []
     for qid, info in grouped.items():
         lines.append(f"Question ID : {qid}")
@@ -31,6 +31,9 @@ def format_questions_block(grouped: dict, distinct: dict) -> str:
         lines.append(f"Type        : {info['type']}")
         answers_str = " | ".join(distinct.get(qid, []))
         lines.append(f"Distinct Answers ({len(distinct.get(qid, []))}): {answers_str}")
+        if sample_answers and qid in sample_answers and sample_answers[qid]:
+            samples_str = " | ".join(str(s) for s in sample_answers[qid])
+            lines.append(f"Sample Raw Answers (3 examples): {samples_str}")
         lines.append("")
     return "\n".join(lines)
 

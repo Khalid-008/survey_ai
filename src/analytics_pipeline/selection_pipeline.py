@@ -18,20 +18,14 @@ from analytics_pipeline.util.selection_utils import (
     format_questions_block,
     save_results_to_file,
 )
-from agents.prompt.selection_q1_statistical_summary_prompt  import q1_statistical_summary_prompt
-from agents.prompt.selection_q2_satisfaction_tiers_prompt   import q2_satisfaction_tiers_prompt
-from agents.prompt.selection_q3_cross_tabulation_prompt     import q3_cross_tabulation_prompt
-from agents.prompt.selection_q4_correlation_analysis_prompt import q4_correlation_analysis_prompt
+from agents.prompt.selection_q1_statistical_summary_prompt import q1_statistical_summary_prompt
 
 warnings.filterwarnings("ignore")
 
 
 # ── Query definitions (label, prompt) ────────────────────────────────────────
 _QUERY_DEFINITIONS = [
-    ("Query 1 · Statistical Summary",            q1_statistical_summary_prompt),
-    ("Query 2 · Satisfaction Tiers Distribution", q2_satisfaction_tiers_prompt),
-    ("Query 3 · Cross-tabulation Segment Labels", q3_cross_tabulation_prompt),
-    ("Query 4 · Correlation & Pattern Analysis",  q4_correlation_analysis_prompt),
+    ("Query 1 · Statistical Summary", q1_statistical_summary_prompt),
 ]
 
 
@@ -71,6 +65,15 @@ def get_distinct_answers_per_question(grouped: dict[int, dict[str, Any]]) -> dic
     return distinct
 
 
+def get_sample_answers_per_question(df: pd.DataFrame, n: int = 3) -> dict[int, list[str]]:
+    """Returns up to `n` full row examples (all columns) per question for agent context."""
+    samples: dict[int, list[str]] = {}
+    for qid, group in df.groupby("question_id"):
+        rows = group.head(n).to_dict(orient="records")
+        samples[int(qid)] = [str(row) for row in rows]
+    return samples
+
+
 # ============================================================================
 # MAIN PIPELINE
 # ============================================================================
@@ -98,52 +101,52 @@ def run_selection_pipeline(survey_number: str) -> dict[str, Any]:
     print("\n📊 Step 2 — Grouping answers...")
     grouped  = group_answers_by_question(df)
     distinct = get_distinct_answers_per_question(grouped)
+    samples  = get_sample_answers_per_question(df, n=3)
 
     result["questions_count"]       = len(grouped)
     result["distinct_per_question"] = distinct
 
-    questions_block = format_questions_block(grouped, distinct)
+    questions_block = format_questions_block(grouped, distinct, sample_answers=samples)
     print("questions_block:\n", questions_block)
 
-    # 3. Generate → Execute → Store (one query at a time)
-    total = len(_QUERY_DEFINITIONS)
-    for idx, (label, prompt) in enumerate(_QUERY_DEFINITIONS, start=1):
-        print(f"\n{'─'*60}")
-        print(f"🤖 Step {idx + 2}/{total + 2} — Generating: {label}")
-        print(f"{'─'*60}")
+    # 3. Generate → Execute → Store
+    label  = "Query 1 · Statistical Summary"
+    prompt = q1_statistical_summary_prompt
+    entry: dict[str, Any] = {"label": label, "sql": "", "result": pd.DataFrame()}
 
-        entry: dict[str, Any] = {"label": label, "sql": "", "result": pd.DataFrame()}
+    print(f"\n{'─'*60}")
+    print(f"🤖 Step 3 — Generating: {label}")
+    print(f"{'─'*60}")
 
-        # Generate
-        sql = ""
-        try:
-            chain    = prompt | model
-            response = chain.invoke({"questions_block": questions_block})
-            sql      = extract_sql(response.content)
-            entry["sql"] = sql
-            print(f"   ✅ SQL generated ({len(sql)} chars).")
-            print(f"   SQL:\n{sql}\n")
-        except Exception as e:
-            err = f"[{label}] Generation failed: {e}"
-            print(f"   ❌ {err}")
-            result["errors"].append(err)
-            result["query_results"].append(entry)
-            continue
-
-        # Execute
-        print(f"   ⚡ Executing...")
-        try:
-            df_result    = execute_raw_query(sql)
-            entry["result"] = df_result
-            print(f"   ✅ {len(df_result)} rows returned.")
-        except Exception as e:
-            err = f"[{label}] Execution failed: {e}"
-            print(f"   ❌ {err}")
-            result["errors"].append(err)
-
-        # Store
+    # Generate
+    try:
+        chain    = prompt | model
+        response = chain.invoke({"questions_block": questions_block})
+        sql      = extract_sql(response.content)
+        entry["sql"] = sql
+        print(f"   ✅ SQL generated ({len(sql)} chars).")
+        print(f"   SQL:\n{sql}\n")
+    except Exception as e:
+        err = f"[{label}] Generation failed: {e}"
+        print(f"   ❌ {err}")
+        result["errors"].append(err)
         result["query_results"].append(entry)
-        print(f"   💾 Stored: {label}")
+        return result
+
+    # Execute
+    print(f"   ⚡ Executing...")
+    try:
+        df_result    = execute_raw_query(sql)
+        entry["result"] = df_result
+        print(f"   ✅ {len(df_result)} rows returned.")
+    except Exception as e:
+        err = f"[{label}] Execution failed: {e}"
+        print(f"   ❌ {err}")
+        result["errors"].append(err)
+
+    # Store
+    result["query_results"].append(entry)
+    print(f"   💾 Stored: {label}")
 
     # Summary
     total_rows = sum(len(qr["result"]) for qr in result["query_results"])
