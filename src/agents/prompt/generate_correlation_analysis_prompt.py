@@ -119,7 +119,7 @@ Your goal is to analyze the correlation and relationships between how users answ
 ## Important Notes
 
 - Focus on the correlation data for your analysis
-- Look for patterns where the SAME respondent (AnswerUniqueID) answered different questions
+- Look for patterns where the SAME respondent (submission_id) answered different questions
 - Be specific with percentages and counts when making claims
 - Consider both positive correlations (similar responses) and negative correlations (opposite responses)
 - Identify any surprising or unexpected patterns

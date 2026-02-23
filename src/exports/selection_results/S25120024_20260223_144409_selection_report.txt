@@ -1,0 +1,382 @@
+SELECTION PIPELINE REPORT
+Survey   : S25120024
+Generated: 2026-02-23 14:44:09
+======================================================================
+
+── QUESTIONS & DISTINCT ANSWERS ──
+
+Q296: بشكل عام، ما مدى رضاك عن خدماتنا؟
+  Type   : EMOJIS
+  Distinct answers (5):
+    • 1
+    • 2
+    • 3
+    • 4
+    • 5
+
+Q297: ما مدى رضاك عن أداء مندوب المبيعات الذي قام بخدمتك؟
+  Type   : EMOJIS
+  Distinct answers (5):
+    • 1
+    • 2
+    • 3-Acceptable/مقبول
+    • 4
+    • 5
+
+Q298: ما مدى رضاك عن سرعة ودقة تنفيذ طلبك في الوقت المحدد؟
+  Type   : EMOJIS
+  Distinct answers (5):
+    • 1
+    • 2
+    • 3
+    • 4
+    • 5
+
+Q299: ما مدى احتمالية أن توصي بشركة قنوات كمورد لزميل أو شريك تجاري؟
+  Type   : MULTIPLE_CHOICE
+  Distinct answers (5):
+    • 397
+    • 398
+    • 398,397
+    • 399
+    • 399,397
+
+
+── GENERATED SQL: Query 1 · Statistical Summary ──
+WITH ResponsePivot AS (
+    SELECT 
+        sa.submission_id,
+        MAX(CASE WHEN sa.survey_question_id = 296 THEN sa.answer END) AS q296_answer,
+        MAX(CASE WHEN sa.survey_question_id = 297 THEN sa.answer END) AS q297_answer,
+        MAX(CASE WHEN sa.survey_question_id = 298 THEN sa.answer END) AS q298_answer
+    FROM ms_survey_service.survey_answer AS sa
+    GROUP BY sa.submission_id
+),
+NumericBase AS (
+    SELECT 
+        submission_id,
+        CAST(q296_answer AS DECIMAL(5,2)) AS q296_num,
+        CAST(
+            CASE
+                WHEN q297_answer LIKE '3%' THEN 3
+                ELSE q297_answer
+            END AS DECIMAL(5,2)
+        ) AS q297_num,
+        CAST(q298_answer AS DECIMAL(5,2)) AS q298_num
+    FROM ResponsePivot
+)
+SELECT
+    ROUND(AVG(q296_num), 2)                                          AS `AVG — بشكل عام، ما مدى رضاك عن خدماتنا؟`,
+    ROUND(STDDEV_POP(q296_num), 2)                                   AS `STDDEV — بشكل عام، ما مدى رضاك عن خدماتنا؟`,
+    (SELECT ROUND(AVG(mid.q296_num), 2)
+     FROM (
+         SELECT q296_num,
+                ROW_NUMBER() OVER (ORDER BY q296_num) AS rn,
+                COUNT(*) OVER ()                         AS cnt
+         FROM NumericBase
+         WHERE q296_num IS NOT NULL
+     ) AS mid
+     WHERE rn IN (FLOOR((cnt + 1) / 2), CEIL((cnt + 1) / 2))
+    )                                                               AS `Median — بشكل عام، ما مدى رضاك عن خدماتنا؟`,
+    
+    ROUND(AVG(q297_num), 2)                                          AS `AVG — ما مدى رضاك عن أداء مندوب المبيعات الذي قام بخدمتك؟`,
+    ROUND(STDDEV_POP(q297_num), 2)                                   AS `STDDEV — ما مدى رضاك عن أداء مندوب المبيعات الذي قام بخدمتك؟`,
+    (SELECT ROUND(AVG(mid.q297_num), 2)
+     FROM (
+         SELECT q297_num,
+                ROW_NUMBER() OVER (ORDER BY q297_num) AS rn,
+                COUNT(*) OVER ()                         AS cnt
+         FROM NumericBase
+         WHERE q297_num IS NOT NULL
+     ) AS mid
+     WHERE rn IN (FLOOR((cnt + 1) / 2), CEIL((cnt + 1) / 2))
+    )                                                               AS `Median — ما مدى رضاك عن أداء مندوب المبيعات الذي قام بخدمتك؟`,
+    
+    ROUND(AVG(q298_num), 2)                                          AS `AVG — ما مدى رضاك عن سرعة ودقة تنفيذ طلبك في الوقت المحدد؟`,
+    ROUND(STDDEV_POP(q298_num), 2)                                   AS `STDDEV — ما مدى رضاك عن سرعة ودقة تنفيذ طلبك في الوقت المحدد؟`,
+    (SELECT ROUND(AVG(mid.q298_num), 2)
+     FROM (
+         SELECT q298_num,
+                ROW_NUMBER() OVER (ORDER BY q298_num) AS rn,
+                COUNT(*) OVER ()                         AS cnt
+         FROM NumericBase
+         WHERE q298_num IS NOT NULL
+     ) AS mid
+     WHERE rn IN (FLOOR((cnt + 1) / 2), CEIL((cnt + 1) / 2))
+    )                                                               AS `Median — ما مدى رضاك عن سرعة ودقة تنفيذ طلبك في الوقت المحدد؟`
+FROM NumericBase;
+
+── RESULT: Query 1 · Statistical Summary ──
+ AVG — بشكل عام، ما مدى رضاك عن خدماتنا؟  STDDEV — بشكل عام، ما مدى رضاك عن خدماتنا؟  Median — بشكل عام، ما مدى رضاك عن خدماتنا؟  AVG — ما مدى رضاك عن أداء مندوب المبيعات الذي قام بخدمتك؟  STDDEV — ما مدى رضاك عن أداء مندوب المبيعات الذي قام بخدمتك؟  Median — ما مدى رضاك عن أداء مندوب المبيعات الذي قام بخدمتك؟  AVG — ما مدى رضاك عن سرعة ودقة تنفيذ طلبك في الوقت المحدد؟  STDDEV — ما مدى رضاك عن سرعة ودقة تنفيذ طلبك في الوقت المحدد؟  Median — ما مدى رضاك عن سرعة ودقة تنفيذ طلبك في الوقت المحدد؟
+                                    4.71                                        0.89                                         5.0                                                        4.8                                                           0.8                                                           5.0                                                        4.76                                                           0.87                                                            5.0
+
+(1 rows)
+
+
+── GENERATED SQL: Query 2 · Satisfaction Tiers Distribution ──
+WITH ResponsePivot AS (
+    SELECT 
+        sa.submission_id,
+        MAX(CASE WHEN sa.survey_question_id = 296 THEN sa.answer END) AS q296_answer,
+        MAX(CASE WHEN sa.survey_question_id = 297 THEN sa.answer END) AS q297_answer,
+        MAX(CASE WHEN sa.survey_question_id = 298 THEN sa.answer END) AS q298_answer
+    FROM ms_survey_service.survey_answer sa
+    WHERE sa.survey_question_id IN (296, 297, 298)
+    GROUP BY sa.submission_id
+),
+NumericBase AS (
+    SELECT
+        CASE
+            WHEN q296_answer IN ('1','2') THEN 'سلبي'
+            WHEN q296_answer = '3' THEN 'محايد'
+            WHEN q296_answer IN ('4','5') THEN 'إيجابي'
+        END AS `بشكل عام، ما مدى رضاك عن خدماتنا؟`,
+        CASE
+            WHEN q297_answer IN ('1','2') THEN 'سلبي'
+            WHEN q297_answer IN ('3','3-Acceptable/مقبول') THEN 'محايد'
+            WHEN q297_answer IN ('4','5') THEN 'إيجابي'
+        END AS `ما مدى رضاك عن أداء مندوب المبيعات الذي قام بخدمتك؟`,
+        CASE
+            WHEN q298_answer IN ('1','2') THEN 'سلبي'
+            WHEN q298_answer = '3' THEN 'محايد'
+            WHEN q298_answer IN ('4','5') THEN 'إيجابي'
+        END AS `ما مدى رضاك عن سرعة ودقة تنفيذ طلبك في الوقت المحدد؟`
+    FROM ResponsePivot
+)
+SELECT
+    `بشكل عام، ما مدى رضاك عن خدماتنا؟`,
+    `ما مدى رضاك عن أداء مندوب المبيعات الذي قام بخدمتك؟`,
+    `ما مدى رضاك عن سرعة ودقة تنفيذ طلبك في الوقت المحدد؟`,
+    COUNT(*) AS `عدد المستجيبين`,
+    CAST(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER () AS DECIMAL(5,2)) AS `النسبة المئوية`
+FROM NumericBase
+GROUP BY
+    `بشكل عام، ما مدى رضاك عن خدماتنا؟`,
+    `ما مدى رضاك عن أداء مندوب المبيعات الذي قام بخدمتك؟`,
+    `ما مدى رضاك عن سرعة ودقة تنفيذ طلبك في الوقت المحدد؟`
+ORDER BY `عدد المستجيبين` DESC;
+
+── RESULT: Query 2 · Satisfaction Tiers Distribution ──
+بشكل عام، ما مدى رضاك عن خدماتنا؟ ما مدى رضاك عن أداء مندوب المبيعات الذي قام بخدمتك؟ ما مدى رضاك عن سرعة ودقة تنفيذ طلبك في الوقت المحدد؟  عدد المستجيبين  النسبة المئوية
+                           إيجابي                                              إيجابي                                               إيجابي            2503           90.20
+                             سلبي                                                سلبي                                                 سلبي              81            2.92
+                            محايد                                              إيجابي                                               إيجابي              68            2.45
+                             سلبي                                              إيجابي                                               إيجابي              20            0.72
+                           إيجابي                                                سلبي                                                 سلبي              17            0.61
+                             سلبي                                              إيجابي                                                 سلبي              17            0.61
+                            محايد                                                سلبي                                                 سلبي              12            0.43
+                           إيجابي                                              إيجابي                                                محايد               8            0.29
+                            محايد                                              إيجابي                                                محايد               8            0.29
+                             سلبي                                              إيجابي                                                محايد               7            0.25
+                             سلبي                                               محايد                                                 سلبي               6            0.22
+                           إيجابي                                                سلبي                                               إيجابي               5            0.18
+                           إيجابي                                               محايد                                                 سلبي               5            0.18
+                            محايد                                              إيجابي                                                 سلبي               3            0.11
+                            محايد                                               محايد                                                 سلبي               3            0.11
+                            محايد                                               محايد                                                محايد               3            0.11
+                           إيجابي                                                سلبي                                                محايد               2            0.07
+                             سلبي                                               محايد                                                محايد               2            0.07
+                             سلبي                                                سلبي                                                محايد               1            0.04
+                           إيجابي                                              إيجابي                                                 سلبي               1            0.04
+                           إيجابي                                               محايد                                               إيجابي               1            0.04
+                            محايد                                                سلبي                                                محايد               1            0.04
+                           إيجابي                                               محايد                                                محايد               1            0.04
+
+(23 rows)
+
+
+── GENERATED SQL: Query 3 · Cross-tabulation Segment Labels ──
+WITH ResponsePivot AS (
+    SELECT
+        sa.submission_id,
+        MAX(CASE WHEN sa.survey_question_id = 296 THEN sa.answer END) AS q296_answer,
+        MAX(CASE WHEN sa.survey_question_id = 297 THEN sa.answer END) AS q297_answer,
+        MAX(CASE WHEN sa.survey_question_id = 298 THEN sa.answer END) AS q298_answer,
+        MAX(CASE WHEN sa.survey_question_id = 299 THEN sa.answer END) AS q299_answer
+    FROM ms_survey_service.survey_answer sa
+    GROUP BY sa.submission_id
+),
+NumericBase AS (
+    SELECT
+        rp.submission_id,
+        rp.q299_answer AS `ما مدى احتمالية أن توصي بشركة قنوات كمورد لزميل أو شريك تجاري؟`,
+        CASE
+            WHEN rp.q296_answer IN ('1','2')                     THEN 'سلبي'
+            WHEN rp.q296_answer = '3'                           THEN 'محايد'
+            WHEN rp.q296_answer IN ('4','5')                    THEN 'إيجابي'
+            ELSE NULL
+        END AS `بشكل عام، ما مدى رضاك عن خدماتنا؟`,
+        CASE
+            WHEN rp.q297_answer = '3-Acceptable/مقبول'          THEN 'محايد'
+            WHEN rp.q297_answer IN ('1','2')                    THEN 'سلبي'
+            WHEN rp.q297_answer = '3'                           THEN 'محايد'
+            WHEN rp.q297_answer IN ('4','5')                    THEN 'إيجابي'
+            ELSE NULL
+        END AS `ما مدى رضاك عن أداء مندوب المبيعات الذي قام بخدمتك؟`,
+        CASE
+            WHEN rp.q298_answer IN ('1','2')                     THEN 'سلبي'
+            WHEN rp.q298_answer = '3'                           THEN 'محايد'
+            WHEN rp.q298_answer IN ('4','5')                    THEN 'إيجابي'
+            ELSE NULL
+        END AS `ما مدى رضاك عن سرعة ودقة تنفيذ طلبك في الوقت المحدد؟`
+    FROM ResponsePivot rp
+)
+SELECT
+    `بشكل عام، ما مدى رضاك عن خدماتنا؟`,
+    `ما مدى رضاك عن أداء مندوب المبيعات الذي قام بخدمتك؟`,
+    `ما مدى رضاك عن سرعة ودقة تنفيذ طلبك في الوقت المحدد؟`,
+    `ما مدى احتمالية أن توصي بشركة قنوات كمورد لزميل أو شريك تجاري؟`,
+    COUNT(*) AS `عدد المستجيبين`,
+    CAST(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER () AS DECIMAL(5,2)) AS `النسبة المئوية`,
+    CASE
+        WHEN `بشكل عام، ما مدى رضاك عن خدماتنا؟` = 'إيجابي'
+         AND `ما مدى رضاك عن أداء مندوب المبيعات الذي قام بخدمتك؟` = 'إيجابي'
+         AND `ما مدى رضاك عن سرعة ودقة تنفيذ طلبك في الوقت المحدد؟` = 'إيجابي' THEN 'راضون كلياً'
+        WHEN `بشكل عام، ما مدى رضاك عن خدماتنا؟` = 'سلبي'
+         AND `ما مدى رضاك عن أداء مندوب المبيعات الذي قام بخدمتك؟` = 'سلبي'
+         AND `ما مدى رضاك عن سرعة ودقة تنفيذ طلبك في الوقت المحدد؟` = 'سلبي' THEN 'غير راضون كلياً'
+        ELSE 'مختلط'
+    END AS `تصنيف الشريحة`
+FROM NumericBase
+GROUP BY
+    `بشكل عام، ما مدى رضاك عن خدماتنا؟`,
+    `ما مدى رضاك عن أداء مندوب المبيعات الذي قام بخدمتك؟`,
+    `ما مدى رضاك عن سرعة ودقة تنفيذ طلبك في الوقت المحدد؟`,
+    `ما مدى احتمالية أن توصي بشركة قنوات كمورد لزميل أو شريك تجاري؟`
+ORDER BY `عدد المستجيبين` DESC;
+
+── RESULT: Query 3 · Cross-tabulation Segment Labels ──
+بشكل عام، ما مدى رضاك عن خدماتنا؟ ما مدى رضاك عن أداء مندوب المبيعات الذي قام بخدمتك؟ ما مدى رضاك عن سرعة ودقة تنفيذ طلبك في الوقت المحدد؟ ما مدى احتمالية أن توصي بشركة قنوات كمورد لزميل أو شريك تجاري؟  عدد المستجيبين  النسبة المئوية   تصنيف الشريحة
+                             None                                                None                                                 None                                                           None          516042           99.47           مختلط
+                           إيجابي                                              إيجابي                                               إيجابي                                                           None            2503            0.48     راضون كلياً
+                             سلبي                                                سلبي                                                 سلبي                                                           None              81            0.02 غير راضون كلياً
+                            محايد                                              إيجابي                                               إيجابي                                                           None              68            0.01           مختلط
+                             سلبي                                              إيجابي                                               إيجابي                                                           None              20            0.00           مختلط
+                           إيجابي                                                سلبي                                                 سلبي                                                           None              17            0.00           مختلط
+                             سلبي                                              إيجابي                                                 سلبي                                                           None              17            0.00           مختلط
+                            محايد                                                سلبي                                                 سلبي                                                           None              12            0.00           مختلط
+                           إيجابي                                              إيجابي                                                محايد                                                           None               8            0.00           مختلط
+                            محايد                                              إيجابي                                                محايد                                                           None               8            0.00           مختلط
+                             سلبي                                              إيجابي                                                محايد                                                           None               7            0.00           مختلط
+                             سلبي                                               محايد                                                 سلبي                                                           None               6            0.00           مختلط
+                           إيجابي                                                سلبي                                               إيجابي                                                           None               5            0.00           مختلط
+                           إيجابي                                               محايد                                                 سلبي                                                           None               5            0.00           مختلط
+                            محايد                                              إيجابي                                                 سلبي                                                           None               3            0.00           مختلط
+                            محايد                                               محايد                                                 سلبي                                                           None               3            0.00           مختلط
+                            محايد                                               محايد                                                محايد                                                           None               3            0.00           مختلط
+                           إيجابي                                                سلبي                                                محايد                                                           None               2            0.00           مختلط
+                             سلبي                                               محايد                                                محايد                                                           None               2            0.00           مختلط
+                             سلبي                                                سلبي                                                محايد                                                           None               1            0.00           مختلط
+                           إيجابي                                              إيجابي                                                 سلبي                                                           None               1            0.00           مختلط
+                           إيجابي                                               محايد                                               إيجابي                                                           None               1            0.00           مختلط
+                            محايد                                                سلبي                                                محايد                                                           None               1            0.00           مختلط
+                           إيجابي                                               محايد                                                محايد                                                           None               1            0.00           مختلط
+
+(24 rows)
+
+
+── GENERATED SQL: Query 4 · Correlation & Pattern Analysis ──
+WITH ResponsePivot AS (
+    SELECT
+        sa.submission_id,
+        MAX(CASE WHEN sa.survey_question_id = 296 THEN sa.answer END) AS q296_answer,
+        MAX(CASE WHEN sa.survey_question_id = 297 THEN sa.answer END) AS q297_answer,
+        MAX(CASE WHEN sa.survey_question_id = 298 THEN sa.answer END) AS q298_answer,
+        MAX(CASE WHEN sa.survey_question_id = 299 THEN sa.answer END) AS q299_answer
+    FROM ms_survey_service.survey_answer sa
+    GROUP BY sa.submission_id
+),
+
+NumericBase AS (
+    SELECT
+        submission_id,
+        -- Tier for السؤال 296
+        CASE
+            WHEN CAST(q296_answer AS DECIMAL) BETWEEN 1 AND 2 THEN 'سلبي'
+            WHEN CAST(q296_answer AS DECIMAL) = 3            THEN 'محايد'
+            WHEN CAST(q296_answer AS DECIMAL) BETWEEN 4 AND 5 THEN 'إيجابي'
+        END AS `بشكل عام، ما مدى رضاك عن خدماتنا؟`,
+        -- Tier for السؤال 297 (mixed label)
+        CASE
+            WHEN CAST(
+                    CASE
+                        WHEN q297_answer LIKE '3-%' THEN '3'
+                        ELSE q297_answer
+                    END AS DECIMAL) BETWEEN 1 AND 2 THEN 'سلبي'
+            WHEN CAST(
+                    CASE
+                        WHEN q297_answer LIKE '3-%' THEN '3'
+                        ELSE q297_answer
+                    END AS DECIMAL) = 3 THEN 'محايد'
+            WHEN CAST(
+                    CASE
+                        WHEN q297_answer LIKE '3-%' THEN '3'
+                        ELSE q297_answer
+                    END AS DECIMAL) BETWEEN 4 AND 5 THEN 'إيجابي'
+        END AS `ما مدى رضاك عن أداء مندوب المبيعات الذي قام بخدمتك؟`,
+        -- Tier for السؤال 298
+        CASE
+            WHEN CAST(q298_answer AS DECIMAL) BETWEEN 1 AND 2 THEN 'سلبي'
+            WHEN CAST(q298_answer AS DECIMAL) = 3            THEN 'محايد'
+            WHEN CAST(q298_answer AS DECIMAL) BETWEEN 4 AND 5 THEN 'إيجابي'
+        END AS `ما مدى رضاك عن سرعة ودقة تنفيذ طلبك في الوقت المحدد؟`,
+        -- Raw answer for السؤال 299
+        q299_answer AS `ما مدى احتمالية أن توصي بشركة قنوات كمورد لزميل أو شريك تجاري؟`
+    FROM ResponsePivot
+    WHERE q296_answer IS NOT NULL
+      AND q297_answer IS NOT NULL
+      AND q298_answer IS NOT NULL
+      AND q299_answer IS NOT NULL
+),
+
+CrossTab AS (
+    SELECT
+        `بشكل عام، ما مدى رضاك عن خدماتنا؟`,
+        `ما مدى رضاك عن أداء مندوب المبيعات الذي قام بخدمتك؟`,
+        `ما مدى رضاك عن سرعة ودقة تنفيذ طلبك في الوقت المحدد؟`,
+        `ما مدى احتمالية أن توصي بشركة قنوات كمورد لزميل أو شريك تجاري؟`,
+        COUNT(*)                                            AS response_count,
+        CAST(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER () AS DECIMAL(5,2)) AS pct_of_total
+    FROM NumericBase
+    GROUP BY
+        `بشكل عام، ما مدى رضاك عن خدماتنا؟`,
+        `ما مدى رضاك عن أداء مندوب المبيعات الذي قام بخدمتك؟`,
+        `ما مدى رضاك عن سرعة ودقة تنفيذ طلبك في الوقت المحدد؟`,
+        `ما مدى احتمالية أن توصي بشركة قنوات كمورد لزميل أو شريك تجاري؟`
+)
+
+SELECT
+    `بشكل عام، ما مدى رضاك عن خدماتنا؟`,
+    `ما مدى رضاك عن أداء مندوب المبيعات الذي قام بخدمتك؟`,
+    `ما مدى رضاك عن سرعة ودقة تنفيذ طلبك في الوقت المحدد؟`,
+    `ما مدى احتمالية أن توصي بشركة قنوات كمورد لزميل أو شريك تجاري؟`,
+    response_count                                 AS `عدد المستجيبين`,
+    pct_of_total                                   AS `النسبة المئوية`,
+    CAST(response_count * 100.0 / NULLIF(
+            SUM(response_count) OVER (PARTITION BY `بشكل عام، ما مدى رضاك عن خدماتنا؟`),0) AS DECIMAL(5,2))
+                                                   AS `% ضمن بشكل عام، ما مدى رضاك عن خدماتنا؟`,
+    CAST(response_count * 100.0 / NULLIF(
+            SUM(response_count) OVER (PARTITION BY `ما مدى رضاك عن أداء مندوب المبيعات الذي قام بخدمتك؟`),0) AS DECIMAL(5,2))
+                                                   AS `% ضمن ما مدى رضاك عن أداء مندوب المبيعات الذي قام بخدمتك؟`,
+    CAST(response_count * 100.0 / NULLIF(
+            SUM(response_count) OVER (PARTITION BY `ما مدى رضاك عن سرعة ودقة تنفيذ طلبك في الوقت المحدد؟`),0) AS DECIMAL(5,2))
+                                                   AS `% ضمن ما مدى رضاك عن سرعة ودقة تنفيذ طلبك في الوقت المحدد؟`,
+    CASE
+        WHEN `بشكل عام، ما مدى رضاك عن خدماتنا؟` = 'إيجابي'
+         AND `ما مدى رضاك عن أداء مندوب المبيعات الذي قام بخدمتك؟` = 'إيجابي'
+         AND `ما مدى رضاك عن سرعة ودقة تنفيذ طلبك في الوقت المحدد؟` = 'إيجابي' THEN 'راضون كلياً'
+        WHEN `بشكل عام، ما مدى رضاك عن خدماتنا؟` = 'سلبي'
+         AND `ما مدى رضاك عن أداء مندوب المبيعات الذي قام بخدمتك؟` = 'سلبي'
+         AND `ما مدى رضاك عن سرعة ودقة تنفيذ طلبك في الوقت المحدد؟` = 'سلبي' THEN 'غير راضون كلياً'
+        ELSE 'مختلط'
+    END                                            AS `تصنيف الشريحة`,
+    CASE
+        WHEN pct_of_total >= 30 THEN 'ارتباط قوي'
+        WHEN pct_of_total >= 15 THEN 'ارتباط متوسط'
+        ELSE 'ارتباط ضعيف'
+    END                                            AS `قوة الارتباط`
+FROM CrossTab
+ORDER BY `عدد المستجيبين` DESC;
+
+── RESULT: Query 4 · Correlation & Pattern Analysis ──
+(empty)
