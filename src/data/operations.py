@@ -41,21 +41,6 @@ def get_survey_df(survey_id):
 
 
 def get_selection_questions_data(survey_number: str) -> pd.DataFrame:
-    """
-    تجلب جميع الأسئلة غير النصية (غير TEXT_INPUT) مع إجاباتها
-    المرتبطة بالاستبيان المحدد بـ survey_number.
-
-    تستخدم COALESCE(sa.answer, sa.selected_options_id) لتغطية:
-    - أسئلة الخيار الفردي  (answer)
-    - أسئلة الاختيار المتعدد (قد تُخزَّن في selected_options_id)
-
-    العمود الناتج:
-        question_id     : معرّف السؤال
-        question_ar     : نص السؤال بالعربية
-        question_type   : نوع السؤال
-        answer          : إجابة المستجيب (من answer أو selected_options_id)
-        submission_id   : معرّف الاستجابة الواحدة
-    """
     query = """
         SELECT
             sq.id               AS question_id,
@@ -65,10 +50,45 @@ def get_selection_questions_data(survey_number: str) -> pd.DataFrame:
                 NULLIF(TRIM(sa.answer), ''),
                 NULLIF(TRIM(sa.selected_options_id), '')
             )                   AS answer,
-            sa.submission_id    AS submission_id
+            sa.submission_id    AS submission_id,
+            sa.created_date     AS submission_date,
+            CASE
+                WHEN UPPER(sq.question_type) IN ('MULTIPLE_CHOICE', 'DROPDOWN')
+                    THEN qo.option_text_ar
+
+                WHEN UPPER(sq.question_type) = 'YES_NO'
+                    THEN CASE COALESCE(NULLIF(TRIM(sa.answer),''), NULLIF(TRIM(sa.selected_options_id),''))
+                            WHEN '1' THEN 'نعم'
+                            WHEN '0' THEN 'لا'
+                            ELSE COALESCE(NULLIF(TRIM(sa.answer),''), NULLIF(TRIM(sa.selected_options_id),''))
+                         END
+
+                WHEN UPPER(sq.question_type) = 'EMOJIS'
+                    THEN CASE COALESCE(NULLIF(TRIM(sa.answer),''), NULLIF(TRIM(sa.selected_options_id),''))
+                            WHEN '1' THEN 'Very Dissatisfied'
+                            WHEN '2' THEN 'Dissatisfied'
+                            WHEN '3' THEN 'Neutral'
+                            WHEN '4' THEN 'Satisfied'
+                            WHEN '5' THEN 'Very Satisfied'
+                            ELSE COALESCE(NULLIF(TRIM(sa.answer),''), NULLIF(TRIM(sa.selected_options_id),''))
+                         END
+
+                ELSE COALESCE(
+                        NULLIF(TRIM(sa.answer), ''),
+                        NULLIF(TRIM(sa.selected_options_id), '')
+                     )
+            END                 AS answer_label
         FROM ms_survey_service.survey_question sq
         INNER JOIN ms_survey_service.survey_answer sa
             ON sq.id = sa.survey_question_id
+        LEFT JOIN ms_survey_service.question_option qo
+            ON  qo.question_id = sq.id
+            AND qo.id = CAST(
+                    COALESCE(
+                        NULLIF(TRIM(sa.answer), ''),
+                        NULLIF(TRIM(sa.selected_options_id), '')
+                    ) AS UNSIGNED
+                )
         WHERE sq.survey_id = (
             SELECT id FROM ms_survey_service.survey
             WHERE survey_number = %s
