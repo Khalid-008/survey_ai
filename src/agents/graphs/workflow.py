@@ -8,6 +8,7 @@ from agents.graphs.nodes import (
     synthesis_agent,
     generate_charts_agent
 )
+import json
 
 
 def create_survey_insight_workflow(survey_id: int, user_message: str, session_id: str):
@@ -55,11 +56,34 @@ def create_survey_insight_workflow(survey_id: int, user_message: str, session_id
             synthesis_text = message.content
             break
 
-    chart_configs    = final_response.get("chart_configs", [])
-    selection_results = final_response.get("selection_results", {})
+    chart_configs = final_response.get("chart_configs", [])
 
-    return {
-        "synthesis":          synthesis_text,
-        "charts":             chart_configs,
-        "selection_results":  selection_results
-    }
+    # حاول تحليل JSON من نص التوليف وإعادته بالمستوى الأعلى مباشرة
+    try:
+        # أزل أي علامات markdown محتملة قبل التحليل
+        clean_text = synthesis_text.strip()
+        if clean_text.startswith("```"):
+            clean_text = clean_text.split("\n", 1)[-1]
+            clean_text = clean_text.rsplit("```", 1)[0].strip()
+
+        parsed_synthesis = json.loads(clean_text)
+
+        # التأكد من أن الحقول المطلوبة موجودة
+        parsed_synthesis.setdefault("visualizations", [])
+        parsed_synthesis.setdefault("executive_summary", "")
+        parsed_synthesis.setdefault("detailed_analysis", "")
+        parsed_synthesis.setdefault("key_metrics", [])
+        parsed_synthesis.setdefault("recommendations", [])
+
+        return {
+            **parsed_synthesis,
+            "charts": chart_configs,
+        }
+
+    except (json.JSONDecodeError, Exception) as e:
+        print(f"⚠️ Could not parse synthesis as JSON: {e}")
+        # Fallback: return raw synthesis text under 'synthesis' key
+        return {
+            "synthesis": synthesis_text,
+            "charts":    chart_configs,
+        }

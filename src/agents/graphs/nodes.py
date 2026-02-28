@@ -63,8 +63,8 @@ def retrieve_survey_question(state: State) -> Dict[str, Any]:
 
         return {
             "survey_data": survey_data,
-            "analysis_results": {},
-            "selection_results": {},
+            "text_questions_result": {},
+            "selection_questions_result": {},
             "messages": [
                 AIMessage(
                     content=f"Survey data retrieved: {rows} rows ready for analysis."
@@ -104,32 +104,39 @@ def analyze_selection_questions(state: State) -> Dict[str, Any]:
         pipeline_result = run_selection_pipeline(survey_id)
 
         # تحويل DataFrames إلى قوائم قابلة للتسلسل
+        # الهيكل الجديد: query_results = [{label, sql, result: DataFrame}, ...]
+        query_results_serialized = []
+        total_rows = 0
+        for entry in pipeline_result.get("query_results", []):
+            df_result = entry.get("result", pd.DataFrame())
+            rows = df_result.to_dict(orient="records") if not df_result.empty else []
+            total_rows += len(rows)
+            query_results_serialized.append({
+                "label":  entry.get("label", ""),
+                "sql":    entry.get("sql", ""),
+                "result": rows,
+            })
+
         serializable_result = {
-            "questions_count": pipeline_result["questions_count"],
+            "questions_count":       pipeline_result["questions_count"],
+            "questions_metadata":    pipeline_result.get("questions_metadata", []),
             "distinct_per_question": pipeline_result["distinct_per_question"],
-            "selection_sql": pipeline_result["selection_sql"],
-            "correlation_sql": pipeline_result["correlation_sql"],
-            "selection_result": pipeline_result["selection_result"].to_dict(orient="records")
-                if not pipeline_result["selection_result"].empty else [],
-            "correlation_result": pipeline_result["correlation_result"].to_dict(orient="records")
-                if not pipeline_result["correlation_result"].empty else [],
-            "errors": pipeline_result["errors"]
+            "query_results":         query_results_serialized,
+            "errors":                pipeline_result["errors"],
         }
 
         q_count = pipeline_result["questions_count"]
-        sel_rows = len(pipeline_result["selection_result"])
-        cor_rows = len(pipeline_result["correlation_result"])
 
         print(f"✅ Selection analysis complete: {q_count} questions, "
-              f"{sel_rows} analysis rows, {cor_rows} correlation rows")
+              f"{len(query_results_serialized)} queries, {total_rows} total rows")
 
         return {
-            "selection_results": serializable_result,
+            "selection_questions_result": serializable_result,
             "messages": [
                 AIMessage(
                     content=(
                         f"Selection analysis complete: {q_count} questions analyzed. "
-                        f"Analysis rows: {sel_rows}, Correlation rows: {cor_rows}."
+                        f"Queries: {len(query_results_serialized)}, Total rows: {total_rows}."
                     ),
                     name="analyze_selection_questions"
                 )
@@ -143,7 +150,7 @@ def analyze_selection_questions(state: State) -> Dict[str, Any]:
 
         # خطأ غير حرج — نكمل بدون نتائج خيارات
         return {
-            "selection_results": {"errors": [error_msg]},
+            "selection_questions_result": {"errors": [error_msg]},
             "messages": [
                 AIMessage(
                     content=f"Warning: {error_msg}. Proceeding to text analysis.",
@@ -175,7 +182,7 @@ def analyze_text_questions(state: State) -> Dict[str, Any]:
         if not state.get("survey_data"):
             return {
                 "survey_data": [],
-                "analysis_results": {},
+                "text_questions_result": {},
                 "messages": [AIMessage(content="No survey data available for text analysis.")]
             }
 
@@ -193,7 +200,7 @@ def analyze_text_questions(state: State) -> Dict[str, Any]:
         if survey_df.empty:
             return {
                 "survey_data": [],
-                "analysis_results": {},
+                "text_questions_result": {},
                 "messages": [AIMessage(content="Survey data is empty after cleaning.")]
             }
 
@@ -239,7 +246,7 @@ def analyze_text_questions(state: State) -> Dict[str, Any]:
 
         return {
             "survey_data": enriched_data,
-            "analysis_results": serializable_analysis,
+            "text_questions_result": serializable_analysis,
             "messages": [
                 AIMessage(
                     content=(
@@ -258,7 +265,7 @@ def analyze_text_questions(state: State) -> Dict[str, Any]:
         # خطأ غير حرج — نكمل بالبيانات الأساسية
         return {
             "survey_data": state.get("survey_data", []),
-            "analysis_results": state.get("analysis_results", {}),
+            "text_questions_result": state.get("text_questions_result", {}),
             "messages": [
                 AIMessage(content=f"Warning: {error_msg}. Proceeding with basic data.")
             ]
@@ -282,10 +289,10 @@ def synthesis_agent(state: State) -> Dict[str, Any]:
         print("=" * 60)
         print(f"Survey ID: {state['survey_id']}")
 
-        analysis_results  = state.get("analysis_results", {})
-        selection_results = state.get("selection_results", {})
+        text_questions_result      = state.get("text_questions_result", {})
+        selection_questions_result = state.get("selection_questions_result", {})
 
-        if not analysis_results and not selection_results:
+        if not text_questions_result and not selection_questions_result:
             return Command(
                 update={
                     "messages": [
@@ -299,30 +306,21 @@ def synthesis_agent(state: State) -> Dict[str, Any]:
 
         # استخراج عنوان الاستبيان
         survey_title = f"Survey {state['survey_id']}"
-        if analysis_results:
-            first_result = next(iter(analysis_results.values()))
+        if text_questions_result:
+            first_result = next(iter(text_questions_result.values()))
             survey_title = first_result.get("survey_title", survey_title)
 
         print(f"Survey: {survey_title}")
-        print(f"Text questions analyzed  : {len(analysis_results)}")
-        print(f"Selection questions count: {selection_results.get('questions_count', 0)}")
+        print(f"Text questions analyzed  : {len(text_questions_result)}")
+        print(f"Selection questions count: {selection_questions_result.get('questions_count', 0)}")
 
-        # تنسيق التحليلات
-        analytics_messages = format_analytics_messages(analysis_results)
-
-        # إضافة ملخص تحليل الخيارات إلى السياق إن وُجد
-        if selection_results.get("selection_result"):
-            sel_rows = selection_results["selection_result"]
-            analytics_messages += (
-                f"\n\n---\n## نتائج تحليل أسئلة الخيارات\n"
-                f"عدد الأسئلة: {selection_results.get('questions_count', 0)}\n"
-                f"عدد صفوف نتيجة التوزيع: {len(sel_rows)}\n"
-                f"عدد صفوف نتيجة الارتباط: {len(selection_results.get('correlation_result', []))}\n"
-            )
+        # تنسيق التحليلات النصية (قائمة من الرسائل)
+        analytics_messages = format_analytics_messages(text_questions_result)
 
         prompt_messages = synthesis_agent_prompt.invoke({
-            "survey_subject": survey_title,
-            "analytics_messages": analytics_messages
+            "survey_subject":             survey_title,
+            "selection_questions_result": selection_questions_result,
+            "text_questions_result":      analytics_messages
         })
 
         response = model.invoke(prompt_messages)
@@ -369,10 +367,10 @@ def generate_charts_agent(state: State) -> Command[Literal["__end__"]]:
         print("=" * 60)
         print(f"Survey ID: {state['survey_id']}")
 
-        analysis_results  = state.get("analysis_results", {})
-        selection_results = state.get("selection_results", {})
+        text_questions_result      = state.get("text_questions_result", {})
+        selection_questions_result = state.get("selection_questions_result", {})
 
-        if not analysis_results and not selection_results:
+        if not text_questions_result and not selection_questions_result:
             print("⚠️ No analysis results available for chart generation")
             return Command(
                 update={
@@ -389,14 +387,14 @@ def generate_charts_agent(state: State) -> Command[Literal["__end__"]]:
 
         # استخراج عنوان الاستبيان
         survey_title = f"Survey {state['survey_id']}"
-        if analysis_results:
-            first_result = next(iter(analysis_results.values()))
+        if text_questions_result:
+            first_result = next(iter(text_questions_result.values()))
             survey_title = first_result.get("survey_title", survey_title)
 
         print(f"Survey: {survey_title}")
 
         # تنسيق ملخص التحليل للنموذج اللغوي
-        analytics_summary = format_analysis_summary(analysis_results)
+        analytics_summary = format_analysis_summary(text_questions_result)
         print(f"Analytics summary length: {len(analytics_summary)} chars")
 
         prompt_messages = chart_generation_prompt.invoke({

@@ -1,0 +1,181 @@
+SELECTION PIPELINE REPORT
+Survey   : S25120024
+Generated: 2026-02-28 16:30:39
+======================================================================
+
+── QUESTIONS & DISTINCT ANSWERS ──
+
+Q296: بشكل عام، ما مدى رضاك عن خدماتنا؟
+  Type   : EMOJIS
+  Distinct answers (5):
+    • Dissatisfied
+    • Neutral
+    • Satisfied
+    • Very Dissatisfied
+    • Very Satisfied
+
+Q297: ما مدى رضاك عن أداء مندوب المبيعات الذي قام بخدمتك؟
+  Type   : EMOJIS
+  Distinct answers (5):
+    • 3-Acceptable/مقبول
+    • Dissatisfied
+    • Satisfied
+    • Very Dissatisfied
+    • Very Satisfied
+
+Q298: ما مدى رضاك عن سرعة ودقة تنفيذ طلبك في الوقت المحدد؟
+  Type   : EMOJIS
+  Distinct answers (5):
+    • Dissatisfied
+    • Neutral
+    • Satisfied
+    • Very Dissatisfied
+    • Very Satisfied
+
+Q299: ما مدى احتمالية أن توصي بشركة قنوات كمورد لزميل أو شريك تجاري؟
+  Type   : MULTIPLE_CHOICE
+  Distinct answers (3):
+    • 0-6 (لا أوصي بشدة)
+    • 7-8 (محايد)
+    • 9-10 (أوصي بشدة)
+
+
+── GENERATED SQL: Query 1 ──
+-- 1. Overall distribution of answers for the primary EMOJIS question (ID 296) with percentages
+SELECT sa.answer,
+       COUNT(*) AS answer_count,
+       ROUND(100.0 * COUNT(*) / (SELECT COUNT(*) FROM survey_answer WHERE survey_question_id = 296), 2) AS percent
+FROM survey s
+JOIN survey_question sq ON sq.survey_id = s.id
+JOIN survey_answer sa ON sa.survey_question_id = sq.id
+WHERE s.survey_number = 'S25120024'
+  AND sq.id = 296
+GROUP BY sa.answer;
+
+── RESULT: Query 1 ──
+answer  answer_count  percent
+     1           136     4.54
+     2            35     1.17
+     3           107     3.57
+     4           106     3.54
+     5          2614    87.19
+
+(5 rows)
+
+
+── GENERATED SQL: Query 2 ──
+-- 2. Average score comparison across all EMOJIS questions (IDs 296, 297, 298)
+SELECT sq.id AS question_id,
+       AVG(CAST(sa.answer AS DECIMAL(3,1))) AS avg_score,
+       COUNT(*) AS responses
+FROM survey s
+JOIN survey_question sq ON sq.survey_id = s.id
+JOIN survey_answer sa ON sa.survey_question_id = sq.id
+WHERE s.survey_number = 'S25120024'
+  AND sq.id IN (296, 297, 298)
+GROUP BY sq.id;
+
+── RESULT: Query 2 ──
+ question_id  avg_score  responses
+         296    4.67678       2998
+         297    4.76718       2998
+         298    4.71748       2998
+
+(3 rows)
+
+
+── GENERATED SQL: Query 3 ──
+-- 3. Monthly trend (count and average) for the primary EMOJIS question (ID 296)
+SELECT DATE_FORMAT(sa.created_date, '%Y-%m') AS month,
+       COUNT(*) AS responses,
+       AVG(CAST(sa.answer AS DECIMAL(3,1))) AS avg_score
+FROM survey s
+JOIN survey_question sq ON sq.survey_id = s.id
+JOIN survey_answer sa ON sa.survey_question_id = sq.id
+WHERE s.survey_number = 'S25120024'
+  AND sq.id = 296
+GROUP BY DATE_FORMAT(sa.created_date, '%Y-%m')
+ORDER BY month;
+
+── RESULT: Query 3 ──
+  month  responses  avg_score
+2024-04          1    4.00000
+2024-05         86    4.67442
+2024-06         83    4.79518
+2024-07         87    4.56322
+2024-08        138    4.44203
+2024-09        193    4.77202
+2024-10        182    4.70330
+2024-11        113    4.83186
+2024-12        109    4.44954
+2025-01        113    4.48673
+2025-02        112    4.25000
+2025-03        130    4.76923
+2025-04        145    4.71724
+2025-05        170    4.81176
+2025-06        102    4.80392
+2025-07        149    4.72483
+2025-08        196    4.73469
+2025-09        173    4.56647
+2025-10        196    4.74490
+2025-11        138    4.83333
+2025-12        130    4.53077
+2026-01         38    4.94737
+2026-02        214    4.71028
+
+(23 rows)
+
+
+── GENERATED SQL: Query 4 ──
+-- 4. NPS breakdown for the MULTIPLE_CHOICE question (ID 299)
+SELECT
+    COUNT(*) AS total_responses,
+    SUM(CASE WHEN CAST(sa.selected_options_id AS SIGNED) IN (395) THEN 1 ELSE 0 END) AS detractors,
+    SUM(CASE WHEN CAST(sa.selected_options_id AS SIGNED) IN (396) THEN 1 ELSE 0 END) AS passives,
+    SUM(CASE WHEN CAST(sa.selected_options_id AS SIGNED) IN (397) THEN 1 ELSE 0 END) AS promoters,
+    ROUND(100.0 *
+        (SUM(CASE WHEN CAST(sa.selected_options_id AS SIGNED) IN (397) THEN 1 ELSE 0 END) -
+         SUM(CASE WHEN CAST(sa.selected_options_id AS SIGNED) IN (395) THEN 1 ELSE 0 END))
+        / COUNT(*), 2) AS nps_score
+FROM survey s
+JOIN survey_question sq ON sq.survey_id = s.id
+JOIN survey_answer sa ON sa.survey_question_id = sq.id
+WHERE s.survey_number = 'S25120024'
+  AND sq.id = 299
+  AND sa.selected_options_id IS NOT NULL
+  AND sa.selected_options_id != '';
+
+── RESULT: Query 4 ──
+ total_responses  detractors  passives  promoters  nps_score
+            2998         0.0       0.0     2602.0      86.79
+
+(1 rows)
+
+
+── GENERATED SQL: Query 5 ──
+-- 5. Department‑wise answer distribution for the primary EMOJIS question (ID 296)
+SELECT d.id,
+       d.name_en,
+       sa.answer,
+       COUNT(*) AS answer_count,
+       ROUND(100.0 * COUNT(*) / (
+           SELECT COUNT(*)
+           FROM survey_answer sa2
+           JOIN survey_question sq2 ON sa2.survey_question_id = sq2.id
+           JOIN survey s2 ON sq2.survey_id = s2.id
+           JOIN department_survey ds2 ON ds2.survey_id = s2.id
+           WHERE s2.survey_number = 'S25120024'
+             AND sq2.id = 296
+             AND ds2.department_id = d.id
+       ), 2) AS percent
+FROM survey s
+JOIN survey_question sq ON sq.survey_id = s.id
+JOIN survey_answer sa ON sa.survey_question_id = sq.id
+JOIN department_survey ds ON ds.survey_id = s.id
+JOIN department d ON d.id = ds.department_id
+WHERE s.survey_number = 'S25120024'
+  AND sq.id = 296
+GROUP BY d.id, d.name_en, sa.answer;
+
+── RESULT: Query 5 ──
+(empty)

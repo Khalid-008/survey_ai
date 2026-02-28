@@ -119,20 +119,102 @@
             }
         }
 
-        .synthesis-section {
-            background: #f0f9ff;
+        /* ── Report Sections ── */
+        .report-section {
+            background: #f8faff;
             border-right: 4px solid #3b82f6;
-            padding: 20px;
-            margin-bottom: 30px;
-            border-radius: 10px;
+            padding: 20px 24px;
+            margin-bottom: 20px;
+            border-radius: 12px;
         }
 
-        .synthesis-section h2 {
-            color: #1e40af;
-            margin-bottom: 15px;
-            font-size: 1.5em;
+        .report-section.executive {
+            border-color: #6366f1;
+            background: #f5f3ff;
         }
 
+        .report-section.analysis {
+            border-color: #3b82f6;
+            background: #eff6ff;
+        }
+
+        .report-section.metrics {
+            border-color: #10b981;
+            background: #f0fdf4;
+        }
+
+        .report-section.recs {
+            border-color: #f59e0b;
+            background: #fffbeb;
+        }
+
+        .report-section h2 {
+            font-size: 1.25em;
+            font-weight: 700;
+            margin-bottom: 14px;
+        }
+
+        .report-section.executive h2 {
+            color: #4338ca;
+        }
+
+        .report-section.analysis h2 {
+            color: #1d4ed8;
+        }
+
+        .report-section.metrics h2 {
+            color: #065f46;
+        }
+
+        .report-section.recs h2 {
+            color: #92400e;
+        }
+
+        .analysis-text {
+            color: #1e293b;
+            line-height: 1.9;
+            white-space: pre-wrap;
+        }
+
+        .executive-text {
+            color: #312e81;
+            line-height: 1.8;
+            font-size: 1.05em;
+        }
+
+        .metrics-list,
+        .recs-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .metrics-list li,
+        .recs-list li {
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+        }
+
+        .metrics-list li {
+            background: rgba(16, 185, 129, 0.08);
+            color: #065f46;
+        }
+
+        .recs-list li {
+            background: rgba(245, 158, 11, 0.08);
+            color: #78350f;
+        }
+
+        .item-index {
+            font-weight: 700;
+            min-width: 26px;
+        }
+
+        /* Fallback plain synthesis */
         .synthesis-content {
             color: #1e293b;
             line-height: 1.8;
@@ -217,8 +299,43 @@
                 {{ errorMessage }}
             </div>
 
-            <!-- Synthesis Section -->
-            <div v-if="synthesis" class="synthesis-section">
+            <!-- ── Structured Report Sections ── -->
+            <!-- Executive Summary -->
+            <div v-if="executiveSummary" class="report-section executive">
+                <h2>📌 الملخص التنفيذي</h2>
+                <div class="executive-text">{{ executiveSummary }}</div>
+            </div>
+
+            <!-- Detailed Analysis -->
+            <div v-if="detailedAnalysis" class="report-section analysis">
+                <h2>📊 التحليل التفصيلي</h2>
+                <div class="analysis-text" v-html="formattedDetailedAnalysis"></div>
+            </div>
+
+            <!-- Key Metrics -->
+            <div v-if="keyMetrics.length > 0" class="report-section metrics">
+                <h2>📈 المؤشرات الرئيسية</h2>
+                <ul class="metrics-list">
+                    <li v-for="(metric, idx) in keyMetrics" :key="idx">
+                        <span class="item-index">{{ idx + 1 }}.</span>
+                        <span>{{ metric }}</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Recommendations -->
+            <div v-if="recommendations.length > 0" class="report-section recs">
+                <h2>💡 التوصيات</h2>
+                <ul class="recs-list">
+                    <li v-for="(rec, idx) in recommendations" :key="idx">
+                        <span class="item-index">{{ idx + 1 }}.</span>
+                        <span>{{ rec }}</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Fallback: plain synthesis text (backward compat) -->
+            <div v-if="!executiveSummary && synthesis" class="report-section analysis">
                 <h2>📝 التحليل التنفيذي</h2>
                 <div class="synthesis-content">{{ synthesis }}</div>
             </div>
@@ -232,7 +349,7 @@
             </div>
 
             <!-- No Data Message -->
-            <div v-if="!loading && !synthesis && dynamicCharts.length === 0"
+            <div v-if="!loading && !executiveSummary && !synthesis && dynamicCharts.length === 0"
                 style="text-align: center; padding: 40px; color: #6b7280;">
                 <p style="font-size: 1.2em;">👆 اختر استطلاع وابدأ التحليل</p>
             </div>
@@ -248,6 +365,10 @@
                 const sessionId = ref('B6F10FAC-A20E-4A77-B52C-CBC472679163');
                 const loading = ref(false);
                 const synthesis = ref('');
+                const executiveSummary = ref('');
+                const detailedAnalysis = ref('');
+                const keyMetrics = ref([]);
+                const recommendations = ref([]);
                 const dynamicCharts = ref([]);
                 const errorMessage = ref('');
                 const chartInstances = ref([]);
@@ -261,6 +382,10 @@
                     loading.value = true;
                     errorMessage.value = '';
                     synthesis.value = '';
+                    executiveSummary.value = '';
+                    detailedAnalysis.value = '';
+                    keyMetrics.value = [];
+                    recommendations.value = [];
 
                     // Destroy existing charts
                     chartInstances.value.forEach(chart => chart.destroy());
@@ -287,11 +412,18 @@
                         }
 
                         const data = await response.json();
+                        console.log('API response:', data);
 
-                        // Set synthesis text
-                        synthesis.value = data.synthesis || 'لا يوجد تحليل متاح';
+                        // Structured JSON fields
+                        executiveSummary.value = data.executive_summary || '';
+                        detailedAnalysis.value = data.detailed_analysis || '';
+                        keyMetrics.value = data.key_metrics || [];
+                        recommendations.value = data.recommendations || [];
 
-                        // Set dynamic charts
+                        // Fallback: plain synthesis string (backward compat)
+                        synthesis.value = data.synthesis || '';
+
+                        // Charts
                         dynamicCharts.value = data.charts || [];
 
                         // Wait for DOM update then render charts
@@ -326,11 +458,24 @@
                     });
                 };
 
+                // Convert \n to <br> and **bold** to <strong> for display
+                const formattedDetailedAnalysis = Vue.computed(() => {
+                    if (!detailedAnalysis.value) return '';
+                    return detailedAnalysis.value
+                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                        .replace(/\n/g, '<br/>');
+                });
+
                 return {
                     surveyId,
                     sessionId,
                     loading,
                     synthesis,
+                    executiveSummary,
+                    detailedAnalysis,
+                    formattedDetailedAnalysis,
+                    keyMetrics,
+                    recommendations,
                     dynamicCharts,
                     errorMessage,
                     fetchAnalysis

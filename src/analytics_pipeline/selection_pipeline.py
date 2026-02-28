@@ -55,7 +55,7 @@ from analytics_pipeline.util.selection_utils import (
 )
 
 
-from agents.prompt.selection_q1_statistical_summary_prompt import selection_analytics_prompt
+from agents.prompt.selection_analytics_prompt import selection_analytics_prompt
 
 
 
@@ -203,20 +203,11 @@ def run_selection_pipeline(survey_number: str) -> dict[str, Any]:
 
 
     result: dict[str, Any] = {
-
-
         "questions_count":       0,
-
-
+        "questions_metadata":    [],   # [{id, text, type}] for synthesis labelling
         "distinct_per_question": {},
-
-
         "query_results":         [],
-
-
         "errors":                [],
-
-
     }
 
 
@@ -253,11 +244,11 @@ def run_selection_pipeline(survey_number: str) -> dict[str, Any]:
 
 
     result["questions_count"]       = len(grouped)
-
-
     result["distinct_per_question"] = distinct
-
-
+    result["questions_metadata"]    = [
+        {"id": qid, "text": info["text"], "type": info["type"]}
+        for qid, info in grouped.items()
+    ]
 
     questions_block = format_questions_block(grouped, distinct, sample_answers=samples, survey_number=survey_number)
 

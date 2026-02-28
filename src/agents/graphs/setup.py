@@ -12,9 +12,9 @@ class State(MessagesState):
     survey_id: Any
     questions : list[dict]
     survey_data: list[dict]
-    analysis_results: dict[str, Any]
-    selection_results: dict[str, Any]   # نتائج تحليل أسئلة الخيارات
-    chart_configs: list[dict]           # إعدادات الرسوم البيانية المولّدة
+    text_questions_result: dict[str, Any]       # نتائج تحليل أسئلة النصوص
+    selection_questions_result: dict[str, Any]   # نتائج تحليل أسئلة الخيارات
+    chart_configs: list[dict]                    # إعدادات الرسوم البيانية المولّدة
 
 # Memory
 memory = MemorySaver()
