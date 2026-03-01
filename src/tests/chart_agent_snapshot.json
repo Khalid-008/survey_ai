@@ -1,0 +1,222 @@
+{
+  "survey_id": "S25120024",
+  "text_questions_result": {
+    "300": {
+      "sentiment_distribution": {
+        "العدد": {
+          "positive": 493,
+          "negative": 123,
+          "neutral": 120
+        },
+        "النسبة المئوية (%)": {
+          "positive": 66.98,
+          "negative": 16.71,
+          "neutral": 16.3
+        }
+      },
+      "top_topics": {
+        "المندوب": 416,
+        "الله": 292,
+        "مندوب": 272,
+        "تعامل": 272,
+        "الموظف": 261,
+        "متعاون": 230,
+        "سريع": 230,
+        "وسريع": 230,
+        "جدا": 230,
+        "ممتاز": 230,
+        "الشرايح": 186,
+        "شرايح": 186,
+        "الشرائح": 186,
+        "الشركه": 186,
+        "قنوات": 186
+      },
+      "top_topics_by_sentiment": {
+        "المندوب": 120,
+        "الشرائح": 95,
+        "الشرايح": 95,
+        "شرايح": 95,
+        "قنوات": 95,
+        "وقت": 95,
+        "ولا": 95,
+        "الشركه": 95,
+        "التواصل": 95,
+        "بشكل": 95,
+        "مندوب": 27,
+        "تعامل": 27,
+        "جدا": 25,
+        "متعاون": 25,
+        "ممتاز": 25
+      },
+      "top_entities": {
+        "المندوب (شخص)": 19,
+        "الشرايح (منتج)": 19,
+        "الشرائح (منتج)": 15,
+        "شرايح (منتج)": 5,
+        "الشركات (منظمة)": 5,
+        "الشركه (منظمة)": 4,
+        "ناصر الشمري (شخص)": 4,
+        "شرائح (منتج)": 4,
+        "الموظف (شخص)": 4,
+        "كويك بلس (منتج)": 3,
+        "شركه قنوات (منظمة)": 3,
+        "اليوزر (مكان)": 3,
+        "اليوزر (منتج)": 3,
+        "التجار (منظمة)": 2,
+        "المستودع (مكان)": 2
+      },
+      "top_words": {
+        "الشرايح": 24,
+        "المندوب": 19,
+        "الشرائح": 16,
+        "علي": 15,
+        "وعدم": 11,
+        "تاخير": 9,
+        "جدا": 8,
+        "شرايح": 7,
+        "اليوزر": 7,
+        "بسبب": 7,
+        "لايوجد": 7,
+        "توفير": 7,
+        "بشكل": 7,
+        "ولا": 6,
+        "كويك": 6
+      },
+      "topics_analysis": "❌ خطأ في الاتصال بـ LLM: Error code: 413 - {'statusCode': 413, 'message': 'request entity too large'}",
+      "entities_analysis": "## 📊 مؤشرات الكيانs\n- **المندوب (شخص)**: 19 تكرار (15.45 %)\n- **الشرايح (منتج)**: 19 تكرار (15.45 %)\n- **الشرائح (منتج)**: 15 تكرار (12.20 %)\n- **شرايح (منتج)**: 5 تكرار (4.07 %)\n- **الشركات (منظمة)**: 5 تكرار (4.07 %)\n- **ناصر الشمري (شخص)**: 4 تكرار (3.25 %)\n- **الشركه (منظمة)**: 4 تكرار (3.25 %)\n- **الموظف (شخص)**: 4 تكرار (3.25 %)\n- **شرائح (منتج)**: 4 تكرار (3.25 %)\n- **شركه قنوات (منظمة)**: 3 تكرار (2.44 %)\n- **كويك بلس (منتج)**: 3 تكرار (2.44 %)\n- **اليوزر (منتج)**: 3 تكرار (2.44 %)\n- **اليوزر (مكان)**: 3 تكرار (2.44 %)\n- **التاجر (شخص)**: 2 تكرار (1.63 %)\n- **التجار (منظمة)**: 2 تكرار (1.63 %)\n\n## 📝 التقرير المختصر\n- **المندوب (شخص)** – يذكر كثيراً بسبب **التأخير** في تسليم الشرائح/الشرايح، صعوبة التواصل، وعدم الاستجابة للطلبات والبلاغات.  \n- **الشرايح (منتج)** – أبرز شكاية هي **نقص الكمية** وتعطيل العمل بسبب عدم توفرها في المستودعات.  \n- **الشرائح (منتج)** – تكرار مشابه لِلشرايح؛ تُستَشهد بــ **تأخير التسليم** و**شح المخزون** وتأثير ذلك على المبيعات.  \n- **شرايح (منتج)** – شكاوى مركزة على **عدم وجود شرايح** لدى المندوبين وضرورة الاعتماد على وسائل نقل غير فعّالة.  \n- **الشركات (منظمة)** – تعبير عن **استياء من أداء الشركة** مقارنةً بالمنافسين، مع إشارة إلى مشاكل النظام والاتصالات.  \n- **ناصر الشمري (شخص)** – يُذكر كـ **مندوب غير متجاوب** يرفض توفير الشرائح وإبلاغ التجار بالمسابقات.  \n- **الشركه (منظمة)** – تتعرض لانتقادات بشأن **صعوبة التواصل** مع الإدارة وعدم حل المشكلات التقنية والعمولات.  \n- **الموظف (شخص)** – يُشير إلى **سلوك غير مهني** وسحب الشرائح لتحقيق أهداف داخلية.  \n- **شرائح (منتج)** – تكرار للشكوى حول **عدم الإمداد** وفق المتطلبات الزمنية.  \n- **شركه قنوات (منظمة)** – يُنتقد احتكارها وتأخر الاستجابة للمتعاملين.  \n- **كويك بلس (منتج)** – يشمل **أعطال التطبيق** ونقص المخزون ومشكلات العمولات.  \n- **اليوزر (منتج/مكان)** – يُذكر بخصوص **مشاكل التفعيل** و**تعليق الحسابات** التي تعرقل استخراج الشرايح.  \n- **التاجر (شخص) / التجار (منظمة)** – يُظهرون **الإحباط من التأخير** في معالجة طلبات الشرايح و**المشكلات الفنية** التي تواجههم.  \n\n> **ملخص عام**:  أغلب الشكاوى تدور حول **نقص وتاخير توفير الشرايح/الشرائح**، **ضعف استجابة المندوبين (خاصة ناصر الشمري)**، و **صعوبات التواصل مع الشركة/الموظفين**، إلى جانب **مشكلات تقنية في تطبيق كويك بلس**. التركيز على تحسين سلسلة الإمداد وتدريب المندوبين وتعزيز قنوات الدعم سيساهم في رفع رضى التجار.",
+      "words_analysis": "**## 📊 مؤشرات الكلمات**  \n\n| الكلمة | التكرار | النسبة من 123 إجابة |\n|--------|----------|----------------------|\n| الشرايح | 24 | 19.5 % |\n| المندوب | 19 | 15.5 % |\n| الشرائح | 16 | 13.0 % |\n| علي | 15 | 12.2 % |\n| وعدم | 11 | 8.9 % |\n| تاخير | 9 | 7.3 % |\n| جدا | 8 | 6.5 % |\n| بسبب | 7 | 5.7 % |\n| شرايح | 7 | 5.7 % |\n| بشكل | 7 | 5.7 % |\n| توفير | 7 | 5.7 % |\n| لايوجد | 7 | 5.7 % |\n| اليوزر | 7 | 5.7 % |\n| ولا | 6 | 4.9 % |\n| قنوات | 6 | 4.9 % |\n\n**## 📝 التقرير المختصر**\n\n- **الشرايح / شرايح / الشرائح** – أكثر الكلمات تكرارًا. تدل على نقص حاد في توافر بطاقات SIM (الشرايح) بالمستودعات، مما يعرقل عمليات البيع ويؤدي إلى فقدان مبيعات وفرص تسويق.  \n- **المندوب** – يُذكر غالبًا في سياق عدم الاستجابة، تأخير التسليم، وصعوبة التواصل مع منسق المبيعات (ناصر الشمري). يُنظر إليه كمصدر رئيسي للمشكلات اللوجستية.  \n- **علي** – تُستعمل غالبًا في جمل “الاعتراض علي …” أو “الاعتماد علي …”، وهو إشارة إلى طلب تحسينات أو ملاحظة سلبية تجاه موظف أو عملية داخلية.  \n- **عدم / لايوجد** – يبرز قضايا نقص وإهمال، مثل “عدم توفير الشرايح” أو “لايوجد شرايح”. يدل على عدم وجود حل أو مادة أساسية في الوقت المطلوب.  \n- **تاخير** – يُستعمل لتوثيق فترات الانتظار غير المبررة في توصيل الشرايح أو معالجة الطلبات، وهو ما يضر بسمعة الشركة.  \n- **بسبب** – يربط المشاكل بأسباب محددة (نقص الشرايح، بطء المندوب، مشاكل النظام). يساعد في تحديد جذور الشكوى.  \n- **جدا / جدًا** – تُستخدم لتقوية الشكوى (قِلَّة الشرايح جداً، نظام توزيع سيء جداً). تُظهر حدة الإحباط لدى التجار.  \n- **قنوات** – تُشير إلى اسم الشركة (قنوات) وتستخدم لتوجيه الشكاوى العامة إلى إدارة الشركة، خاصةً بخصوص الدعم الفني وقضايا المنافسة.  \n- **اليوزر** – يظهَر في شكاوى تقنية (تعليق اليوزر، صعوبات استخراج الشرايح عبر التطبيق)، مما يدل على حاجة لتحسين تجربة النظام الرقمي.  \n- **بشكل / توفير** – تركيز على طلب تحسين أسلوب التوزيع (“توفير الشرايح بشكل أسرع”) وتوحيد الإجراءات.  \n\n**الاستنتاج العام**  \nغالبية الردود تدور حول **نقص الشرايح** وتأثيره المباشر على المبيعات، مع إلقاء اللوم على **المندوب** لتأخره وعدم استجابته. توجد أيضًا شكاوى تقنية مرتبطة بالـ **يوزر** و**نظام كويك بلس**. التركيز على تحسين إمدادات الشرايح، تعزيز استجابة المناوبين، وتحديث المنصات الرقمية سيساهم في رفع مستوى رضا التجار بشكل ملحوظ.",
+      "survey_question": "رأيك يهمنا، فضلاً شاركنا تعليق او مقترح يساعد في تحسين التجربة",
+      "survey_title": "MS - Merchant with salesman CSAT",
+      "question_id": "300"
+    }
+  },
+  "selection_questions_result": {
+    "questions_count": 4,
+    "questions_metadata": [
+      {
+        "id": 296,
+        "text": "بشكل عام، ما مدى رضاك عن خدماتنا؟",
+        "type": "EMOJIS"
+      },
+      {
+        "id": 297,
+        "text": "ما مدى رضاك عن أداء مندوب المبيعات الذي قام بخدمتك؟",
+        "type": "EMOJIS"
+      },
+      {
+        "id": 298,
+        "text": "ما مدى رضاك عن سرعة ودقة تنفيذ طلبك في الوقت المحدد؟",
+        "type": "EMOJIS"
+      },
+      {
+        "id": 299,
+        "text": "ما مدى احتمالية أن توصي بشركة قنوات كمورد لزميل أو شريك تجاري؟",
+        "type": "MULTIPLE_CHOICE"
+      }
+    ],
+    "distinct_per_question": {
+      "296": [
+        "Dissatisfied",
+        "Neutral",
+        "Satisfied",
+        "Very Dissatisfied",
+        "Very Satisfied"
+      ],
+      "297": [
+        "3-Acceptable/مقبول",
+        "Dissatisfied",
+        "Satisfied",
+        "Very Dissatisfied",
+        "Very Satisfied"
+      ],
+      "298": [
+        "Dissatisfied",
+        "Neutral",
+        "Satisfied",
+        "Very Dissatisfied",
+        "Very Satisfied"
+      ],
+      "299": [
+        "0-6 (لا أوصي بشدة)",
+        "7-8 (محايد)",
+        "9-10 (أوصي بشدة)"
+      ]
+    },
+    "query_results": [
+      {
+        "label": "Query 1",
+        "sql": "-- Distribution of answers for overall satisfaction (question 296) with percentages\nSELECT\n    sa.answer AS answer_value,\n    COUNT(*) AS answer_count,\n    ROUND(100.0 * COUNT(*) / (SELECT COUNT(*) FROM survey_answer WHERE survey_question_id = 296), 2) AS answer_pct\nFROM survey_answer sa\nJOIN survey_question sq ON sq.id = sa.survey_question_id\nJOIN survey s ON s.id = sq.survey_id\nWHERE s.survey_number = 'S25120024'\n  AND sq.id = 296\nGROUP BY sa.answer;",
+        "result": [
+          {
+            "answer_value": "1",
+            "answer_count": 136,
+            "answer_pct": 4.51
+          },
+          {
+            "answer_value": "2",
+            "answer_count": 35,
+            "answer_pct": 1.16
+          },
+          {
+            "answer_value": "3",
+            "answer_count": 107,
+            "answer_pct": 3.55
+          },
+          {
+            "answer_value": "4",
+            "answer_count": 108,
+            "answer_pct": 3.58
+          },
+          {
+            "answer_value": "5",
+            "answer_count": 2629,
+            "answer_pct": 87.2
+          }
+        ]
+      },
+      {
+        "label": "Query 2",
+        "sql": "-- Average score per EMOJIS question (296, 297, 298)\nSELECT\n    sq.id AS question_id,\n    AVG(CAST(sa.answer AS DECIMAL(3,1))) AS avg_score\nFROM survey_answer sa\nJOIN survey_question sq ON sq.id = sa.survey_question_id\nJOIN survey s ON s.id = sq.survey_id\nWHERE s.survey_number = 'S25120024'\n  AND sq.id IN (296, 297, 298)\nGROUP BY sq.id;",
+        "result": [
+          {
+            "question_id": 296,
+            "avg_score": 4.67794
+          },
+          {
+            "question_id": 297,
+            "avg_score": 4.76783
+          },
+          {
+            "question_id": 298,
+            "avg_score": 4.71841
+          }
+        ]
+      },
+      {
+        "label": "Query 3",
+        "sql": "-- Monthly trend of average score for overall satisfaction (question 296)\nSELECT\n    DATE_FORMAT(sa.created_date, '%Y-%m') AS year_month,\n    AVG(CAST(sa.answer AS DECIMAL(3,1))) AS avg_score,\n    COUNT(*) AS responses\nFROM survey_answer sa\nJOIN survey_question sq ON sq.id = sa.survey_question_id\nJOIN survey s ON s.id = sq.survey_id\nWHERE s.survey_number = 'S25120024'\n  AND sq.id = 296\nGROUP BY DATE_FORMAT(sa.created_date, '%Y-%m')\nORDER BY DATE_FORMAT(sa.created_date, '%Y-%m');",
+        "result": []
+      },
+      {
+        "label": "Query 4",
+        "sql": "-- NPS breakdown (question 299) into Detractor, Passive, Promoter\nSELECT\n    CASE\n        WHEN qo.option_text_en = '0-6 (لا أوصي بشدة)' THEN 'Detractor'\n        WHEN qo.option_text_en = '7-8 (محايد)' THEN 'Passive'\n        WHEN qo.option_text_en = '9-10 (أوصي بشدة)' THEN 'Promoter'\n        ELSE 'Other'\n    END AS nps_category,\n    COUNT(*) AS response_count,\n    ROUND(100.0 * COUNT(*) / (SELECT COUNT(*) FROM survey_answer WHERE survey_question_id = 299 AND selected_options_id IS NOT NULL), 2) AS pct_of_total\nFROM survey_answer sa\nJOIN survey_question sq ON sq.id = sa.survey_question_id\nJOIN survey s ON s.id = sq.survey_id\nJOIN question_option qo ON qo.id = CAST(sa.selected_options_id AS SIGNED)\nWHERE s.survey_number = 'S25120024'\n  AND sq.id = 299\n  AND sa.selected_options_id IS NOT NULL\nGROUP BY\n    CASE\n        WHEN qo.option_text_en = '0-6 (لا أوصي بشدة)' THEN 'Detractor'\n        WHEN qo.option_text_en = '7-8 (محايد)' THEN 'Passive'\n        WHEN qo.option_text_en = '9-10 (أوصي بشدة)' THEN 'Promoter'\n        ELSE 'Other'\n    END;",
+        "result": [
+          {
+            "nps_category": "Other",
+            "response_count": 3015,
+            "pct_of_total": 100.0
+          }
+        ]
+      },
+      {
+        "label": "Query 5",
+        "sql": "-- Departmental distribution of answers for overall satisfaction (question 296)\nSELECT\n    d.name_en AS department,\n    sa.answer AS answer_value,\n    COUNT(*) AS response_count,\n    ROUND(100.0 * COUNT(*) / (\n        SELECT COUNT(*)\n        FROM survey_answer sa2\n        JOIN survey_question sq2 ON sq2.id = sa2.survey_question_id\n        JOIN department_survey ds2 ON ds2.survey_id = sq2.survey_id\n        WHERE ds2.department_id = d.id\n          AND sq2.id = 296\n    ), 2) AS pct_of_department\nFROM survey_answer sa\nJOIN survey_question sq ON sq.id = sa.survey_question_id\nJOIN survey s ON s.id = sq.survey_id\nJOIN department_survey ds ON ds.survey_id = s.id\nJOIN department d ON d.id = ds.department_id\nWHERE s.survey_number = 'S25120024'\n  AND sq.id = 296\nGROUP BY d.name_en, sa.answer;",
+        "result": []
+      }
+    ],
+    "errors": [
+      "[Query 3] Execution failed: Execution failed on sql '-- Monthly trend of average score for overall satisfaction (question 296)\nSELECT\n    DATE_FORMAT(sa.created_date, '%Y-%m') AS year_month,\n    AVG(CAST(sa.answer AS DECIMAL(3,1))) AS avg_score,\n    COUNT(*) AS responses\nFROM survey_answer sa\nJOIN survey_question sq ON sq.id = sa.survey_question_id\nJOIN survey s ON s.id = sq.survey_id\nWHERE s.survey_number = 'S25120024'\n  AND sq.id = 296\nGROUP BY DATE_FORMAT(sa.created_date, '%Y-%m')\nORDER BY DATE_FORMAT(sa.created_date, '%Y-%m');': 1064 (42000): You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'year_month,\n    AVG(CAST(sa.answer AS DECIMAL(3,1))) AS avg_score,\n    COUNT(*) ' at line 3",
+      "[Query 5] Execution failed: Execution failed on sql '-- Departmental distribution of answers for overall satisfaction (question 296)\nSELECT\n    d.name_en AS department,\n    sa.answer AS answer_value,\n    COUNT(*) AS response_count,\n    ROUND(100.0 * COUNT(*) / (\n        SELECT COUNT(*)\n        FROM survey_answer sa2\n        JOIN survey_question sq2 ON sq2.id = sa2.survey_question_id\n        JOIN department_survey ds2 ON ds2.survey_id = sq2.survey_id\n        WHERE ds2.department_id = d.id\n          AND sq2.id = 296\n    ), 2) AS pct_of_department\nFROM survey_answer sa\nJOIN survey_question sq ON sq.id = sa.survey_question_id\nJOIN survey s ON s.id = sq.survey_id\nJOIN department_survey ds ON ds.survey_id = s.id\nJOIN department d ON d.id = ds.department_id\nWHERE s.survey_number = 'S25120024'\n  AND sq.id = 296\nGROUP BY d.name_en, sa.answer;': 1055 (42000): Expression #4 of SELECT list is not in GROUP BY clause and contains nonaggregated column 'ms_survey_service.d.id' which is not functionally dependent on columns in GROUP BY clause; this is incompatible with sql_mode=only_full_group_by"
+    ]
+  }
+}

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة تحليل الاستطلاعات - AI Powered</title>
+    <title>اختبار لوحة التحليل — Snapshot Mode</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
@@ -315,6 +315,7 @@
             width: 100%;
             display: flex;
             align-items: center;
+            justify-content: space-between;
             padding: 16px 20px;
             background: transparent;
             border: none;
@@ -362,12 +363,51 @@
             padding: 0 20px 18px;
         }
 
-        /* ── Charts ── */
+        /* metrics+recs side by side */
+        .report-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+            margin-bottom: 16px;
+            align-items: start;
+        }
+
+        .report-grid .accordion {
+            margin-bottom: 0;
+            border-radius: 0;
+        }
+
+        .report-grid .accordion:first-child {
+            border-radius: 16px 0 0 16px;
+            border-right: none;
+        }
+
+        .report-grid .accordion:last-child {
+            border-radius: 0 16px 16px 0;
+        }
+
+        @media (max-width: 700px) {
+            .report-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .report-grid .accordion:first-child {
+                border-radius: 16px 16px 0 0;
+                border-right: 1px solid var(--border);
+                border-bottom: none;
+            }
+
+            .report-grid .accordion:last-child {
+                border-radius: 0 0 16px 16px;
+            }
+        }
+
+        /* ── Charts grid ── */
         .charts-header {
             font-size: 13px;
             font-weight: 700;
             color: var(--muted);
-            letter-spacing: 0.5px;
+            letter-spacing: .5px;
             margin-bottom: 16px;
             display: flex;
             align-items: center;
@@ -612,25 +652,16 @@
 
             <!-- Header -->
             <header>
-                <div class="eyebrow">AI-Powered Survey Intelligence</div>
-                <h1>📊 لوحة تحليل الاستطلاعات</h1>
-                <p>تحليل شامل مدعوم بالذكاء الاصطناعي</p>
+                <div class="eyebrow">Test Environment — Snapshot Mode</div>
+                <h1>🧪 اختبار لوحة التحليل الكاملة</h1>
+                <p>يشغّل synthesis_agent + generate_charts_agent من الـ snapshot مباشرةً</p>
             </header>
 
-            <!-- Input -->
+            <!-- Run button -->
             <div class="input-section">
-                <div class="input-group">
-                    <label>رقم الاستطلاع</label>
-                    <input v-model="surveyId" type="text" placeholder="مثال: S25120024" @keyup.enter="fetchAnalysis" />
-                </div>
-                <div class="input-group">
-                    <label>معرف الجلسة</label>
-                    <input v-model="sessionId" type="text" placeholder="معرف فريد للجلسة"
-                        @keyup.enter="fetchAnalysis" />
-                </div>
-                <button class="analyze-btn" @click="fetchAnalysis" :disabled="loading || !surveyId">
+                <button class="analyze-btn" @click="fetchAnalysis" :disabled="loading">
                     <span v-if="loading" class="spinner"></span>
-                    <span>{{ loading ? 'جاري التحليل...' : 'تحليل الاستطلاع' }}</span>
+                    <span>{{ loading ? 'جاري التحليل...' : '▶ تشغيل التحليل من الـ Snapshot' }}</span>
                 </button>
             </div>
 
@@ -643,77 +674,71 @@
                 <p>يجري تحليل الاستطلاع بواسطة الذكاء الاصطناعي…</p>
             </div>
 
-            <!-- Report Sections: Vue accordion -->
-            <template v-if="!loading && hasData">
+            <!-- Report Sections: accordion, populated by JS -->
+            <div id="reportSections" style="display:none">
 
                 <!-- Executive Summary -->
-                <div v-if="executiveSummary" class="accordion" :class="{open: open.summary}">
-                    <button class="acc-header" @click="open.summary = !open.summary">
+                <div class="accordion" id="acc-summary" style="display:none">
+                    <button class="acc-header" onclick="toggleAcc('acc-summary')">
                         <span>📌 الملخص التنفيذي</span><span class="acc-arrow">▾</span>
                     </button>
                     <div class="acc-body">
-                        <div class="report-text">{{ executiveSummary }}</div>
+                        <div id="acc-summary-content" class="report-text"></div>
                     </div>
                 </div>
 
                 <!-- Detailed Analysis -->
-                <div v-if="detailedAnalysis" class="accordion" :class="{open: open.detail}">
-                    <button class="acc-header" @click="open.detail = !open.detail">
+                <div class="accordion" id="acc-detail" style="display:none">
+                    <button class="acc-header" onclick="toggleAcc('acc-detail')">
                         <span>📋 التحليل التفصيلي</span><span class="acc-arrow">▾</span>
                     </button>
                     <div class="acc-body">
-                        <div class="report-text" v-html="formattedDetailedAnalysis"></div>
+                        <div id="acc-detail-content" class="report-text"></div>
                     </div>
                 </div>
 
                 <!-- Synthesis fallback -->
-                <div v-if="!executiveSummary && synthesis" class="accordion" :class="{open: open.synthesis}">
-                    <button class="acc-header" @click="open.synthesis = !open.synthesis">
+                <div class="accordion" id="acc-synthesis" style="display:none">
+                    <button class="acc-header" onclick="toggleAcc('acc-synthesis')">
                         <span>📝 التحليل</span><span class="acc-arrow">▾</span>
                     </button>
                     <div class="acc-body">
-                        <div class="report-text">{{ synthesis }}</div>
+                        <div id="acc-synthesis-content" class="report-text"></div>
                     </div>
                 </div>
 
-                <!-- Key Metrics -->
-                <div v-if="keyMetrics.length" class="accordion green" :class="{open: open.metrics}">
-                    <button class="acc-header" @click="open.metrics = !open.metrics">
+                <!-- Metrics -->
+                <div class="accordion green" id="acc-metrics" style="display:none">
+                    <button class="acc-header" onclick="toggleAcc('acc-metrics')">
                         <span>📈 المؤشرات الرئيسية</span><span class="acc-arrow">▾</span>
                     </button>
                     <div class="acc-body">
-                        <div class="badge-list">
-                            <span class="badge" v-for="(m, i) in keyMetrics" :key="i">{{ m }}</span>
-                        </div>
+                        <div id="acc-metrics-content" class="badge-list"></div>
                     </div>
                 </div>
 
                 <!-- Recommendations -->
-                <div v-if="recommendations.length" class="accordion amber" :class="{open: open.recs}">
-                    <button class="acc-header" @click="open.recs = !open.recs">
+                <div class="accordion amber" id="acc-recs" style="display:none">
+                    <button class="acc-header" onclick="toggleAcc('acc-recs')">
                         <span>💡 التوصيات</span><span class="acc-arrow">▾</span>
                     </button>
                     <div class="acc-body">
-                        <ul class="rec-list">
-                            <li v-for="(r, i) in recommendations" :key="i">
-                                <span class="rec-num">{{ i+1 }}.</span><span>{{ r }}</span>
-                            </li>
-                        </ul>
+                        <ul id="acc-recs-content" class="rec-list"></ul>
                     </div>
                 </div>
 
-            </template>
+            </div>
 
             <!-- Empty State -->
-            <div v-if="!loading && !hasData && !errorMessage" class="empty-state">
-                <div class="icon">🔍</div>
-                <p>أدخل رقم الاستطلاع وابدأ التحليل</p>
+            <div v-if="!loading && !dataLoaded && !errorMessage" class="empty-state">
+                <div class="icon">🔬</div>
+                <p>جاري التحميل...</p>
             </div>
 
         </div>
     </div>
 
-    <!-- Charts: OUTSIDE Vue v-if so #chartsMasonry always exists in DOM -->
+    <!-- Charts section: OUTSIDE Vue entirely so it always exists in DOM -->
     <div class="wrapper" style="padding-top:0">
         <div id="chartsSection" style="display:none">
             <div class="charts-header">📊 الرسوم البيانية التحليلية</div>
@@ -730,10 +755,9 @@
 
         createApp({
             setup() {
-                const surveyId = ref('S25120024');
-                const sessionId = ref('B6F10FAC-A20E-4A77-B52C-CBC472679163');
                 const loading = ref(false);
                 const errorMessage = ref('');
+                const dataLoaded = ref(false);
 
                 // Structured report fields
                 const executiveSummary = ref('');
@@ -745,9 +769,6 @@
                 // Charts
                 const dynamicCharts = ref([]);
                 const chartInstances = ref([]);
-
-                // Accordion open state
-                const open = ref({ summary: true, detail: true, synthesis: true, metrics: true, recs: true });
 
                 const hasData = computed(() =>
                     executiveSummary.value || detailedAnalysis.value ||
@@ -857,30 +878,45 @@
                     return packed;
                 };
 
-                // ── Render charts: synchronous, no Vue timing needed ──────────────────
+                // ── Render all charts with smart layout ───────────────────────────────
                 const renderCharts = (charts) => {
+                    // Destroy previous instances
                     chartInstances.value.forEach(c => c.destroy());
                     chartInstances.value = [];
+
                     const section = document.getElementById('chartsSection');
                     const masonry = document.getElementById('chartsMasonry');
-                    if (!charts.length) { if (section) section.style.display = 'none'; return; }
+
+                    if (!charts.length) {
+                        if (section) section.style.display = 'none';
+                        return;
+                    }
+
+                    // Show section & clear previous cards
                     if (section) section.style.display = 'block';
                     masonry.innerHTML = '';
+
                     const layout = smartLayout(charts);
                     layout.forEach(({ chart, cols, h, circular }, idx) => {
                         const card = document.createElement('div');
                         card.className = 'chart-card';
                         card.style.setProperty('--cols', cols);
+
                         const title = document.createElement('div');
                         title.className = 'chart-card-title';
                         title.textContent = chart.title || `مخطط ${idx + 1}`;
                         card.appendChild(title);
+
                         const wrap = document.createElement('div');
                         wrap.className = `chart-wrap${circular ? ' circular' : ''}`;
                         wrap.style.setProperty('--h', h + 'px');
+
                         const canvas = document.createElement('canvas');
                         canvas.id = `chart-canvas-${idx}`;
-                        wrap.appendChild(canvas); card.appendChild(wrap); masonry.appendChild(card);
+                        wrap.appendChild(canvas);
+                        card.appendChild(wrap);
+                        masonry.appendChild(card);
+
                         try {
                             const inst = new Chart(canvas, buildChartConfig(chart));
                             chartInstances.value.push(inst);
@@ -891,68 +927,92 @@
                     });
                 };
 
-                // ── Fetch from backend ─────────────────────────────────────────────────
-                const fetchAnalysis = async () => {
-                    if (!surveyId.value) {
-                        errorMessage.value = 'الرجاء إدخال رقم الاستطلاع';
-                        return;
-                    }
 
+                // ── Populate accordion sections (pure DOM) ────────────────────────────
+                const populateSections = (data) => {
+                    const show = (id, html, isHtml = false) => {
+                        const el = document.getElementById(id);
+                        const acc = document.getElementById(id.replace('-content', ''));
+                        if (!el || !acc) return;
+                        if (isHtml) el.innerHTML = html; else el.textContent = html;
+                        acc.style.display = '';
+                        acc.classList.add('open'); // open by default
+                    };
+
+                    const reportSections = document.getElementById('reportSections');
+                    if (reportSections) reportSections.style.display = 'block';
+
+                    if (data.executive_summary) show('acc-summary-content', data.executive_summary);
+                    if (data.detailed_analysis) {
+                        const html = data.detailed_analysis
+                            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                            .replace(/\n/g, '<br/>');
+                        show('acc-detail-content', html, true);
+                    }
+                    if (!data.executive_summary && data.synthesis) show('acc-synthesis-content', data.synthesis);
+
+                    const metricsRow = document.getElementById('acc-metrics-row');
+                    if (data.key_metrics?.length) {
+                        const el = document.getElementById('acc-metrics-content');
+                        if (el) el.innerHTML = data.key_metrics
+                            .map(m => `<span class="badge">${m}</span>`).join('');
+                        const acc = document.getElementById('acc-metrics');
+                        if (acc) { acc.style.display = ''; acc.classList.add('open'); }
+                    }
+                    if (data.recommendations?.length) {
+                        const el = document.getElementById('acc-recs-content');
+                        if (el) el.innerHTML = data.recommendations
+                            .map((r, i) => `<li><span class="rec-num">${i + 1}.</span><span>${r}</span></li>`).join('');
+                        const acc = document.getElementById('acc-recs');
+                        if (acc) { acc.style.display = ''; acc.classList.add('open'); }
+                    }
+                };
+
+                // ── Fetch from snapshot (test_full endpoint) ───────────────────────────
+                const fetchAnalysis = async () => {
                     loading.value = true;
                     errorMessage.value = '';
-                    executiveSummary.value = '';
-                    detailedAnalysis.value = '';
-                    keyMetrics.value = [];
-                    recommendations.value = [];
-                    synthesis.value = '';
-                    dynamicCharts.value = [];
+
+                    // Reset accordion sections
+                    ['acc-summary', 'acc-detail', 'acc-synthesis', 'acc-metrics', 'acc-recs'].forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) { el.style.display = 'none'; el.classList.remove('open'); }
+                    });
+                    const rs = document.getElementById('reportSections');
+                    if (rs) rs.style.display = 'none';
+                    const cs = document.getElementById('chartsSection');
+                    if (cs) cs.style.display = 'none';
 
                     try {
-                        const response = await fetch('http://localhost:5566/survey_insight', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                request: {
-                                    message: '',
-                                    survey_id: surveyId.value,
-                                    session_id: sessionId.value
-                                }
-                            })
-                        });
-
+                        const response = await fetch('http://localhost:5566/test_full');
                         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
                         const data = await response.json();
-                        console.log('✅ API response:', data);
+                        console.log('✅ snapshot response:', data);
 
-                        executiveSummary.value = data.executive_summary || '';
-                        detailedAnalysis.value = data.detailed_analysis || '';
-                        keyMetrics.value = data.key_metrics || [];
-                        recommendations.value = data.recommendations || [];
-                        synthesis.value = data.synthesis || '';
-                        dynamicCharts.value = data.charts || [];
-
-                        // Reset accordion open state for new run
-                        open.value = { summary: true, detail: true, synthesis: true, metrics: true, recs: true };
+                        populateSections(data);
                         renderCharts(data.charts || []);
+                        dataLoaded.value = true;
 
                     } catch (err) {
                         console.error('Fetch error:', err);
-                        errorMessage.value = `حدث خطأ أثناء جلب التحليل: ${err.message}`;
+                        errorMessage.value = `حدث خطأ: ${err.message}`;
                     } finally {
                         loading.value = false;
                     }
                 };
 
-                return {
-                    surveyId, sessionId, loading, errorMessage,
-                    executiveSummary, detailedAnalysis, formattedDetailedAnalysis,
-                    keyMetrics, recommendations, synthesis,
-                    dynamicCharts, hasData, open,
-                    fetchAnalysis
-                };
+                // Auto-run on load
+                fetchAnalysis();
+
+                return { loading, errorMessage, dataLoaded, fetchAnalysis };
             }
         }).mount('#app');
+
+        // Accordion toggle (global — called from onclick in HTML)
+        function toggleAcc(id) {
+            const el = document.getElementById(id);
+            if (el) el.classList.toggle('open');
+        }
     </script>
 </body>
 

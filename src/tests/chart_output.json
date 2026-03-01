@@ -1,0 +1,227 @@
+[
+  {
+    "type": "doughnut",
+    "title": "توزيع المشاعر",
+    "data": {
+      "labels": [
+        "إيجابي",
+        "سلبي",
+        "محايد"
+      ],
+      "datasets": [
+        {
+          "label": "عدد الردود",
+          "data": [
+            493,
+            123,
+            120
+          ],
+          "backgroundColor": [
+            "#10b981",
+            "#ef4444",
+            "#f59e0b"
+          ],
+          "borderColor": "#fff",
+          "borderWidth": 2
+        }
+      ]
+    },
+    "options": {
+      "responsive": true,
+      "maintainAspectRatio": true,
+      "plugins": {
+        "legend": {
+          "position": "bottom"
+        }
+      }
+    }
+  },
+  {
+    "type": "bar",
+    "title": "أبرز المواضيع / الشكاوى",
+    "data": {
+      "labels": [
+        "المندوب",
+        "الله",
+        "مندوب",
+        "تعامل",
+        "الموظف"
+      ],
+      "datasets": [
+        {
+          "label": "عدد المرات",
+          "data": [
+            416,
+            292,
+            272,
+            272,
+            261
+          ],
+          "backgroundColor": [
+            "#3b82f6",
+            "#3b82f6",
+            "#3b82f6",
+            "#3b82f6",
+            "#3b82f6"
+          ],
+          "borderColor": "#fff",
+          "borderWidth": 2
+        }
+      ]
+    },
+    "options": {
+      "responsive": true,
+      "maintainAspectRatio": true,
+      "plugins": {
+        "legend": {
+          "position": "bottom"
+        }
+      }
+    }
+  },
+  {
+    "type": "horizontalBar",
+    "title": "الكيانات المذكورة وتكرارها",
+    "data": {
+      "labels": [
+        "المندوب (شخص)",
+        "الشرايح (منتج)",
+        "الشرائح (منتج)",
+        "شرايح (منتج)",
+        "الشركات (منظمة)",
+        "ناصر الشمري (شخص)",
+        "الشركه (منظمة)",
+        "الموظف (شخص)"
+      ],
+      "datasets": [
+        {
+          "label": "عدد التكرار",
+          "data": [
+            19,
+            19,
+            15,
+            5,
+            5,
+            4,
+            4,
+            4
+          ],
+          "backgroundColor": [
+            "#8b5cf6",
+            "#8b5cf6",
+            "#8b5cf6",
+            "#8b5cf6",
+            "#8b5cf6",
+            "#8b5cf6",
+            "#8b5cf6",
+            "#8b5cf6"
+          ],
+          "borderColor": "#fff",
+          "borderWidth": 2
+        }
+      ]
+    },
+    "options": {
+      "indexAxis": "y",
+      "responsive": true,
+      "maintainAspectRatio": true,
+      "plugins": {
+        "legend": {
+          "position": "bottom"
+        }
+      }
+    }
+  },
+  {
+    "type": "polarArea",
+    "title": "نسبة تكرار الكيانات",
+    "data": {
+      "labels": [
+        "المندوب (شخص)",
+        "الشرايح (منتج)",
+        "الشرائح (منتج)",
+        "شرايح (منتج)",
+        "الشركات (منظمة)",
+        "ناصر الشمري (شخص)",
+        "الشركه (منظمة)",
+        "الموظف (شخص)"
+      ],
+      "datasets": [
+        {
+          "label": "عدد التكرار",
+          "data": [
+            19,
+            19,
+            15,
+            5,
+            5,
+            4,
+            4,
+            4
+          ],
+          "backgroundColor": [
+            "#10b981",
+            "#ef4444",
+            "#f59e0b",
+            "#3b82f6",
+            "#8b5cf6",
+            "#6b7280",
+            "#10b981",
+            "#ef4444"
+          ],
+          "borderColor": "#fff",
+          "borderWidth": 2
+        }
+      ]
+    },
+    "options": {
+      "responsive": true,
+      "maintainAspectRatio": true,
+      "plugins": {
+        "legend": {
+          "position": "bottom"
+        }
+      }
+    }
+  },
+  {
+    "type": "radar",
+    "title": "نسبة المشاعر (%)",
+    "data": {
+      "labels": [
+        "إيجابي",
+        "محايد",
+        "سلبي"
+      ],
+      "datasets": [
+        {
+          "label": "نسبة المشاعر",
+          "data": [
+            66.98,
+            16.3,
+            16.71
+          ],
+          "backgroundColor": "rgba(16,185,129,0.2)",
+          "borderColor": "#10b981",
+          "borderWidth": 2,
+          "pointBackgroundColor": "#10b981"
+        }
+      ]
+    },
+    "options": {
+      "responsive": true,
+      "maintainAspectRatio": true,
+      "plugins": {
+        "legend": {
+          "position": "bottom"
+        }
+      },
+      "scales": {
+        "r": {
+          "beginAtZero": true,
+          "max": 100
+        }
+      }
+    }
+  }
+]

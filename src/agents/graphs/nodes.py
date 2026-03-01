@@ -1,5 +1,6 @@
 import os
 import sys
+import json
 import traceback
 import warnings
 from typing import Literal, Dict, Any
@@ -328,6 +329,21 @@ def synthesis_agent(state: State) -> Dict[str, Any]:
 
         report_path = save_report(synthesis_content, state['survey_id'])
         print("✅ Synthesis complete")
+
+        # ── حفظ snapshot للاختبار (يُقرأ لاحقاً بواسطة test_generate_charts_agent.py) ──
+        try:
+            snapshot = {
+                "survey_id":                  state["survey_id"],
+                "text_questions_result":      state.get("text_questions_result", {}),
+                "selection_questions_result": state.get("selection_questions_result", {}),
+            }
+            snapshot_path = os.path.join(src_dir, "tests", "chart_agent_snapshot.json")
+            os.makedirs(os.path.dirname(snapshot_path), exist_ok=True)
+            with open(snapshot_path, "w", encoding="utf-8") as f:
+                json.dump(snapshot, f, ensure_ascii=False, indent=2, default=str)
+            print(f"💾 State snapshot saved → {snapshot_path}")
+        except Exception as snap_err:
+            print(f"⚠️ Could not save snapshot: {snap_err}")
 
         return Command(
             update={
