@@ -2,7 +2,7 @@ import json
 from langchain_core.messages import SystemMessage
 
 
-# ── System Prompt (ثابت — البرومبت فقط) ──────────────────────────────────────
+# ── System Prompt ──────────────────────────────────────────────────────────────
 
 SYNTHESIS_SYSTEM_PROMPT = """\
 You are a Strategic Synthesis Agent — a senior business intelligence consultant.
@@ -70,29 +70,29 @@ QUALITY CHECKLIST
 """
 
 
-# ── Data Builder (كود — يبني البيانات الديناميكية) ───────────────────────────
+# ── Data Builder ───────────────────────────────────────────────────────────────
 
 def _build_analytics_section(selection_questions_result: dict, text_questions_result: list) -> str:
-    """تجميع نتائج التحليلين في نص واحد يُرسل للـ LLM."""
+    """Combines both analysis results into a single text block sent to the LLM."""
     parts = []
 
-    # 0) دليل الأسئلة — يعطي النموذج أسماء الأسئلة بدلاً من أرقامها
+    # 0) Question glossary — gives the model question names instead of IDs
     if selection_questions_result and isinstance(selection_questions_result, dict):
         metadata = selection_questions_result.get("questions_metadata", [])
         if metadata:
-            glossary_lines = ["## دليل الأسئلة\n"]
+            glossary_lines = ["## Question Glossary\n"]
             for q in metadata:
                 glossary_lines.append(f"- **Q{q['id']}** ({q['type']}): {q['text']}")
             parts.append("\n".join(glossary_lines))
 
-    # 1) نتائج تحليل أسئلة النصوص (NLP)
+    # 1) Text questions analysis results (NLP)
     if text_questions_result:
         text_block_parts = []
         for i, msg in enumerate(text_questions_result):
-            text_block_parts.append(f"### تحليل {i + 1}\n{msg}")
-        parts.append("## نتائج تحليل أسئلة النصوص (NLP)\n\n" + "\n\n".join(text_block_parts))
+            text_block_parts.append(f"### Analysis {i + 1}\n{msg}")
+        parts.append("## Text Questions Analysis Results (NLP)\n\n" + "\n\n".join(text_block_parts))
 
-    # 2) نتائج تحليل أسئلة الاختيار
+    # 2) Selection questions analysis results
     if selection_questions_result and isinstance(selection_questions_result, dict):
         sel_block_parts = []
         for qr in selection_questions_result.get("query_results", []):
@@ -104,12 +104,12 @@ def _build_analytics_section(selection_questions_result: dict, text_questions_re
                     + json.dumps(rows, ensure_ascii=False, indent=2)
                 )
         if sel_block_parts:
-            parts.append("## نتائج تحليل أسئلة الاختيار\n\n" + "\n\n".join(sel_block_parts))
+            parts.append("## Selection Questions Analysis Results\n\n" + "\n\n".join(sel_block_parts))
 
-    return "\n\n---\n\n".join(parts) if parts else "لا توجد بيانات تحليلية متاحة."
+    return "\n\n---\n\n".join(parts) if parts else "No analytical data available."
 
 
-# ── Main Function ─────────────────────────────────────────────────────────────
+# ── Main Function ──────────────────────────────────────────────────────────────
 
 def synthesis_agent_prompt_function(survey_subject, selection_questions_result, text_questions_result):
     """
@@ -130,23 +130,23 @@ def synthesis_agent_prompt_function(survey_subject, selection_questions_result, 
 
 ## CURRENT TASK
 
-**موضوع الاستبيان:** {survey_subject}
+**Survey subject:** {survey_subject}
 
-**البيانات التحليلية للتوليف:**
+**Analytical data for synthesis:**
 
 {analytics_section}
 
 ---
 
-قم بتوليف البيانات التحليلية أعلاه في تقرير تنفيذي شامل بصيغة JSON فقط.
-ركّز على استخراج رؤى قابلة للتنفيذ خاصة بموضوع الاستبيان: "{survey_subject}".
-أجب باللغة العربية حصراً.
-تأكد من صحة JSON قبل الإرسال."""
+Synthesize the analytical data above into a comprehensive executive report in JSON format only.
+Focus on extracting actionable insights specific to the survey subject: "{survey_subject}".
+Respond exclusively in Arabic.
+Validate the JSON before returning."""
 
     return [SystemMessage(content=prompt_text)]
 
 
-# ── Compatibility Wrapper ─────────────────────────────────────────────────────
+# ── Compatibility Wrapper ──────────────────────────────────────────────────────
 
 class SynthesisAgentPrompt:
     """Wrapper class to maintain .invoke() compatibility"""
