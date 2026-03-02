@@ -1,7 +1,7 @@
 from langgraph.graph import StateGraph, MessagesState
 from langgraph.checkpoint.memory import MemorySaver
 from typing_extensions import TypedDict
-from typing import Literal, Any
+from typing import Literal, Any, Optional
 from langchain_core.tools import tool
 from langgraph.graph import StateGraph, START, END
 from langchain_core.messages import BaseMessage
@@ -15,6 +15,8 @@ class State(MessagesState):
     text_questions_result: dict[str, Any]       # نتائج تحليل أسئلة النصوص
     selection_questions_result: dict[str, Any]   # نتائج تحليل أسئلة الخيارات
     chart_configs: list[dict]                    # إعدادات الرسوم البيانية المولّدة
+    date_from: Optional[str]                     # فلتر التاريخ — بداية (YYYY-MM-DD)
+    date_to: Optional[str]                       # فلتر التاريخ — نهاية (YYYY-MM-DD)
 
 # Memory
 memory = MemorySaver()

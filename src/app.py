@@ -21,12 +21,17 @@ CORS(app, resources={
 @app.route('/survey_insight', methods=['POST'])
 def survey_insight():
     request_body = get_request_body()
-    survey_id = request_body['request']['survey_id']
-    user_message  = request_body['request']['message']
-    session_id  = request_body['request']['session_id']
+    survey_id    = request_body['request']['survey_id']
+    user_message = request_body['request']['message']
+    session_id   = request_body['request']['session_id']
+    date_from    = request_body['request'].get('date_from')  # اختياري
+    date_to      = request_body['request'].get('date_to')    # اختياري
 
     # Get workflow response (now returns dict with synthesis and charts)
-    response = create_survey_insight_workflow(survey_id, user_message, session_id)
+    response = create_survey_insight_workflow(
+        survey_id, user_message, session_id,
+        date_from=date_from, date_to=date_to
+    )
     
     # Return JSON response with both synthesis and chart configurations
     return jsonify(response)

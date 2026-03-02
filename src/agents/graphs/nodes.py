@@ -47,10 +47,14 @@ def retrieve_survey_question(state: State) -> Dict[str, Any]:
     """
     try:
         survey_id = state["survey_id"]
-        survey_df = get_survey_df(survey_id)
+        date_from = state.get("date_from")
+        date_to   = state.get("date_to")
+
+        survey_df = get_survey_df(survey_id, date_from=date_from, date_to=date_to)
 
         rows = len(survey_df)
-        print(f"📊 Loaded {rows} rows for survey {survey_id}")
+        print(f"📊 Loaded {rows} rows for survey {survey_id}"
+              + (f" [filter: {date_from} → {date_to}]" if date_from or date_to else ""))
 
         if survey_df.empty:
             return {
@@ -95,14 +99,18 @@ def analyze_selection_questions(state: State) -> Dict[str, Any]:
     """
     try:
         survey_id = state["survey_id"]
+        date_from = state.get("date_from")
+        date_to   = state.get("date_to")
 
         print("=" * 60)
         print("SELECTION ANALYSIS NODE")
         print("=" * 60)
         print(f"Survey ID: {survey_id}")
+        if date_from or date_to:
+            print(f"📅 Date filter: {date_from} → {date_to}")
 
         # تشغيل مسار تحليل الخيارات
-        pipeline_result = run_selection_pipeline(survey_id)
+        pipeline_result = run_selection_pipeline(survey_id, date_from=date_from, date_to=date_to)
 
         # تحويل DataFrames إلى قوائم قابلة للتسلسل
         # الهيكل الجديد: query_results = [{label, sql, result: DataFrame}, ...]

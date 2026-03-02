@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <title>تقارير الاستبيان S25120024</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            margin: 20px;
+            background: #f9fafb;
+            color: #111;
+        }
+
+        h2 {
+            margin-top: 40px;
+            text-align: center;
+        }
+
+        .chart-container {
+            width: 90%;
+            max-width: 900px;
+            margin: auto;
+        }
+
+        canvas {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1 style="text-align:center;">تقرير نتائج الاستبيان S25120024</h1>
+
+    <!-- 1️⃣ Donut – توزيع الإجابات -->
+    <h2>رضا العملاء العام (Q296)</h2>
+    <div class="chart-container">
+        <canvas id="doughnutChart"></canvas>
+    </div>
+
+    <!-- 2️⃣ Bar – متوسط الدرجات -->
+    <h2>متوسط الدرجات للأسئلة الثلاثة (EMOJIS)</h2>
+    <div class="chart-container">
+        <canvas id="barChart"></canvas>
+    </div>
+
+    <!-- 3️⃣ Line – الاتجاه الشهري -->
+    <h2>الاتجاه الشهري لمتوسط درجة السؤال Q296</h2>
+    <div class="chart-container">
+        <canvas id="lineChart"></canvas>
+    </div>
+
+    <!-- 4️⃣ Radar – مقارنة المتوسطات -->
+    <h2>مقارنة متوسط الدرجات بين الأسئلة</h2>
+    <div class="chart-container">
+        <canvas id="radarChart"></canvas>
+    </div>
+
+    <script>
+        /* ---------- 1️⃣ Donut Chart ---------- */
+        const doughnutCtx = document.getElementById('doughnutChart').getContext('2d');
+        new Chart(doughnutCtx, {
+            type: 'doughnut',
+            data: {
+                labels: [
+                    'غير راضٍ',          // 1
+                    'محايد',            // 2
+                    'راضٍ',             // 3
+                    'غير راضٍ جداً',    // 4
+                    'راضٍ جداً'        // 5
+                ],
+                datasets: [{
+                    label: 'عدد الردود',
+                    data: [136, 35, 107, 108, 2629],
+                    backgroundColor: [
+                        '#ef4444',   // أحمر (سلبى)
+                        '#6b7280',   // رمادي (محايد)
+                        '#10b981',   // أخضر فاتح (إيجابي)
+                        '#f59e0b',   // برتقالي (تحذير)
+                        '#10b981'    // أخضر (إيجابي قوي)
+                    ],
+                    borderColor: '#fff',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'توزيع الردود على السؤال: ما مدى رضاك عن خدماتنا؟',
+                        font: { size: 18 }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => `${ctx.label}: ${ctx.parsed} رد (${ctx.formattedValue} %)`
+                        }
+                    }
+                },
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+
+        /* ---------- 2️⃣ Bar Chart ---------- */
+        const barCtx = document.getElementById('barChart').getContext('2d');
+        new Chart(barCtx, {
+            type: 'bar',
+            data: {
+                labels: [
+                    'رضا عام (Q296)',
+                    'رضا عن مندوب المبيعات (Q297)',
+                    'رضا عن سرعة التنفيذ (Q298)'
+                ],
+                datasets: [{
+                    label: 'متوسط الدرجة',
+                    data: [4.68, 4.77, 4.72],
+                    backgroundColor: '#3b82f6',
+                    borderColor: '#1e40af',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'متوسط درجات الأسئلة (مقياس 1‑5)',
+                        font: { size: 18 }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y}`
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 5,
+                        title: { display: true, text: 'متوسط الدرجة' }
+                    }
+                },
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+
+        /* ---------- 3️⃣ Line Chart (Trend) ---------- */
+        const lineCtx = document.getElementById('lineChart').getContext('2d');
+        new Chart(lineCtx, {
+            type: 'line',
+            data: {
+                labels: [
+                    '2024‑04', '2024‑05', '2024‑06', '2024‑07', '2024‑08', '2024‑09', '2024‑10', '2024‑11', '2024‑12',
+                    '2025‑01', '2025‑02', '2025‑03', '2025‑04', '2025‑05', '2025‑06', '2025‑07', '2025‑08', '2025‑09',
+                    '2025‑10', '2025‑11', '2025‑12', '2026‑01', '2026‑02', '2026‑03'
+                ],
+                datasets: [{
+                    label: 'متوسط الدرجة الشهري',
+                    data: [4.00, 4.67, 4.80, 4.56, 4.44, 4.77, 4.70, 4.83, 4.45,
+                        4.49, 4.25, 4.77, 4.72, 4.81, 4.80, 4.72, 4.73, 4.57,
+                        4.74, 4.83, 4.53, 4.95, 4.71, 5.00],
+                    fill: false,
+                    borderColor: '#3b82f6',
+                    backgroundColor: '#3b82f6',
+                    tension: 0.2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'الاتجاه الشهري لمتوسط درجة السؤال Q296',
+                        font: { size: 18 }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false
+                    }
+                },
+                scales: {
+                    x: {
+                        title: { display: true, text: 'الشهر (YYYY‑MM)' }
+                    },
+                    y: {
+                        beginAtZero: false,
+                        min: 0,
+                        max: 5,
+                        title: { display: true, text: 'متوسط الدرجة' }
+                    }
+                },
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+
+        /* ---------- 4️⃣ Radar Chart ---------- */
+        const radarCtx = document.getElementById('radarChart').getContext('2d');
+        new Chart(radarCtx, {
+            type: 'radar',
+            data: {
+                labels: ['رضا عام (Q296)', 'رضا عن مندوب المبيعات (Q297)', 'رضا عن سرعة التنفيذ (Q298)'],
+                datasets: [{
+                    label: 'متوسط الدرجة',
+                    data: [4.68, 4.77, 4.72],
+                    backgroundColor: 'rgba(139,92,246,0.2)',   // بنفسجي شبه شفاف
+                    borderColor: '#8b5cf6',
+                    pointBackgroundColor: '#8b5cf6',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: '#8b5cf6'
+                }]
+            },
+            options: {
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'مقارنة متوسط الدرجات بين الأسئلة',
+                        font: { size: 18 }
+                    }
+                },
+                scales: {
+                    r: {
+                        suggestedMin: 0,
+                        suggestedMax: 5,
+                        ticks: { stepSize: 1 }
+                    }
+                },
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+    </script>
+
+</body>
+
+</html>

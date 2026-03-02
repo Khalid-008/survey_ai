@@ -104,6 +104,10 @@
 
         .input-group {
             flex: 1;
+            min-width: 140px;
+        }
+
+        .input-group.wide {
             min-width: 200px;
         }
 
@@ -127,6 +131,7 @@
             font-size: 14px;
             outline: none;
             transition: border-color 0.2s;
+            color-scheme: dark;
         }
 
         .input-group input:focus {
@@ -619,14 +624,22 @@
 
             <!-- Input -->
             <div class="input-section">
-                <div class="input-group">
+                <div class="input-group wide">
                     <label>رقم الاستطلاع</label>
                     <input v-model="surveyId" type="text" placeholder="مثال: S25120024" @keyup.enter="fetchAnalysis" />
                 </div>
-                <div class="input-group">
+                <div class="input-group wide">
                     <label>معرف الجلسة</label>
                     <input v-model="sessionId" type="text" placeholder="معرف فريد للجلسة"
                         @keyup.enter="fetchAnalysis" />
+                </div>
+                <div class="input-group">
+                    <label>من تاريخ</label>
+                    <input v-model="dateFrom" type="date" />
+                </div>
+                <div class="input-group">
+                    <label>إلى تاريخ</label>
+                    <input v-model="dateTo" type="date" />
                 </div>
                 <button class="analyze-btn" @click="fetchAnalysis" :disabled="loading || !surveyId">
                     <span v-if="loading" class="spinner"></span>
@@ -732,6 +745,8 @@
             setup() {
                 const surveyId = ref('S25120024');
                 const sessionId = ref('B6F10FAC-A20E-4A77-B52C-CBC472679163');
+                const dateFrom = ref('');
+                const dateTo = ref('');
                 const loading = ref(false);
                 const errorMessage = ref('');
 
@@ -915,7 +930,9 @@
                                 request: {
                                     message: '',
                                     survey_id: surveyId.value,
-                                    session_id: sessionId.value
+                                    session_id: sessionId.value,
+                                    date_from: dateFrom.value || null,
+                                    date_to: dateTo.value || null,
                                 }
                             })
                         });
@@ -945,7 +962,7 @@
                 };
 
                 return {
-                    surveyId, sessionId, loading, errorMessage,
+                    surveyId, sessionId, dateFrom, dateTo, loading, errorMessage,
                     executiveSummary, detailedAnalysis, formattedDetailedAnalysis,
                     keyMetrics, recommendations, synthesis,
                     dynamicCharts, hasData, open,

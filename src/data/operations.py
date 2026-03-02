@@ -17,10 +17,20 @@ def get_conn():
             buffered=True
         )
 
-def get_survey_df(survey_id):
+def get_survey_df(survey_id, date_from=None, date_to=None):
     try:
         conn = get_conn()
-        result = pd.read_sql(f"""SELECT 
+
+        date_filter = ""
+        params = [survey_id]
+        if date_from:
+            date_filter += " AND a.created_date >= %s"
+            params.append(date_from)
+        if date_to:
+            date_filter += " AND a.created_date <= %s"
+            params.append(date_to)
+
+        query = f"""SELECT 
                 a.external_id as ExternalID,
                 s.survey_number as SurveyNumber,
                 s.subject as SurveyTitle,
@@ -31,17 +41,30 @@ def get_survey_df(survey_id):
             FROM ms_survey_service.survey s
             INNER JOIN ms_survey_service.survey_question q ON q.survey_id = s.id
             INNER JOIN ms_survey_service.survey_answer a ON q.id = a.survey_question_id
-            WHERE s.survey_number = '{survey_id}'
-            """, conn)
+            WHERE s.survey_number = %s
+            {date_filter}
+            """
+        result = pd.read_sql(query, conn, params=params)
         
-        print(f"DEBUG: get_survey_df({survey_id}) returned {len(result)} rows")
+        print(f"DEBUG: get_survey_df({survey_id}) returned {len(result)} rows"
+              + (f" [filter: {date_from} → {date_to}]" if date_from or date_to else ""))
         return result
     finally:
         conn.close()
 
 
-def get_selection_questions_data(survey_number: str) -> pd.DataFrame:
-    query = """
+def get_selection_questions_data(survey_number: str, date_from=None, date_to=None) -> pd.DataFrame:
+
+    date_filter = ""
+    params = [survey_number]
+    if date_from:
+        date_filter += " AND sa.created_date >= %s"
+        params.append(date_from)
+    if date_to:
+        date_filter += " AND sa.created_date <= %s"
+        params.append(date_to)
+
+    query = f"""
         SELECT
             sq.id               AS question_id,
             sq.question_ar      AS question_ar,
@@ -99,14 +122,16 @@ def get_selection_questions_data(survey_number: str) -> pd.DataFrame:
             NULLIF(TRIM(sa.answer), ''),
             NULLIF(TRIM(sa.selected_options_id), '')
         ) IS NOT NULL
+        {date_filter}
     """
     conn = get_conn()
     try:
-        df = pd.read_sql(query, conn, params=(survey_number,))
+        df = pd.read_sql(query, conn, params=params)
         if not df.empty:
             types = df["question_type"].unique().tolist()
             print(f"DEBUG: get_selection_questions_data({survey_number}) → "
-                  f"{len(df)} rows | types: {types}")
+                  f"{len(df)} rows | types: {types}"
+                  + (f" [filter: {date_from} → {date_to}]" if date_from or date_to else ""))
         else:
             print(f"DEBUG: get_selection_questions_data({survey_number}) → 0 rows")
         return df

@@ -11,8 +11,11 @@ from agents.graphs.nodes import (
 import json
 
 
-def create_survey_insight_workflow(survey_id: int, user_message: str, session_id: str):
+def create_survey_insight_workflow(survey_id: int, user_message: str, session_id: str,
+                                   date_from: str = None, date_to: str = None):
     print(f"Creating workflow for survey_id: {survey_id}, session_id: {session_id}")
+    if date_from or date_to:
+        print(f"  📅 Date filter: {date_from} → {date_to}")
 
     builder = StateGraph(State)
 
@@ -40,7 +43,9 @@ def create_survey_insight_workflow(survey_id: int, user_message: str, session_id
         final_response = graph.invoke(
             {
                 "messages": [HumanMessage(content=user_message)],
-                "survey_id": survey_id
+                "survey_id": survey_id,
+                "date_from": date_from,
+                "date_to":   date_to,
             },
             config=config
         )

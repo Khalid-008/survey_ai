@@ -73,18 +73,21 @@ warnings.filterwarnings("ignore")
 
 
 
-def fetch_selection_questions(survey_number: str) -> pd.DataFrame:
+def fetch_selection_questions(survey_number: str, date_from=None, date_to=None) -> pd.DataFrame:
 
 
     print(f"\n{'='*60}")
 
 
     print(f"📋 Fetching selection questions for survey: {survey_number}")
+    if date_from or date_to:
+        print(f"   📅 Date filter: {date_from} → {date_to}")
+
 
     print(f"{'='*60}")
 
 
-    df = get_selection_questions_data(survey_number)
+    df = get_selection_questions_data(survey_number, date_from=date_from, date_to=date_to)
 
 
     if df.empty:
@@ -189,7 +192,7 @@ def get_sample_answers_per_question(df: pd.DataFrame, n: int = 3) -> dict[int, l
 
 
 
-def run_selection_pipeline(survey_number: str) -> dict[str, Any]:
+def run_selection_pipeline(survey_number: str, date_from=None, date_to=None) -> dict[str, Any]:
 
 
     print(f"\n{'#'*60}")
@@ -217,7 +220,7 @@ def run_selection_pipeline(survey_number: str) -> dict[str, Any]:
 
     print("📥 Step 1 — Fetching selection questions...")
 
-    df = fetch_selection_questions(survey_number)
+    df = fetch_selection_questions(survey_number, date_from=date_from, date_to=date_to)
 
 
     if df.empty:
