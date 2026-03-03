@@ -48,9 +48,15 @@ Style:
 ✅ Natural flow: "Revenue grew 23% to SAR4.2M"
 ✅ **Bold text** for section emphasis (never ## headers)
 
-❌ Technical references: "SQL shows", "according to data", "Question 296"
+❌ Technical references: "SQL shows", "according to data", "Question 296", question IDs
+   like "Q293" or "Q154" — describe the question topic in plain language instead
+❌ Industry jargon the reader may not know: never write "NPS" — use plain Arabic
+   instead (e.g. "مؤشر ترشيح الخدمة", "نسبة توصية العملاء", "مستوى رضا العملاء")
 ❌ Written numbers: "twenty-three percent"
 ❌ ## headers anywhere in content
+❌ Personal names — NEVER mention any individual person's name extracted from
+   free-text responses (e.g. "ماجد الشمري", "أحمد", "محمد علي").
+   Always refer to people generically: "أحد المستجيبين", "بعض العملاء", etc.
 
 Structure:
 - Open with the most impactful insight

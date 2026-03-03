@@ -8,6 +8,17 @@ import re
 # ============================================================================
 
 
+def _repair_json_array(json_str):
+    """
+    إصلاح خطأ شائع: النموذج يحذف قوس الفتح { قبل عناصر المصفوفة بعد الأول.
+    مثال على الخطأ:  [{...},"type":"bar",...}]
+    الصحيح يكون:     [{...},{"type":"bar",...}]
+    """
+    # إضافة { بعد الفاصلة مباشرةً إذا جاء بعدها مفتاح JSON مباشرة بدون قوس فتح
+    repaired = re.sub(r',\s*"(type|title|data)":', r',{"\\1":', json_str)
+    return repaired
+
+
 def extract_json_from_response(response_text):
     """
     استخراج JSON من رد اللغوي، مع التعامل مع كتل الكود وأي نص إضافي.
@@ -25,69 +36,69 @@ def extract_json_from_response(response_text):
     else:
         json_str = response_text.strip()
 
+    # المحاولة الأولى: تحليل مباشر
     try:
         charts = json.loads(json_str)
         if isinstance(charts, list):
             return charts
         elif isinstance(charts, dict):
             return [charts]
-        else:
-            raise ValueError("Parsed JSON is neither list nor dict")
     except json.JSONDecodeError as e:
-        print(f"⚠️ Failed to parse JSON: {e}")
-        print(f"Response text: {response_text[:500]}")
-        return []
+        print(f"⚠️ Failed to parse JSON (attempt 1): {e}")
+
+        # المحاولة الثانية: إصلاح الأقواس المفقودة ثم إعادة التحليل
+        repaired = _repair_json_array(json_str)
+        print(f"🔧 Attempting JSON repair...")
+        try:
+            charts = json.loads(repaired)
+            if isinstance(charts, list):
+                print(f"✅ JSON repaired successfully ({len(charts)} charts)")
+                return charts
+            elif isinstance(charts, dict):
+                return [charts]
+        except json.JSONDecodeError as e2:
+            print(f"⚠️ Failed to parse JSON (attempt 2 after repair): {e2}")
+            print(f"Response text: {response_text[:500]}")
+
+    return []
 
 
-def format_analysis_summary(analysis_results):
+def format_analysis_summary(text_questions_result, selection_questions_result=None):
     """
     تنسيق نتائج التحليل في ملخص موجز لتوليد الرسوم البيانية.
 
+    - text_questions_result   : يُستخدم منه توزيع المشاعر فقط (بدون مواضيع أو كيانات)
+    - selection_questions_result : نتائج استعلامات أسئلة الخيارات
+
     يُرجع: نص ملخص منسق
     """
-    summary_parts = []
+    parts = []
 
-    for q_id, results in analysis_results.items():
+    # ── 1) توزيع المشاعر من أسئلة النص ──────────────────────────────────────
+    sentiment_parts = []
+    for q_id, results in text_questions_result.items():
         q_text = results.get("survey_question", f"Question {q_id}")
-
-        # توزيع المشاعر
         sentiment_dist = results.get("sentiment_distribution", {})
         if sentiment_dist:
-            summary_parts.append(f"**السؤال**: {q_text}")
-            summary_parts.append(f"**توزيع المشاعر**: {sentiment_dist}")
+            sentiment_parts.append(f"**السؤال**: {q_text}")
+            sentiment_parts.append(f"**توزيع المشاعر**: {sentiment_dist}")
+            sentiment_parts.append("---")
 
-        # تحليل المواضيع
-        topics_analysis = results.get("topics_analysis", "")
-        if topics_analysis:
-            summary_parts.append(f"**تحليل المواضيع**: {topics_analysis}")
+    if sentiment_parts:
+        parts.append("## تحليل المشاعر (أسئلة النص)\n\n" + "\n".join(sentiment_parts))
 
-        # تحليل الكيانات
-        entities_analysis = results.get("entities_analysis", "")
-        if entities_analysis:
-            summary_parts.append(f"**الكيانات المذكورة**: {entities_analysis}")
+    # ── 2) نتائج أسئلة الخيارات ──────────────────────────────────────────────
+    if selection_questions_result and isinstance(selection_questions_result, dict):
+        sel_parts = []
+        for qr in selection_questions_result.get("query_results", []):
+            label = qr.get("label", "")
+            rows  = qr.get("result", [])
+            if rows:
+                sel_parts.append(
+                    f"### {label}\n"
+                    + json.dumps(rows, ensure_ascii=False, indent=2)
+                )
+        if sel_parts:
+            parts.append("## نتائج أسئلة الخيارات\n\n" + "\n\n".join(sel_parts))
 
-        # أبرز المواضيع مع الأعداد
-        top_topics = results.get("top_topics", [])
-        if top_topics:
-            if isinstance(top_topics, dict):
-                topics_str = ", ".join([f"{topic} ({count})" for topic, count in list(top_topics.items())[:5]])
-            elif isinstance(top_topics, list):
-                topics_str = ", ".join([f"{t.get('topic', t.get('label', 'N/A'))} ({t.get('count', 0)})" for t in top_topics[:5]])
-            else:
-                topics_str = str(top_topics)
-            summary_parts.append(f"**أبرز المواضيع**: {topics_str}")
-
-        # أبرز الكيانات مع الأعداد
-        top_entities = results.get("top_entities", [])
-        if top_entities:
-            if isinstance(top_entities, dict):
-                entities_str = ", ".join([f"{entity} ({count})" for entity, count in list(top_entities.items())[:5]])
-            elif isinstance(top_entities, list):
-                entities_str = ", ".join([f"{e.get('entity', e.get('label', 'N/A'))} ({e.get('count', 0)})" for e in top_entities[:5]])
-            else:
-                entities_str = str(top_entities)
-            summary_parts.append(f"**أبرز الكيانات**: {entities_str}")
-
-        summary_parts.append("---")
-
-    return "\n".join(summary_parts)
+    return "\n\n---\n\n".join(parts) if parts else "No analytical data available."

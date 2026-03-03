@@ -1,13 +1,348 @@
 {
-  "survey_id": "S25080016",
-  "text_questions_result": {},
+  "survey_id": "S25120024",
+  "text_questions_result": {
+    "300": {
+      "sentiment_distribution": {
+        "العدد": {
+          "positive": 77,
+          "neutral": 12,
+          "negative": 7
+        },
+        "النسبة المئوية (%)": {
+          "positive": 80.21,
+          "neutral": 12.5,
+          "negative": 7.29
+        }
+      },
+      "top_topics": {
+        "الموظف مميز": 33,
+        "ومتعاون": 33,
+        "جدا": 33,
+        "مميز": 33,
+        "حل": 33,
+        "مميز ومتعاون": 33,
+        "الموظف": 33,
+        "ممتاز": 33,
+        "الخدمه": 33,
+        "وسرعه": 33,
+        "تركي": 31,
+        "علي": 31,
+        "حسن": 31,
+        "علي حسن": 31,
+        "شكر": 31
+      },
+      "top_topics_by_sentiment": {
+        "مميز": 6,
+        "جدا": 6,
+        "ممتاز": 6,
+        "الموظف": 6,
+        "وسرعه": 6,
+        "الخدمه": 6,
+        "الموظف مميز": 6,
+        "ومتعاون": 6,
+        "حل": 6,
+        "مميز ومتعاون": 6
+      },
+      "top_entities": {
+        "الشرايح (منتج)": 3,
+        "منكم (شخص)": 1,
+        "نامل (شخص)": 1,
+        "البيانات (منتج)": 1,
+        "جيد (منتج)": 1,
+        "اسوعين (شخص)": 1,
+        "ل (شخص)": 1,
+        "كويك بلس (منتج)": 1,
+        "موظف (شخص)": 1,
+        "عبدالكريم (شخص)": 1,
+        "المندوب (شخص)": 1
+      },
+      "top_words": {
+        "الشرايح": 3,
+        "منكم": 1,
+        "خفض": 1,
+        "اسعار": 1,
+        "نامل": 1,
+        "البيانات": 1,
+        "جيد": 1,
+        "تقريبن": 1,
+        "جدن": 1,
+        "اسوعين": 1,
+        "عشان": 1,
+        "تجي": 1,
+        "نعاني": 1,
+        "كثره": 1,
+        "اعطال": 1
+      },
+      "topics_analysis": "## 📊 مؤشرات الموضوعات\n- **خفض أسعار البيانات**: 6 تكرار (100 %)  \n- **تنويه إيجابي “جيد جداً”**: 6 تكرار (100 %)  \n- **طول فترة وصول الشرائح (~2 شهر)**: 6 تكرار (100 %)  \n- **أعطال خدمة “كويك بلس” المتكررة**: 6 تكرار (100 %)  \n- **الإشادة بالموظف عبدالكريم**: 6 تكرار (100 %)  \n- **تأخير المندوب وحل مشكلة العمولة**: 6 تكرار (100 %)  \n\n## 📝 التقرير المختصر\n- **خفض الأسعار** يُذكر في كل الردود؛ العملاء يطلبون تخفيض تكلفة الباقة أو البيانات، ما يدل على حساسية السعر العالية.  \n- **الرد الإيجابي “جيد جداً”** متكرر، يُظهر رضاً عامًّا أو تقديرًا لجزء من التجربة.  \n- **مدة وصول الشرائح** تُستغرق تقريبًا شهرين حسب جميع المستجيبِين، ما يبرز بطءً ملحوظًا في سلسلة التوريد.  \n- **أعطال “كويك بلس”** تُذكر باستمرار، إشارة إلى مشكلة تقنية تؤثر سلبًا على الاستخدام اليومي.  \n- **الإشادة بالموظف عبدالكريم** في كل الردود تدل على قيمة العنصر البشري وإمكانية استخدامه كنموذج خدمة متميزة.  \n- **تأخير المندوب ومشكلة العمولة** تُطرح في جميع الإجابات، مما يكشف عن قصور لوجستي وإداري يحتاج إلى تحسين فوري.  \n\n**ملخص**: جميع المستجيبين يسلطون الضوء على ستة مواضيع أساسية (السعر, رضا عام, زمن التوصيل, الأعطال التقنية, أداء الموظف, مشكلات التوصيل والعمولة) بنسبة 100 %، ما يوضح أن هذه النقاط هي الأولوية القصوى لتحسين تجربة العميل.",
+      "entities_analysis": "## 📊 مؤشرات الكيانs:\n- الشرايح (منتج): 3 تكرار (42.86%)\n- نامل (شخص): 1 تكرار (14.29%)\n- منكم (شخص): 1 تكرار (14.29%)\n- البيانات (منتج): 1 تكرار (14.29%)\n- جيد (منتج): 1 تكرار (14.29%)\n- اسوعين (شخص): 1 تكرار (14.29%)\n- ل (شخص): 1 تكرار (14.29%)\n- كويك بلس (منتج): 1 تكرار (14.29%)\n- موظف (شخص): 1 تكرار (14.29%)\n- عبدالكريم (شخص): 1 تكرار (14.29%)\n- المندوب (شخص): 1 تكرار (14.29%)\n\n## 📝 التقرير المختصر:\n- **الشرايح**: تظهر في 3 ردود (≈43%)، كلها تشكو من تأخر توصيل الشرايح وتعطيل العمولة، ما يُشير إلى مشكلة لوجستية ملحة في توصيل هذا المنتج.  \n- **نامل / منكم / البيانات**: ذُكروا معًا مرة واحدة (≈14%) كطلب خفض أسعار البيانات، دليل على توقعات سعرية من العملاء.  \n- **جيد**: ذكر مرة واحدة (≈14%) كتعليق إيجابي عام “جيد جداً”، يُظهر رضا محدود لكن غير محدد.  \n- **اسوعين**: ذُكر مرة واحدة (≈14%) ضمن عبارة “تقريبًا أسوعين” للدلالة على زمن انتظار طويل لتوصيل الشرايح.  \n- **ل**: كلمة غير مفهومة ذُكرت مرة واحدة (≈14%); لا تستدعي اتخاذ إجراء.  \n- **كويك بلس**: ذُكرت مرة واحدة (≈14%) مع شكوى عن أعطال متكررة، ما يدل على حاجة لتحسين استقرار الخدمة.  \n- **موظف / عبدالكريم**: تم الإشادة بموظف واحد (≈14%) كأفضل موظف، فرصة لتعزيز التدريب والاستفادة من خبراته.  \n- **المندوب**: تم ذكره مرة واحدة (≈14%) في سياق التأخر، يؤكد أن مشكلة التوصيل تتعلق أيضاً بأداء المندوب.  ",
+      "words_analysis": "**## 📊 مؤشرات الكلمات**\n\n- الشرايح: **3** تكرار (**42.9%** من إجمالي الردود)  \n- نامل: **1** تكرار (**14.3%**)  \n- منكم: **1** تكرار (**14.3%**)  \n- خفض: **1** تكرار (**14.3%**)  \n- اسعار: **1** تكرار (**14.3%**)  \n- البيانات: **1** تكرار (**14.3%**)  \n- جيد: **1** تكرار (**14.3%**)  \n- جدن: **1** تكرار (**14.3%**)  \n- تقريبن: **1** تكرار (**14.3%**)  \n- اسوعين: **1** تكرار (**14.3%**)  \n- عشان: **1** تكرار (**14.3%**)  \n- تجي: **1** تكرار (**14.3%**)  \n- نعاني: **1** تكرار (**14.3%**)  \n- كثره: **1** تكرار (**14.3%**)  \n- اعطال: **1** تكرار (**14.3%**)  \n\n---\n\n**## 📝 التقرير المختصر**\n\n- **الشرايح (42.9%)** – يظهر كثيراً بسبب تأخر المندوب في تسليم الشرايح وغياب العمولة المرتبطة بتفعيلها، ما يسبب إيقاف النشاط لفترة تقارب شهرين.   \n- **نامل / منكم / خفض / اسعار / البيانات (كل منها 14.3%)** – طلب واضح لتخفيض أسعار البيانات، يدل على حساسية العملاء لتكلفة الخدمة.  \n- **نعاني / كثره / اعطال (كل منها 14.3%)** – إشارة إلى أعطال متكررة في نظام “كويك بلس”، ما يخلق اضطراباً في العمليات اليومية.  \n- **جيد / جدن (كل منها 14.3%)** – تعليق إيجابي منفرد يُظهر وجود تجارب مرضية، لكنه يُقَصَّر أمام القضايا السلبية المتكررة.  \n\n**الاستنتاج السريع:**  \n1. **التسليم والعمولة** المرتبطان بالشرايح يمثلان أكبر مصدر للانزعاج (≈43%).  \n2. **تكلفة البيانات** ومشكلات **الأعطال التقنية** كل منهما يهم حوالي 14% من العملاء.  \n3. وجود ملاحظات إيجابية قليلة لا يغطي حجم المشكلات المذكورة.  \n\n**التوصيات المختصرة:**  \n- تحسين جدولة وتسليم الشرايح وحل مشكلة العمولة فوراً.  \n- مراجعة أسعار البيانات أو تقديم باقات مرنة لتقليل الضغط على العملاء.  \n- تعزيز صيانة نظام كويك بلس لتقليل الأعطال المتكررة.  ",
+      "survey_question": "رأيك يهمنا، فضلاً شاركنا تعليق او مقترح يساعد في تحسين التجربة",
+      "survey_title": "MS - Merchant with salesman CSAT",
+      "question_id": "300"
+    }
+  },
   "selection_questions_result": {
-    "questions_count": 0,
-    "questions_metadata": [],
-    "distinct_per_question": {},
-    "query_results": [],
-    "errors": [
-      "No selection questions found."
-    ]
+    "questions_count": 4,
+    "questions_metadata": [
+      {
+        "id": 296,
+        "text": "بشكل عام، ما مدى رضاك عن خدماتنا؟",
+        "type": "EMOJIS"
+      },
+      {
+        "id": 297,
+        "text": "ما مدى رضاك عن أداء مندوب المبيعات الذي قام بخدمتك؟",
+        "type": "EMOJIS"
+      },
+      {
+        "id": 298,
+        "text": "ما مدى رضاك عن سرعة ودقة تنفيذ طلبك في الوقت المحدد؟",
+        "type": "EMOJIS"
+      },
+      {
+        "id": 299,
+        "text": "ما مدى احتمالية أن توصي بشركة قنوات كمورد لزميل أو شريك تجاري؟",
+        "type": "MULTIPLE_CHOICE"
+      }
+    ],
+    "distinct_per_question": {
+      "296": [
+        "Dissatisfied",
+        "Neutral",
+        "Satisfied",
+        "Very Dissatisfied",
+        "Very Satisfied"
+      ],
+      "297": [
+        "Dissatisfied",
+        "Satisfied",
+        "Very Dissatisfied",
+        "Very Satisfied"
+      ],
+      "298": [
+        "Dissatisfied",
+        "Neutral",
+        "Satisfied",
+        "Very Dissatisfied",
+        "Very Satisfied"
+      ],
+      "299": [
+        "0-6 (لا أوصي بشدة)",
+        "7-8 (محايد)",
+        "9-10 (أوصي بشدة)"
+      ]
+    },
+    "query_results": [
+      {
+        "label": "Query 1",
+        "sql": "-- Overall distribution of ratings for the primary EMOJIS question (ID 296) with percentage\nSELECT CAST(sa.answer AS SIGNED) AS rating,\n       COUNT(*) AS response_count,\n       ROUND(100.0 * COUNT(*) / (\n         SELECT COUNT(*)\n         FROM survey_answer sa2\n         JOIN survey_question sq2 ON sa2.survey_question_id = sq2.id\n         JOIN survey s2 ON sq2.survey_id = s2.id\n         WHERE sq2.id = 296\n           AND s2.survey_number = 'S25120024'\n       ), 2) AS percent\nFROM survey_answer sa\nJOIN survey_question sq ON sa.survey_question_id = sq.id\nJOIN survey s ON sq.survey_id = s.id\nWHERE sq.id = 296\n  AND s.survey_number = 'S25120024'\nGROUP BY CAST(sa.answer AS SIGNED);",
+        "result": [
+          {
+            "rating": 1,
+            "response_count": 136,
+            "percent": 4.49
+          },
+          {
+            "rating": 2,
+            "response_count": 35,
+            "percent": 1.16
+          },
+          {
+            "rating": 3,
+            "response_count": 107,
+            "percent": 3.53
+          },
+          {
+            "rating": 4,
+            "response_count": 109,
+            "percent": 3.6
+          },
+          {
+            "rating": 5,
+            "response_count": 2642,
+            "percent": 87.22
+          }
+        ]
+      },
+      {
+        "label": "Query 2",
+        "sql": "-- Average score comparison across all EMOJIS questions (IDs 296, 297, 298)\nSELECT sq.id AS question_id,\n       ROUND(AVG(CAST(sa.answer AS DECIMAL(3,1))), 2) AS average_score,\n       COUNT(*) AS response_count\nFROM survey_answer sa\nJOIN survey_question sq ON sa.survey_question_id = sq.id\nJOIN survey s ON sq.survey_id = s.id\nWHERE sq.id IN (296, 297, 298)\n  AND s.survey_number = 'S25120024'\nGROUP BY sq.id;",
+        "result": [
+          {
+            "question_id": 296,
+            "average_score": 4.68,
+            "response_count": 3029
+          },
+          {
+            "question_id": 297,
+            "average_score": 4.77,
+            "response_count": 3029
+          },
+          {
+            "question_id": 298,
+            "average_score": 4.72,
+            "response_count": 3029
+          }
+        ]
+      },
+      {
+        "label": "Query 3",
+        "sql": "-- Monthly trend for the primary EMOJIS question (ID 296): responses and average rating per month\nSELECT DATE_FORMAT(sa.created_date, '%Y-%m') AS month,\n       COUNT(*) AS response_count,\n       ROUND(AVG(CAST(sa.answer AS DECIMAL(3,1))), 2) AS average_rating\nFROM survey_answer sa\nJOIN survey_question sq ON sa.survey_question_id = sq.id\nJOIN survey s ON sq.survey_id = s.id\nWHERE sq.id = 296\n  AND s.survey_number = 'S25120024'\nGROUP BY DATE_FORMAT(sa.created_date, '%Y-%m')\nORDER BY month;",
+        "result": [
+          {
+            "month": "2024-04",
+            "response_count": 1,
+            "average_rating": 4.0
+          },
+          {
+            "month": "2024-05",
+            "response_count": 86,
+            "average_rating": 4.67
+          },
+          {
+            "month": "2024-06",
+            "response_count": 83,
+            "average_rating": 4.8
+          },
+          {
+            "month": "2024-07",
+            "response_count": 87,
+            "average_rating": 4.56
+          },
+          {
+            "month": "2024-08",
+            "response_count": 138,
+            "average_rating": 4.44
+          },
+          {
+            "month": "2024-09",
+            "response_count": 193,
+            "average_rating": 4.77
+          },
+          {
+            "month": "2024-10",
+            "response_count": 182,
+            "average_rating": 4.7
+          },
+          {
+            "month": "2024-11",
+            "response_count": 113,
+            "average_rating": 4.83
+          },
+          {
+            "month": "2024-12",
+            "response_count": 109,
+            "average_rating": 4.45
+          },
+          {
+            "month": "2025-01",
+            "response_count": 113,
+            "average_rating": 4.49
+          },
+          {
+            "month": "2025-02",
+            "response_count": 112,
+            "average_rating": 4.25
+          },
+          {
+            "month": "2025-03",
+            "response_count": 130,
+            "average_rating": 4.77
+          },
+          {
+            "month": "2025-04",
+            "response_count": 145,
+            "average_rating": 4.72
+          },
+          {
+            "month": "2025-05",
+            "response_count": 170,
+            "average_rating": 4.81
+          },
+          {
+            "month": "2025-06",
+            "response_count": 102,
+            "average_rating": 4.8
+          },
+          {
+            "month": "2025-07",
+            "response_count": 149,
+            "average_rating": 4.72
+          },
+          {
+            "month": "2025-08",
+            "response_count": 196,
+            "average_rating": 4.73
+          },
+          {
+            "month": "2025-09",
+            "response_count": 173,
+            "average_rating": 4.57
+          },
+          {
+            "month": "2025-10",
+            "response_count": 196,
+            "average_rating": 4.74
+          },
+          {
+            "month": "2025-11",
+            "response_count": 138,
+            "average_rating": 4.83
+          },
+          {
+            "month": "2025-12",
+            "response_count": 130,
+            "average_rating": 4.53
+          },
+          {
+            "month": "2026-01",
+            "response_count": 38,
+            "average_rating": 4.95
+          },
+          {
+            "month": "2026-02",
+            "response_count": 224,
+            "average_rating": 4.71
+          },
+          {
+            "month": "2026-03",
+            "response_count": 21,
+            "average_rating": 4.95
+          }
+        ]
+      },
+      {
+        "label": "Query 4",
+        "sql": "-- NPS breakdown for the MULTIPLE_CHOICE question (ID 299) with option counts, percentages, and overall NPS score\nSELECT option_id,\n       responses,\n       pct\nFROM (\n  SELECT CAST(sa.selected_options_id AS SIGNED) AS option_id,\n         COUNT(*) AS responses,\n         ROUND(100.0 * COUNT(*) / (\n           SELECT COUNT(*)\n           FROM survey_answer sa2\n           JOIN survey_question sq2 ON sa2.survey_question_id = sq2.id\n           JOIN survey s2 ON sq2.survey_id = s2.id\n           WHERE sq2.id = 299\n             AND s2.survey_number = 'S25120024'\n         ), 2) AS pct\n  FROM survey_answer sa\n  JOIN survey_question sq ON sa.survey_question_id = sq.id\n  JOIN survey s ON sq.survey_id = s.id\n  WHERE sq.id = 299\n    AND s.survey_number = 'S25120024'\n    AND sa.selected_options_id IS NOT NULL\n    AND sa.selected_options_id != ''\n  GROUP BY CAST(sa.selected_options_id AS SIGNED)\n) AS breakdown\nUNION ALL\nSELECT -1 AS option_id,\n       (SELECT ROUND(100.0 * (promoters - detractors) / total, 2)\n        FROM (\n          SELECT\n            SUM(CASE WHEN CAST(sa.selected_options_id AS SIGNED) = 397 THEN 1 ELSE 0 END) AS promoters,\n            SUM(CASE WHEN CAST(sa.selected_options_id AS SIGNED) != 397\n                     AND sa.selected_options_id IS NOT NULL\n                     AND sa.selected_options_id != '' THEN 1 ELSE 0 END) AS detractors,\n            COUNT(*) AS total\n          FROM survey_answer sa\n          JOIN survey_question sq ON sa.survey_question_id = sq.id\n          JOIN survey s ON sq.survey_id = s.id\n          WHERE sq.id = 299\n            AND s.survey_number = 'S25120024'\n        ) AS nps_calc) AS responses,\n       NULL AS pct;",
+        "result": [
+          {
+            "option_id": 397,
+            "responses": 2629.0,
+            "pct": 86.79
+          },
+          {
+            "option_id": 398,
+            "responses": 236.0,
+            "pct": 7.79
+          },
+          {
+            "option_id": 399,
+            "responses": 164.0,
+            "pct": 5.41
+          },
+          {
+            "option_id": -1,
+            "responses": 73.59,
+            "pct": NaN
+          }
+        ]
+      },
+      {
+        "label": "Query 5",
+        "sql": "-- Department-level average rating for the primary EMOJIS question (ID 296)\nSELECT d.name_en AS department,\n       COUNT(*) AS response_count,\n       ROUND(AVG(CAST(sa.answer AS DECIMAL(3,1))), 2) AS average_rating\nFROM survey_answer sa\nJOIN survey_question sq ON sa.survey_question_id = sq.id\nJOIN survey s ON sq.survey_id = s.id\nJOIN department_survey ds ON ds.survey_id = s.id\nJOIN department d ON ds.department_id = d.id\nWHERE sq.id = 296\n  AND s.survey_number = 'S25120024'\nGROUP BY d.name_en;",
+        "result": []
+      }
+    ],
+    "errors": []
   }
 }
