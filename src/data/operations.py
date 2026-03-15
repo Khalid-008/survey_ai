@@ -22,32 +22,25 @@ def get_survey_df(survey_id, date_from=None, date_to=None):
         conn = get_conn()
 
         date_filter = ""
-        params = [survey_id]
         if date_from:
-            date_filter += " AND a.created_date >= %s"
-            params.append(date_from)
+            date_filter += f" AND a.created_date >= '{date_from}'"
         if date_to:
-            date_filter += " AND a.created_date <= %s"
-            params.append(date_to)
+            date_filter += f" AND a.created_date <= '{date_to}'"
 
         query = f"""SELECT 
-                a.external_id as ExternalID,
-                s.survey_number as SurveyNumber,
-                s.subject as SurveyTitle,
-                q.id as QuestionID, 
-                q.question_ar as Questions, 
-                q.question_type as QuestionType, 
-                a.answer as Answer
+                q.id as question_id, 
+                q.question_ar as question_ar, 
+                q.question_type as question_type, 
+                a.answer as answer,
+                a.submission_id as submission_id,
+                a.created_date as created_date
             FROM ms_survey_service.survey s
             INNER JOIN ms_survey_service.survey_question q ON q.survey_id = s.id
             INNER JOIN ms_survey_service.survey_answer a ON q.id = a.survey_question_id
-            WHERE s.survey_number = %s
+            WHERE s.survey_number = '{survey_id}'
             {date_filter}
             """
-        result = pd.read_sql(query, conn, params=params)
-        
-        print(f"DEBUG: get_survey_df({survey_id}) returned {len(result)} rows"
-              + (f" [filter: {date_from} → {date_to}]" if date_from or date_to else ""))
+        result = pd.read_sql(query, conn)
         return result
     finally:
         conn.close()

@@ -10,13 +10,43 @@ import re
 
 def _repair_json_array(json_str):
     """
-    إصلاح خطأ شائع: النموذج يحذف قوس الفتح { قبل عناصر المصفوفة بعد الأول.
-    مثال على الخطأ:  [{...},"type":"bar",...}]
-    الصحيح يكون:     [{...},{"type":"bar",...}]
+    إصلاح أخطاء شائعة في JSON الناتج عن النموذج اللغوي:
+    1. الفاصلة المزدوجة:  ["1",,"2"]  →  ["1","2"]
+    2. قوس الفتح المفقود: [{...},"type":...}]  →  [{...},{"type":...}]
     """
+    # إزالة الفواصل المزدوجة (مثل ["1",,"2","3"])
+    repaired = re.sub(r',\s*,', ',', json_str)
+
     # إضافة { بعد الفاصلة مباشرةً إذا جاء بعدها مفتاح JSON مباشرة بدون قوس فتح
-    repaired = re.sub(r',\s*"(type|title|data)":', r',{"\\1":', json_str)
+    repaired = re.sub(r',\s*\"(type|title|data)\":', r',{\"\\1\":', repaired)
     return repaired
+
+
+def _extract_chart_objects(text):
+    """
+    استراتيجية احتياطية: استخراج كائنات JSON فردية عندما تفشل قراءة المصفوفة الكاملة.
+    مفيدة عندما يكون الرد مقطوعاً في المنتصف (truncated response).
+    """
+    charts = []
+    depth = 0
+    start = None
+    for i, ch in enumerate(text):
+        if ch == '{':
+            if depth == 0:
+                start = i
+            depth += 1
+        elif ch == '}':
+            depth -= 1
+            if depth == 0 and start is not None:
+                candidate = text[start:i + 1]
+                try:
+                    obj = json.loads(candidate)
+                    if isinstance(obj, dict) and 'type' in obj and 'data' in obj:
+                        charts.append(obj)
+                except json.JSONDecodeError:
+                    pass
+                start = None
+    return charts
 
 
 def extract_json_from_response(response_text):
@@ -46,7 +76,7 @@ def extract_json_from_response(response_text):
     except json.JSONDecodeError as e:
         print(f"⚠️ Failed to parse JSON (attempt 1): {e}")
 
-        # المحاولة الثانية: إصلاح الأقواس المفقودة ثم إعادة التحليل
+        # المحاولة الثانية: إصلاح الأخطاء الشائعة ثم إعادة التحليل
         repaired = _repair_json_array(json_str)
         print(f"🔧 Attempting JSON repair...")
         try:
@@ -59,6 +89,13 @@ def extract_json_from_response(response_text):
         except json.JSONDecodeError as e2:
             print(f"⚠️ Failed to parse JSON (attempt 2 after repair): {e2}")
             print(f"Response text: {response_text[:500]}")
+
+        # المحاولة الثالثة: استخراج الكائنات المكتملة فردياً (للردود المقطوعة)
+        print(f"🔧 Attempting fallback: extracting individual chart objects...")
+        charts = _extract_chart_objects(repaired)
+        if charts:
+            print(f"✅ Fallback recovered {len(charts)} chart object(s)")
+            return charts
 
     return []
 

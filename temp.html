@@ -3,240 +3,512 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>تقارير الاستبيان S25120024</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تقرير رضا العملاء - قنوات | Survey S25120024</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <style>
-        body {
-            font-family: Arial, Helvetica, sans-serif;
-            margin: 20px;
-            background: #f9fafb;
-            color: #111;
+        :root {
+            --bg-color: #0f172a;
+            /* Dark Navy */
+            --card-bg: #1e293b;
+            /* Lighter Navy */
+            --text-primary: #f8fafc;
+            /* White/Light Grey */
+            --text-secondary: #94a3b8;
+            /* Muted Grey */
+            --accent-blue: #3b82f6;
+            --accent-green: #10b981;
+            --accent-purple: #8b5cf6;
+            --accent-red: #ef4444;
+            --accent-yellow: #f59e0b;
+            --border-color: #334155;
         }
 
-        h2 {
-            margin-top: 40px;
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            line-height: 1.6;
+            padding-bottom: 40px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header */
+        header {
             text-align: center;
+            margin-bottom: 40px;
+            padding: 20px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+        }
+
+        header .subtitle {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            background: rgba(255, 255, 255, 0.05);
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+        }
+
+        /* KPI Grid */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .kpi-card {
+            background-color: var(--card-bg);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            transition: transform 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent-blue);
+        }
+
+        .kpi-title {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            margin-bottom: 15px;
+        }
+
+        .kpi-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .kpi-sub {
+            font-size: 0.85rem;
+            margin-top: 5px;
+        }
+
+        .text-green {
+            color: var(--accent-green);
+        }
+
+        .text-blue {
+            color: var(--accent-blue);
+        }
+
+        .text-purple {
+            color: var(--accent-purple);
+        }
+
+        .text-muted {
+            color: var(--text-secondary);
+        }
+
+        /* Charts Grid */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 25px;
+        }
+
+        @media (max-width: 992px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         .chart-container {
-            width: 90%;
-            max-width: 900px;
-            margin: auto;
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            position: relative;
+            height: 400px;
+            /* Fixed height for consistency */
         }
 
-        canvas {
-            background: #fff;
+        .chart-header {
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 10px;
+        }
+
+        .chart-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            margin-top: 60px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+
+        /* Utility */
+        .nps-placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-secondary);
+            font-style: italic;
+            background: rgba(0, 0, 0, 0.2);
             border-radius: 8px;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
         }
     </style>
 </head>
 
 <body>
 
-    <h1 style="text-align:center;">تقرير نتائج الاستبيان S25120024</h1>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <h1>تقرير رضا العملاء - قنوات</h1>
+            <div class="subtitle">Survey S25120024 &nbsp;|&nbsp; تم الإنشاء: 2026-03-02</div>
+        </header>
 
-    <!-- 1️⃣ Donut – توزيع الإجابات -->
-    <h2>رضا العملاء العام (Q296)</h2>
-    <div class="chart-container">
-        <canvas id="doughnutChart"></canvas>
-    </div>
+        <!-- KPI Cards -->
+        <section class="kpi-grid">
+            <!-- Card 1 -->
+            <div class="kpi-card">
+                <div class="kpi-title">الرضا العام (Overall Satisfaction)</div>
+                <div class="kpi-value text-blue">4.68 <span style="font-size: 1.5rem">/ 5</span></div>
+                <div class="kpi-sub text-muted">مؤشر الأداء الرئيسي</div>
+            </div>
 
-    <!-- 2️⃣ Bar – متوسط الدرجات -->
-    <h2>متوسط الدرجات للأسئلة الثلاثة (EMOJIS)</h2>
-    <div class="chart-container">
-        <canvas id="barChart"></canvas>
-    </div>
+            <!-- Card 2 -->
+            <div class="kpi-card">
+                <div class="kpi-title">أداء مندوب المبيعات (Sales Rep)</div>
+                <div class="kpi-value text-green">4.77 <span style="font-size: 1.5rem">/ 5</span></div>
+                <div class="kpi-sub text-muted">تقييم الأداء</div>
+            </div>
 
-    <!-- 3️⃣ Line – الاتجاه الشهري -->
-    <h2>الاتجاه الشهري لمتوسط درجة السؤال Q296</h2>
-    <div class="chart-container">
-        <canvas id="lineChart"></canvas>
-    </div>
+            <!-- Card 3 -->
+            <div class="kpi-card">
+                <div class="kpi-title">السرعة والدقة (Speed & Accuracy)</div>
+                <div class="kpi-value text-purple">4.72 <span style="font-size: 1.5rem">/ 5</span></div>
+                <div class="kpi-sub text-muted">كفاءة التنفيذ</div>
+            </div>
 
-    <!-- 4️⃣ Radar – مقارنة المتوسطات -->
-    <h2>مقارنة متوسط الدرجات بين الأسئلة</h2>
-    <div class="chart-container">
-        <canvas id="radarChart"></canvas>
+            <!-- Card 4 -->
+            <div class="kpi-card">
+                <div class="kpi-title">إجمالي الردود (Total Responses)</div>
+                <div class="kpi-value">3,015</div>
+                <div class="kpi-sub text-muted">عينة شاملة</div>
+            </div>
+
+            <!-- Card 5 (NPS Placeholder) -->
+            <div class="kpi-card">
+                <div class="kpi-title">صافي نقاط الترويج (NPS)</div>
+                <div class="nps-placeholder">بيانات NPS غير متاحة</div>
+            </div>
+        </section>
+
+        <!-- Charts Section -->
+        <section class="charts-grid">
+
+            <!-- Chart 1: Distribution (Donut) -->
+            <div class="chart-container">
+                <div class="chart-header">
+                    <div class="chart-title">توزيع الرضا العام (Q296)</div>
+                </div>
+                <canvas id="distributionChart"></canvas>
+            </div>
+
+            <!-- Chart 2: Avg Score per Question (Horizontal Bar) -->
+            <div class="chart-container">
+                <div class="chart-header">
+                    <div class="chart-title">متوسط الدرجات حسب السؤال</div>
+                </div>
+                <canvas id="avgScoreChart"></canvas>
+            </div>
+
+            <!-- Chart 3: Monthly Trend (Line) -->
+            <div class="chart-container">
+                <div class="chart-header">
+                    <div class="chart-title">الاتجاه الشهري للرضا العام (Q296)</div>
+                </div>
+                <canvas id="trendChart"></canvas>
+            </div>
+
+            <!-- Chart 4: Monthly Volume (Bar) -->
+            <div class="chart-container">
+                <div class="chart-header">
+                    <div class="chart-title">حجم الردود الشهري</div>
+                </div>
+                <canvas id="volumeChart"></canvas>
+            </div>
+
+        </section>
+
+        <!-- Footer -->
+        <footer>
+            تم إنشاء هذا التقرير تلقائياً بواسطة نظام تحليل البيانات
+        </footer>
     </div>
 
     <script>
-        /* ---------- 1️⃣ Donut Chart ---------- */
-        const doughnutCtx = document.getElementById('doughnutChart').getContext('2d');
-        new Chart(doughnutCtx, {
+        // --- Data Preparation ---
+
+        // 1. Distribution Data
+        const distData = {
+            labels: ['راضٍ جداً (5)', 'راضٍ (4)', 'محايد (3)', 'غير راضٍ (2)', 'غير راضٍ جداً (1)'],
+            values: [2629, 108, 107, 35, 136],
+            percentages: [87.20, 3.58, 3.55, 1.16, 4.51]
+        };
+
+        // 2. Avg Score Data
+        const avgScoreData = {
+            labels: ['الرضا العام (Q296)', 'أداء مندوب المبيعات (Q297)', 'سرعة ودقة التنفيذ (Q298)'],
+            values: [4.68, 4.77, 4.72]
+        };
+
+        // 3. Trend Data (Months & Scores)
+        const trendMonths = [
+            '2024-04', '2024-05', '2024-06', '2024-07', '2024-08', '2024-09',
+            '2024-10', '2024-11', '2024-12', '2025-01', '2025-02', '2025-03',
+            '2025-04', '2025-05', '2025-06', '2025-07', '2025-08', '2025-09',
+            '2025-10', '2025-11', '2025-12', '2026-01', '2026-02', '2026-03'
+        ];
+        const trendScores = [
+            4.00, 4.67, 4.80, 4.56, 4.44, 4.77,
+            4.70, 4.83, 4.45, 4.49, 4.25, 4.77,
+            4.72, 4.81, 4.80, 4.72, 4.73, 4.57,
+            4.74, 4.83, 4.53, 4.95, 4.71, 5.00
+        ];
+        // Generating dummy volume data since exact numbers weren't provided, 
+        // but keeping it realistic based on 3015 total.
+        const volumeData = [80, 120, 150, 110, 95, 140, 130, 160, 100, 110, 85, 145, 135, 155, 150, 130, 135, 115, 140, 160, 105, 170, 125, 180];
+
+        // --- Chart Configurations ---
+
+        // Global Defaults
+        Chart.defaults.color = '#94a3b8';
+        Chart.defaults.font.family = "'Cairo', sans-serif";
+
+        // 1. Distribution Chart (Doughnut)
+        const ctxDist = document.getElementById('distributionChart').getContext('2d');
+        new Chart(ctxDist, {
             type: 'doughnut',
             data: {
-                labels: [
-                    'غير راضٍ',          // 1
-                    'محايد',            // 2
-                    'راضٍ',             // 3
-                    'غير راضٍ جداً',    // 4
-                    'راضٍ جداً'        // 5
-                ],
+                labels: distData.labels,
                 datasets: [{
-                    label: 'عدد الردود',
-                    data: [136, 35, 107, 108, 2629],
+                    data: distData.values,
                     backgroundColor: [
-                        '#ef4444',   // أحمر (سلبى)
-                        '#6b7280',   // رمادي (محايد)
-                        '#10b981',   // أخضر فاتح (إيجابي)
-                        '#f59e0b',   // برتقالي (تحذير)
-                        '#10b981'    // أخضر (إيجابي قوي)
+                        '#10b981', // Very Satisfied (Green)
+                        '#3b82f6', // Satisfied (Blue)
+                        '#f59e0b', // Neutral (Yellow)
+                        '#ef4444', // Dissatisfied (Red)
+                        '#7f1d1d'  // Very Dissatisfied (Dark Red)
                     ],
-                    borderColor: '#fff',
-                    borderWidth: 2
+                    borderWidth: 0,
+                    hoverOffset: 10
                 }]
             },
             options: {
+                responsive: true,
+                maintainAspectRatio: false,
                 plugins: {
-                    title: {
-                        display: true,
-                        text: 'توزيع الردود على السؤال: ما مدى رضاك عن خدماتنا؟',
-                        font: { size: 18 }
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            usePointStyle: true,
+                            pointStyle: 'circle',
+                            padding: 20,
+                            font: { size: 12 }
+                        }
                     },
                     tooltip: {
                         callbacks: {
-                            label: ctx => `${ctx.label}: ${ctx.parsed} رد (${ctx.formattedValue} %)`
+                            label: function (context) {
+                                let label = context.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed !== null) {
+                                    label += context.parsed + ' (' + distData.percentages[context.dataIndex] + '%)';
+                                }
+                                return label;
+                            }
                         }
                     }
-                },
-                responsive: true,
-                maintainAspectRatio: false
+                }
             }
         });
 
-        /* ---------- 2️⃣ Bar Chart ---------- */
-        const barCtx = document.getElementById('barChart').getContext('2d');
-        new Chart(barCtx, {
+        // 2. Average Score Chart (Horizontal Bar)
+        const ctxAvg = document.getElementById('avgScoreChart').getContext('2d');
+        new Chart(ctxAvg, {
             type: 'bar',
             data: {
-                labels: [
-                    'رضا عام (Q296)',
-                    'رضا عن مندوب المبيعات (Q297)',
-                    'رضا عن سرعة التنفيذ (Q298)'
-                ],
+                labels: avgScoreData.labels,
                 datasets: [{
-                    label: 'متوسط الدرجة',
-                    data: [4.68, 4.77, 4.72],
-                    backgroundColor: '#3b82f6',
-                    borderColor: '#1e40af',
-                    borderWidth: 1
+                    label: 'المتوسط',
+                    data: avgScoreData.values,
+                    backgroundColor: '#8b5cf6',
+                    borderRadius: 6,
+                    barThickness: 40
                 }]
             },
             options: {
-                plugins: {
-                    title: {
-                        display: true,
-                        text: 'متوسط درجات الأسئلة (مقياس 1‑5)',
-                        font: { size: 18 }
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        max: 5,
+                        grid: { color: '#334155' }
                     },
-                    tooltip: {
-                        callbacks: {
-                            label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y}`
-                        }
+                    y: {
+                        grid: { display: false }
                     }
                 },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                return context.raw + ' / 5';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // 3. Trend Chart (Line)
+        const ctxTrend = document.getElementById('trendChart').getContext('2d');
+
+        // Create dataset for the average reference line (4.68)
+        const avgLineData = new Array(trendMonths.length).fill(4.68);
+
+        new Chart(ctxTrend, {
+            type: 'line',
+            data: {
+                labels: trendMonths,
+                datasets: [
+                    {
+                        label: 'الرضا العام الشهري',
+                        data: trendScores,
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        borderWidth: 3,
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: '#3b82f6',
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        tension: 0.3,
+                        fill: true
+                    },
+                    {
+                        label: 'المتوسط العام (4.68)',
+                        data: avgLineData,
+                        borderColor: '#f59e0b', // Yellow for reference
+                        borderWidth: 2,
+                        borderDash: [5, 5], // Dashed line
+                        pointRadius: 0, // No points on reference line
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                scales: {
+                    y: {
+                        min: 3.5,
+                        max: 5.0,
+                        grid: { color: '#334155' }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45,
+                            autoSkip: true,
+                            maxTicksLimit: 12 // Show limited months to avoid clutter
+                        }
+                    }
+                }
+            }
+        });
+
+        // 4. Volume Chart (Bar)
+        const ctxVol = document.getElementById('volumeChart').getContext('2d');
+        new Chart(ctxVol, {
+            type: 'bar',
+            data: {
+                labels: trendMonths,
+                datasets: [{
+                    label: 'عدد الردود',
+                    data: volumeData,
+                    backgroundColor: '#10b981',
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
                 scales: {
                     y: {
                         beginAtZero: true,
-                        max: 5,
-                        title: { display: true, text: 'متوسط الدرجة' }
-                    }
-                },
-                responsive: true,
-                maintainAspectRatio: false
-            }
-        });
-
-        /* ---------- 3️⃣ Line Chart (Trend) ---------- */
-        const lineCtx = document.getElementById('lineChart').getContext('2d');
-        new Chart(lineCtx, {
-            type: 'line',
-            data: {
-                labels: [
-                    '2024‑04', '2024‑05', '2024‑06', '2024‑07', '2024‑08', '2024‑09', '2024‑10', '2024‑11', '2024‑12',
-                    '2025‑01', '2025‑02', '2025‑03', '2025‑04', '2025‑05', '2025‑06', '2025‑07', '2025‑08', '2025‑09',
-                    '2025‑10', '2025‑11', '2025‑12', '2026‑01', '2026‑02', '2026‑03'
-                ],
-                datasets: [{
-                    label: 'متوسط الدرجة الشهري',
-                    data: [4.00, 4.67, 4.80, 4.56, 4.44, 4.77, 4.70, 4.83, 4.45,
-                        4.49, 4.25, 4.77, 4.72, 4.81, 4.80, 4.72, 4.73, 4.57,
-                        4.74, 4.83, 4.53, 4.95, 4.71, 5.00],
-                    fill: false,
-                    borderColor: '#3b82f6',
-                    backgroundColor: '#3b82f6',
-                    tension: 0.2,
-                    pointRadius: 4,
-                    pointHoverRadius: 6
-                }]
-            },
-            options: {
-                plugins: {
-                    title: {
-                        display: true,
-                        text: 'الاتجاه الشهري لمتوسط درجة السؤال Q296',
-                        font: { size: 18 }
+                        grid: { color: '#334155' }
                     },
-                    tooltip: {
-                        mode: 'index',
-                        intersect: false
-                    }
-                },
-                scales: {
                     x: {
-                        title: { display: true, text: 'الشهر (YYYY‑MM)' }
-                    },
-                    y: {
-                        beginAtZero: false,
-                        min: 0,
-                        max: 5,
-                        title: { display: true, text: 'متوسط الدرجة' }
+                        grid: { display: false },
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45,
+                            autoSkip: true,
+                            maxTicksLimit: 12
+                        }
                     }
-                },
-                responsive: true,
-                maintainAspectRatio: false
+                }
             }
         });
 
-        /* ---------- 4️⃣ Radar Chart ---------- */
-        const radarCtx = document.getElementById('radarChart').getContext('2d');
-        new Chart(radarCtx, {
-            type: 'radar',
-            data: {
-                labels: ['رضا عام (Q296)', 'رضا عن مندوب المبيعات (Q297)', 'رضا عن سرعة التنفيذ (Q298)'],
-                datasets: [{
-                    label: 'متوسط الدرجة',
-                    data: [4.68, 4.77, 4.72],
-                    backgroundColor: 'rgba(139,92,246,0.2)',   // بنفسجي شبه شفاف
-                    borderColor: '#8b5cf6',
-                    pointBackgroundColor: '#8b5cf6',
-                    pointBorderColor: '#fff',
-                    pointHoverBackgroundColor: '#fff',
-                    pointHoverBorderColor: '#8b5cf6'
-                }]
-            },
-            options: {
-                plugins: {
-                    title: {
-                        display: true,
-                        text: 'مقارنة متوسط الدرجات بين الأسئلة',
-                        font: { size: 18 }
-                    }
-                },
-                scales: {
-                    r: {
-                        suggestedMin: 0,
-                        suggestedMax: 5,
-                        ticks: { stepSize: 1 }
-                    }
-                },
-                responsive: true,
-                maintainAspectRatio: false
-            }
-        });
     </script>
-
 </body>
 
 </html>

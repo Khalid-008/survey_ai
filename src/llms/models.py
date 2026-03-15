@@ -16,7 +16,18 @@ model = ChatOpenAI(
     api_key=llm_mux_api_key,
     model="gpt-oss-120b",
     timeout=60,
-    max_retries=2
+    max_retries=2,
+    max_tokens=4096
+)
+
+qwen3_model = ChatOpenAI(
+    base_url=llm_mux_url,
+    api_key=llm_mux_api_key,
+    model="Qwen/Qwen3.5-27B",
+    timeout=300,
+    max_retries=2,
+    max_tokens=16384,
+    model_kwargs={"extra_body": {"enable_thinking": True, "thinking_budget": 10000}}
 )
 
 # Alternative Google model

@@ -12,6 +12,8 @@ class State(MessagesState):
     survey_id: Any
     questions : list[dict]
     survey_data: list[dict]
+    text_questions_data: list[dict]              # بيانات أسئلة النصوص (TEXT_INPUT) الخام
+    selection_questions_data: list[dict]         # بيانات أسئلة الخيارات (غير TEXT_INPUT) الخام
     text_questions_result: dict[str, Any]       # نتائج تحليل أسئلة النصوص
     selection_questions_result: dict[str, Any]   # نتائج تحليل أسئلة الخيارات
     chart_configs: list[dict]                    # إعدادات الرسوم البيانية المولّدة

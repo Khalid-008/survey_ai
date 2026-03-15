@@ -27,7 +27,7 @@ if src_dir not in sys.path:
     sys.path.insert(0, src_dir)
 
 
-from llms.models import model
+from llms.models import model, qwen3_model
 
 from agents.graphs.setup import State
 
@@ -72,10 +72,9 @@ warnings.filterwarnings('ignore')
 
 def retrieve_survey_question(state: State) -> Dict[str, Any]:
     """
-
-    STAGE 1: استرجاع بيانات الاستبيان الخام من قاعدة البيانات.
-
-    لا يحدث أي إثراء أو تنظيف هنا — فقط تحميل البيانات.
+    STAGE 1: استرجاع بيانات الاستبيان الخام وتصنيف الأسئلة إلى مجموعتين:
+      • text_questions_data     — أسئلة TEXT_INPUT
+      • selection_questions_data — باقي أنواع الأسئلة (اختيارات)
     """
 
     try:
@@ -87,20 +86,30 @@ def retrieve_survey_question(state: State) -> Dict[str, Any]:
         date_to   = state.get("date_to")
 
 
-        survey_df = get_survey_df(survey_id, date_from=date_from, date_to=date_to)
+        print("=" * 60)
+        print("RETRIEVE SURVEY QUESTIONS NODE")
+        print("=" * 60)
+        print(f"📋 Survey ID : {survey_id}")
+        if date_from or date_to:
+            print(f"📅 Date filter: {date_from} → {date_to}")
 
+        survey_df = get_survey_df(survey_id, date_from=date_from, date_to=date_to)
 
         rows = len(survey_df)
 
-        print(f"📊 Loaded {rows} rows for survey {survey_id}"
-              + (f" [filter: {date_from} → {date_to}]" if date_from or date_to else ""))
-
+        print(f"📊 Loaded {rows} rows from database")
 
         if survey_df.empty:
 
+            print("⚠️  No data found — returning empty groups")
+
             return {
 
-                "survey_data": [],
+                "survey_data":             [],
+
+                "text_questions_data":      [],
+
+                "selection_questions_data": [],
 
                 "messages": [
 
@@ -114,23 +123,62 @@ def retrieve_survey_question(state: State) -> Dict[str, Any]:
         survey_data = survey_df.to_dict(orient="records")
 
 
+        # ── تصنيف الأسئلة إلى مجموعتين ──────────────────────────────────────
+
+        all_types = survey_df["question_type"].str.upper().str.strip().unique().tolist()
+        print(f"🔍 All question types detected: {all_types}")
+
+
+        TEXT_TYPE = "TEXT_INPUT"
+
+        # ── المجموعة 1: أسئلة نصية (TEXT_INPUT) ──
+        text_mask           = survey_df["question_type"].str.upper().str.strip() == TEXT_TYPE
+        text_df             = survey_df[text_mask]
+        text_questions_data = text_df.to_dict(orient="records")
+
+        text_q_ids = (
+            text_df["question_id"].unique().tolist()
+            if "question_id" in text_df.columns else []
+        )
+
+        # ── المجموعة 2: أسئلة الاختيارات (كل ما ليس TEXT_INPUT) ──
+        selection_df             = survey_df[~text_mask]
+        selection_questions_data = selection_df.to_dict(orient="records")
+
+        sel_q_ids = (
+            selection_df["question_id"].unique().tolist()
+            if "question_id" in selection_df.columns else []
+        )
+        sel_types = (
+            selection_df["question_type"].str.upper().str.strip().unique().tolist()
+            if not selection_df.empty else []
+        )
+
+
+        print("-" * 60)
+        print(f"✅ Classification complete")
+        print(f"   • Total rows     : {rows}")
+        print(f"   • Text rows      : {len(text_questions_data)} ({len(text_q_ids)} questions)")
+        print(f"   • Selection rows : {len(selection_questions_data)} ({len(sel_q_ids)} questions)")
+        print("=" * 60)
+
+
         return {
 
-            "survey_data": survey_data,
-
-            "text_questions_result": {},
-
+            "survey_data":             survey_data,
+            "text_questions_data":      text_questions_data,
+            "selection_questions_data": selection_questions_data,
+            "text_questions_result":    {},
             "selection_questions_result": {},
-
             "messages": [
-
                 AIMessage(
-
-                    content=f"Survey data retrieved: {rows} rows ready for analysis."
+                    content=(
+                        f"Survey data retrieved: {rows} rows. "
+                        f"Classified → Text: {len(text_questions_data)} rows ({len(text_q_ids)} questions), "
+                        f"Selection: {len(selection_questions_data)} rows ({len(sel_q_ids)} questions)."
+                    )
                 )
-
             ]
-
         }
 
 
@@ -156,26 +204,10 @@ def retrieve_survey_question(state: State) -> Dict[str, Any]:
 
 
 def analyze_selection_questions(state: State) -> Dict[str, Any]:
-    """
-
-    STAGE 2: تحليل أسئلة الخيارات (غير TEXT_INPUT) باستخدام
-
-    selection_pipeline الذي يولّد كويريات MySQL عبر وكيلين LLM:
-
-      - وكيل 1: يولّد كويري توزيع الإجابات لكل سؤال
-
-      - وكيل 2: يولّد كويري العلاقة بين الأسئلة
-
-    ثم ينفّذ الكويريين ويحفظ النتائج في الـ state.
-    """
 
     try:
 
         survey_id = state["survey_id"]
-
-        date_from = state.get("date_from")
-
-        date_to   = state.get("date_to")
 
 
         print("=" * 60)
@@ -186,14 +218,10 @@ def analyze_selection_questions(state: State) -> Dict[str, Any]:
 
         print(f"Survey ID: {survey_id}")
 
-        if date_from or date_to:
-
-            print(f"📅 Date filter: {date_from} → {date_to}")
-
 
         # تشغيل مسار تحليل الخيارات
 
-        pipeline_result = run_selection_pipeline(survey_id, date_from=date_from, date_to=date_to)
+        pipeline_result = run_selection_pipeline(state["selection_questions_data"],survey_id)
 
 
         # تحويل DataFrames إلى قوائم قابلة للتسلسل
@@ -750,7 +778,7 @@ def generate_charts_agent(state: State) -> Command[Literal["__end__"]]:
 
         print("🤖 Invoking LLM for chart generation..."
 )
-        response = model.invoke(prompt_messages)
+        response = qwen3_model.invoke(prompt_messages)
 
         response_text = response.content
 

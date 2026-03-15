@@ -3,19 +3,35 @@ from langchain_core.prompts import ChatPromptTemplate
 
 
 _SYSTEM = """\
-You are an expert data analyst with 15 years of experience across multiple domains
-(customer satisfaction, HR, operations, finance, field sales, banking, e-commerce, etc.)
-
-You will be given a survey questions_block containing questions, their types,
+You are an expert data analyst. You will be given a survey questions_block containing questions, their types,
 and distinct answers. Your job is to generate exactly 5 high-impact analytical SQL queries.
 
 ## Database Schema:
-- survey (id, survey_number)
-- survey_question (id, survey_id, question_type, question_ar, question_en, order_by)
-- survey_answer (id, survey_question_id, answer, selected_options_id, submission_id, created_date)
-- question_option (id, question_id, option_text_ar, option_text_en)
-- department (id, name_ar, name_en)
+- survey (id, survey_number, subject, subject_ar, description, status, is_public, answer_time, department_id, is_deleted)
+- survey_question (id, survey_id, question_type, question_en, question_ar, question_header_en, question_header_ar, is_required, order_by, created_by, created_date)
+- survey_answer (id, survey_question_id, answer, file_url, user_id, location, external_id, submission_id, selected_options_id, created_date)
+- question_option (id, question_id, option_text_en, option_text_ar)
+- department (id, name_en, name_ar)
 - department_survey (id, survey_id, department_id)
+
+## Table Relationships:
+- survey.id = survey_question.survey_id
+- survey_question.id = survey_answer.survey_question_id
+- question_option.question_id = survey_question.id
+- department_survey.survey_id = survey.id
+- department_survey.department_id = department.id
+
+
+## Columns description:
+| Column         | Source                        | Description                                      |
+|----------------|-------------------------------|--------------------------------------------------|
+| question_id    | survey_question.id            | Unique question identifier                       |
+| question_ar    | survey_question.question_ar   | Question text in Arabic                          |
+| question_type  | survey_question.question_type | Question type (EMOJIS, YES_NO, MULTIPLE_CHOICE…) |
+| answer         | survey_answer.answer          | Raw answer value stored by the respondent        |
+| submission_id  | survey_answer.submission_id   | Groups all answers from a single form submission |
+| created_date   | survey_answer.created_date    | Timestamp when the answer was submitted          |
+
 
 ## CRITICAL — SQL Syntax Rules (MySQL 5.7 strict mode):
 
@@ -37,38 +53,32 @@ When grouping on a CASE expression, repeat the FULL CASE block verbatim in GROUP
 Never insert /* ... */ comments, plain English sentences, or placeholder text inside a SQL statement.
 The only allowed comments are the -- header comment before each query.
 
-### Rule 6 — Cross-question pivot: use MAX(CASE WHEN ...) not AVG.
-When pivoting multiple questions per submission, use:
-  MAX(CASE WHEN sq.id = X THEN CAST(sa.answer AS SIGNED) END) AS q_X_score
-Then compute the composite score in an outer SELECT:
-  (q_296_score + q_297_score + q_298_score) / 3.0 AS composite
-
-Pattern:
-  SELECT submission_id,
-         MAX(CASE WHEN sq.id = 296 THEN CAST(sa.answer AS SIGNED) END) AS q_296,
-         MAX(CASE WHEN sq.id = 297 THEN CAST(sa.answer AS SIGNED) END) AS q_297,
-         MAX(CASE WHEN sq.id = 298 THEN CAST(sa.answer AS SIGNED) END) AS q_298
-  FROM ...
-  GROUP BY submission_id
-
-### Rule 7 — MULTIPLE_CHOICE / DROPDOWN:
+### Rule 6 — MULTIPLE_CHOICE / DROPDOWN:
 Join directly: JOIN question_option qo ON qo.id = CAST(sa.selected_options_id AS SIGNED)
 Always filter: AND sa.selected_options_id IS NOT NULL AND sa.selected_options_id != ''
 The table survey_answer_option does NOT exist — never reference it.
 
-### Rule 8 — NPS classification:
+### Rule 7 — NPS classification:
 Use option IDs extracted from the questions_block sample answers (never use LIKE on text).
 CASE WHEN CAST(sa.selected_options_id AS SIGNED) IN (...) THEN ...
 Never leave placeholder comments like /* detractor IDs */ inside the SQL.
 
-### Rule 9 — EMOJIS type:
+### Rule 8 — EMOJIS type:
 Comparisons: CAST(sa.answer AS SIGNED)
 Averages:    CAST(sa.answer AS DECIMAL(3,1))
 
-### Rule 10 — YES_NO type:
+### Rule 9 — YES_NO type:
 answer '1' = Yes, answer '0' = No
 
-### Rule 11 — TEXT_INPUT: skip, do not generate a query for it.
+### Rule 10 — TEXT_INPUT: skip, do not generate a query for it.
+
+### Rule 11 — Department breakdown:
+To join answers to departments, use this path:
+  survey_answer sa
+  JOIN survey_question sq ON sq.id = sa.survey_question_id
+  JOIN survey s ON s.id = sq.survey_id
+  JOIN department_survey ds ON ds.survey_id = s.id
+  JOIN department d ON d.id = ds.department_id
 
 ## Output Format Rules:
 - Return ONLY the 5 SQL queries.

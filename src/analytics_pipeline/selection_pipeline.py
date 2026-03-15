@@ -30,7 +30,7 @@ if src_dir not in sys.path:
 
 
 
-from llms.models import model
+from llms.models import model, qwen3_model
 
 
 from data.operations import get_selection_questions_data, execute_raw_query
@@ -70,39 +70,6 @@ warnings.filterwarnings("ignore")
 
 
 # ============================================================================
-
-
-
-def fetch_selection_questions(survey_number: str, date_from=None, date_to=None) -> pd.DataFrame:
-
-
-    print(f"\n{'='*60}")
-
-
-    print(f"📋 Fetching selection questions for survey: {survey_number}")
-    if date_from or date_to:
-        print(f"   📅 Date filter: {date_from} → {date_to}")
-
-
-    print(f"{'='*60}")
-
-
-    df = get_selection_questions_data(survey_number, date_from=date_from, date_to=date_to)
-
-
-    if df.empty:
-
-
-        print("⚠️  No selection questions found for this survey.")
-
-
-    else:
-
-
-        print(f"✅ Found {df['question_id'].nunique()} question(s), {len(df)} answer rows.")
-    return df
-
-
 
 
 def group_answers_by_question(df: pd.DataFrame) -> dict[int, dict[str, Any]]:
@@ -192,7 +159,7 @@ def get_sample_answers_per_question(df: pd.DataFrame, n: int = 3) -> dict[int, l
 
 
 
-def run_selection_pipeline(survey_number: str, date_from=None, date_to=None) -> dict[str, Any]:
+def run_selection_pipeline(selection_questions_data: pd.DataFrame, survey_number: str) -> dict[str, Any]:
 
 
     print(f"\n{'#'*60}")
@@ -215,34 +182,24 @@ def run_selection_pipeline(survey_number: str, date_from=None, date_to=None) -> 
 
 
 
-    # 1. Fetch
+    # 1. تحويل البيانات وتحقق
+    print("📥 Step 1 — Preparing selection questions data...")
 
+    if isinstance(selection_questions_data, list):
+        selection_questions_data = pd.DataFrame(selection_questions_data)
 
-    print("📥 Step 1 — Fetching selection questions...")
-
-    df = fetch_selection_questions(survey_number, date_from=date_from, date_to=date_to)
-
-
-    if df.empty:
-
-
+    if selection_questions_data.empty:
         result["errors"].append("No selection questions found.")
         return result
 
-
+    print(f"   ✅ {len(selection_questions_data)} rows | {selection_questions_data['question_id'].nunique()} questions")
 
     # 2. Group & distinct
-
-
     print("\n📊 Step 2 — Grouping answers...")
 
-    grouped  = group_answers_by_question(df)
-
-
+    grouped  = group_answers_by_question(selection_questions_data)
     distinct = get_distinct_answers_per_question(grouped)
-
-
-    samples  = get_sample_answers_per_question(df, n=3)
+    samples  = get_sample_answers_per_question(selection_questions_data, n=3)
 
 
 
@@ -275,15 +232,17 @@ def run_selection_pipeline(survey_number: str, date_from=None, date_to=None) -> 
 
     try:
 
+        prompt_messages = selection_analytics_prompt.invoke({"questions_block": questions_block})
 
-        chain    = selection_analytics_prompt | model
-
-
-        response = chain.invoke({"questions_block": questions_block})
-
+        response   = qwen3_model.invoke(prompt_messages)
 
         raw_output = response.content
 
+        if not raw_output:
+            print(f"   ⚠️ Empty content! Full response debug:")
+            print(f"      type: {type(response)}")
+            print(f"      additional_kwargs: {response.additional_kwargs}")
+            print(f"      response_metadata: {response.response_metadata}")
 
         print(f"   ✅ LLM responded ({len(raw_output)} chars).")
 
