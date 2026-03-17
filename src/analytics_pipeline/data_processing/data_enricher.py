@@ -78,11 +78,9 @@ def enrich_text_question(df, survey_title, question_text, question_id):
     return results
 
 
-def process_survey_questions(survey_df, survey_title):
+def _run_enrichment(survey_df, survey_title):
     """
-    معالجة جميع أسئلة الاستبيان مع إثراء أسئلة TEXT_INPUT.
-
-    يُرجع: (enriched_df, analysis_results, metrics)
+    دالة داخلية — تُشغّل الإثراء وتُرجع كل النتائج الخام في قاموس واحد.
     """
     enriched_groups = []
     all_analysis_results = {}
@@ -90,9 +88,9 @@ def process_survey_questions(survey_df, survey_title):
     enriched_count = 0
     failed_count = 0
 
-    for question_id, group_df in survey_df.groupby("QuestionID"):
-        question_type = str(group_df["QuestionType"].iloc[0]).upper().strip()
-        question_text = group_df["Questions"].iloc[0]
+    for question_id, group_df in survey_df.groupby("question_id"):
+        question_type = str(group_df["question_type"].iloc[0]).upper().strip()
+        question_text = group_df["question_ar"].iloc[0]
 
         if question_type == "TEXT_INPUT":
             text_input_count += 1
@@ -100,26 +98,45 @@ def process_survey_questions(survey_df, survey_title):
                 results = enrich_text_question(
                     group_df, survey_title, question_text, str(question_id)
                 )
-                enriched_groups.append(results['enriched_df'])
+                enriched_groups.append(results["enriched_df"])
                 all_analysis_results[str(question_id)] = results
                 enriched_count += 1
-
             except Exception as e:
-                print(f"⚠️ Failed to enrich question {question_id}, using raw data")
+                print(f"⚠️ Failed to enrich question {question_id}: {e}")
                 enriched_groups.append(add_default_enrichment_columns(group_df))
                 failed_count += 1
         else:
-            # الأسئلة غير النصية تحصل على أعمدة إثراء افتراضية
             enriched_groups.append(add_default_enrichment_columns(group_df))
 
-    enriched_df = pd.concat(enriched_groups, ignore_index=True)
+    enriched_df = pd.concat(enriched_groups, ignore_index=True) if enriched_groups else pd.DataFrame()
 
-    metrics = SurveyMetrics(
-        rows_before_cleaning=0,   # يُحدد من قِبل المُستدعي
-        rows_after_cleaning=0,    # يُحدد من قِبل المُستدعي
-        text_input_questions=text_input_count,
-        enriched_questions=enriched_count,
-        failed_questions=failed_count
+    return {
+        "enriched_df":          enriched_df,
+        "analysis_results":     all_analysis_results,
+        "text_input_count":     text_input_count,
+        "enriched_count":       enriched_count,
+        "failed_count":         failed_count,
+    }
+
+
+def enrich_survey_df(survey_df, survey_title):
+    """يُرجع DataFrame مُثرى بأعمدة NLP."""
+    return _run_enrichment(survey_df, survey_title)["enriched_df"]
+
+
+def get_analysis_results(survey_df, survey_title):
+    """يُرجع قاموس نتائج التحليل لكل سؤال TEXT_INPUT."""
+    return _run_enrichment(survey_df, survey_title)["analysis_results"]
+
+
+def get_survey_metrics(survey_df, survey_title):
+    """يُرجع كائن SurveyMetrics يحتوي على إحصائيات المعالجة."""
+    raw = _run_enrichment(survey_df, survey_title)
+    return SurveyMetrics(
+        rows_before_cleaning=0,
+        rows_after_cleaning=0,
+        text_input_questions=raw["text_input_count"],
+        enriched_questions=raw["enriched_count"],
+        failed_questions=raw["failed_count"],
     )
 
-    return enriched_df, all_analysis_results, metrics

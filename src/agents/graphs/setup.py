@@ -16,6 +16,7 @@ class State(MessagesState):
     selection_questions_data: list[dict]         # بيانات أسئلة الخيارات (غير TEXT_INPUT) الخام
     text_questions_result: dict[str, Any]       # نتائج تحليل أسئلة النصوص
     selection_questions_result: dict[str, Any]   # نتائج تحليل أسئلة الخيارات
+    selection_prepared: dict[str, Any]           # مخرجات prepare_selection_data (grouped, distinct, samples, questions_block)
     chart_configs: list[dict]                    # إعدادات الرسوم البيانية المولّدة
     date_from: Optional[str]                     # فلتر التاريخ — بداية (YYYY-MM-DD)
     date_to: Optional[str]                       # فلتر التاريخ — نهاية (YYYY-MM-DD)

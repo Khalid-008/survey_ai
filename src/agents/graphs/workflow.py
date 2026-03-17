@@ -3,6 +3,7 @@ from agents.graphs.setup import State, memory
 from langchain_core.messages import HumanMessage, AIMessage
 from agents.graphs.nodes import (
     retrieve_survey_question,
+    prepare_selection_data,
     analyze_selection_questions,
     analyze_text_questions,
     synthesis_agent,
@@ -21,6 +22,7 @@ def create_survey_insight_workflow(survey_id: int, user_message: str, session_id
 
     # ── تسجيل النودز ──────────────────────────────────────────────────────────
     builder.add_node("retrieve_survey_question",    retrieve_survey_question)
+    builder.add_node("prepare_selection_data",      prepare_selection_data)
     builder.add_node("analyze_selection_questions", analyze_selection_questions)
     builder.add_node("analyze_text_questions",      analyze_text_questions)
     builder.add_node("synthesis_agent",             synthesis_agent)
@@ -28,7 +30,8 @@ def create_survey_insight_workflow(survey_id: int, user_message: str, session_id
 
     # ── الحواف (التسلسل) ──────────────────────────────────────────────────────
     builder.add_edge(START,                          "retrieve_survey_question")
-    builder.add_edge("retrieve_survey_question",     "analyze_selection_questions")
+    builder.add_edge("retrieve_survey_question",     "prepare_selection_data")
+    builder.add_edge("prepare_selection_data",       "analyze_selection_questions")
     builder.add_edge("analyze_selection_questions",  END)
     builder.add_edge("analyze_text_questions",       "synthesis_agent")
     builder.add_edge("synthesis_agent",              "generate_charts_agent")

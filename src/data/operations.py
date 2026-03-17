@@ -28,6 +28,7 @@ def get_survey_df(survey_id, date_from=None, date_to=None):
             date_filter += f" AND a.created_date <= '{date_to}'"
 
         query = f"""SELECT 
+                s.subject as survey_title,
                 q.id as question_id, 
                 q.question_ar as question_ar, 
                 q.question_type as question_type, 

@@ -9,6 +9,8 @@ load_dotenv()
 google_api_key = os.getenv("GOOGLE_API_KEY")
 llm_mux_url = os.getenv("LLM_MUX_URL")
 llm_mux_api_key = os.getenv("LLM_MUX_API_KEY")
+qwen3_mux_url = os.getenv("QWEN3_LLM_MUX_URL")
+qwen3_mux_api_key = os.getenv("QWEN3_LLM_MUX_API_KEY")
 
 # Primary model (GPT-OSS via LLM Mux)
 model = ChatOpenAI(
@@ -21,13 +23,12 @@ model = ChatOpenAI(
 )
 
 qwen3_model = ChatOpenAI(
-    base_url=llm_mux_url,
-    api_key=llm_mux_api_key,
+    base_url=qwen3_mux_url,
+    api_key=qwen3_mux_api_key,
     model="Qwen/Qwen3.5-27B",
     timeout=300,
     max_retries=2,
-    max_tokens=16384,
-    model_kwargs={"extra_body": {"enable_thinking": True, "thinking_budget": 10000}}
+    max_tokens=16384
 )
 
 # Alternative Google model

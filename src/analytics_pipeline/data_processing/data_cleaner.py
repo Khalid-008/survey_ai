@@ -67,15 +67,9 @@ def clean_survey_data(df):
     df = apply_answer_mapping(df)
     df = clean_text_patterns(df)
 
-    # تطبيق حذف المكررات فقط على الأسئلة النصية (TEXT_INPUT)
-    # لتجنب تكرار نفس التعليق الطويل، بينما نحافظ على التكرار في الأسئلة الإحصائية
-    if "QuestionType" in df.columns:
-        is_text = df["QuestionType"].str.upper().str.strip() == "TEXT_INPUT"
-        text_df = df[is_text].drop_duplicates(subset=["QuestionID", "Answer_normalized"])
-        non_text_df = df[~is_text]
-        df = pd.concat([text_df, non_text_df], ignore_index=True)
-    else:
-        # إذا لم يتوفر نوع السؤال، نحافظ على كل البيانات كإجراء احترازي
-        pass
+    # فلترة جميع أسئلة TEXT_INPUT — لا يتم تضمينها في التحليل
+    if "question_type" in df.columns:
+        is_text = df["question_type"].str.upper().str.strip() == "TEXT_INPUT"
+        df = df[~is_text].reset_index(drop=True)
 
     return df

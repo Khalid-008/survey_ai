@@ -129,8 +129,6 @@ def format_questions_block(grouped: dict, distinct: dict, sample_answers: dict |
 
 def save_results_to_file(
     survey_number: str,
-    grouped: dict,
-    distinct: dict,
     query_results: list[dict],
     errors: list
 ) -> str:
@@ -144,13 +142,7 @@ def save_results_to_file(
         f.write(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
         f.write("=" * 70 + "\n\n")
 
-        f.write("── QUESTIONS & DISTINCT ANSWERS ──\n")
-        for qid, info in grouped.items():
-            f.write(f"\nQ{qid}: {info['text']}\n")
-            f.write(f"  Type   : {info['type']}\n")
-            f.write(f"  Distinct answers ({len(distinct.get(qid, []))}):\n")
-            for ans in distinct.get(qid, []):
-                f.write(f"    • {ans}\n")
+        f.write("── QUESTIONS ──\n")
 
         for idx, qr in enumerate(query_results, start=1):
             label = qr.get("label", f"Query {idx}")
@@ -171,14 +163,6 @@ def save_results_to_file(
             f.write("\n\n── ERRORS ──\n")
             for err in errors:
                 f.write(f"  • {err}\n")
-
-    for idx, qr in enumerate(query_results, start=1):
-        df = qr.get("result", pd.DataFrame())
-        label_safe = re.sub(r"[^\w]", "_", qr.get("label", f"query_{idx}"))[:40]
-        if not df.empty:
-            csv_path = os.path.join(EXPORTS_DIR, f"{base_name}_{label_safe}.csv")
-            df.to_csv(csv_path, index=False, encoding="utf-8-sig")
-            print(f"📄 CSV [{label_safe}]: {csv_path}")
 
     print(f"📄 Report TXT: {txt_path}")
     return txt_path
