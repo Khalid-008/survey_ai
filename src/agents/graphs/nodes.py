@@ -59,17 +59,6 @@ from agents.prompt.chart_generation_prompt import chart_generation_prompt
 from agents.prompt.analysis_questions_recommender_prompt import analysis_questions_recommender_prompt
 
 
-
-# معالجة بيانات النصوص
-
-
-from analytics_pipeline.data_processing.data_cleaner import clean_survey_data
-
-
-from analytics_pipeline.data_processing.data_enricher import enrich_survey_df, get_analysis_results, get_survey_metrics
-
-
-
 # معالجة بيانات الخيارات
 
 
@@ -96,6 +85,9 @@ from analytics_pipeline.util.synthesis_utils import format_analytics_messages, s
 
 
 from analytics_pipeline.util.chart_utils import extract_json_from_response, format_analysis_summary
+
+
+from analytics_pipeline.text_pipeline import analyze_text_questions_batch
 
 
 
@@ -630,24 +622,10 @@ def analyze_text_questions(state: State) -> Dict[str, Any]:
 
 
 
-        # أ) تنظيف البيانات
-
-
         rows_before = len(text_questions_data)
 
 
         print(f"📊 Loaded {rows_before} rows for survey {state['survey_id']}")
-
-
-
-        text_questions_data = clean_survey_data(text_questions_data)
-
-
-        rows_after = len(text_questions_data)
-
-
-        print(f"✨ Cleaned data: {rows_after} rows ({rows_before - rows_after} duplicates removed)")
-
 
 
         if text_questions_data.empty:
@@ -662,11 +640,10 @@ def analyze_text_questions(state: State) -> Dict[str, Any]:
                 "text_questions_result": {},
 
 
-                "messages": [AIMessage(content="Survey data is empty after cleaning.")]
+                "messages": [AIMessage(content="Survey data is empty — skipping text analysis.")]
 
 
             }
-
 
 
 
@@ -684,29 +661,24 @@ def analyze_text_questions(state: State) -> Dict[str, Any]:
 
 
 
-        print(f"🔬 Starting enrichment for: {survey_title}")
+        print(f"🔬 Starting text enrichment for: {survey_title}")
 
 
-        enriched_df       = enrich_survey_df(text_questions_data, survey_title)
-
-        analysis_results  = get_analysis_results(text_questions_data, survey_title)
-
-        metrics           = get_survey_metrics(text_questions_data, survey_title)
-
-
-        print(f"📈 Enrichment complete:"
-)
-        print(f"   • TEXT_INPUT questions: {metrics.text_input_questions}")
-
-        print(f"   • Successfully enriched: {metrics.enriched_questions}")
-
-        print(f"   • Failed              : {metrics.failed_questions}")
+        # ── Two-stage batch analysis ──────────────────────────────────────
+        enriched_df, text_questions_result = analyze_text_questions_batch(
+            df         = text_questions_data,
+            batch_size = 30,
+        )
 
 
-        enriched_data         = enriched_df.to_dict(orient="records")
+        enriched_data = enriched_df.to_dict(orient="records")
 
-        serializable_analysis = make_serializable(analysis_results)
 
+        n_questions = len(text_questions_result)
+        n_enriched  = enriched_df["sentiment"].notna().sum() if "sentiment" in enriched_df.columns else 0
+
+
+        print(f"📈 Enrichment complete: {n_enriched}/{rows_before} rows | {n_questions} question(s)")
 
 
         return {
@@ -715,7 +687,7 @@ def analyze_text_questions(state: State) -> Dict[str, Any]:
             "survey_data": enriched_data,
 
 
-            "text_questions_result": serializable_analysis,
+            "text_questions_result": text_questions_result,
 
 
             "messages": [
@@ -723,12 +695,8 @@ def analyze_text_questions(state: State) -> Dict[str, Any]:
 
                 AIMessage(
                     content=(
-
-
-                        f"Text analysis complete: {metrics.enriched_questions}/"
-
-
-                        f"{metrics.text_input_questions} TEXT_INPUT questions analyzed."
+                        f"Text analysis complete: {n_questions} TEXT_INPUT question(s) analysed, "
+                        f"{n_enriched}/{rows_before} answers enriched."
                     )
                 )
 

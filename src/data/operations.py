@@ -33,6 +33,7 @@ def get_survey_df(survey_id, date_from=None, date_to=None):
                 q.question_ar as question_ar, 
                 q.question_type as question_type, 
                 a.answer as answer,
+                a.id as answer_id,
                 a.submission_id as submission_id,
                 a.created_date as created_date
             FROM ms_survey_service.survey s

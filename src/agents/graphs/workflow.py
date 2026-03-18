@@ -30,10 +30,11 @@ def create_survey_insight_workflow(survey_id: int, user_message: str, session_id
 
     # ── الحواف (التسلسل) ──────────────────────────────────────────────────────
     builder.add_edge(START,                          "retrieve_survey_question")
-    builder.add_edge("retrieve_survey_question",     "prepare_selection_data")
-    builder.add_edge("prepare_selection_data",       "analyze_selection_questions")
-    builder.add_edge("analyze_selection_questions",  END)
-    builder.add_edge("analyze_text_questions",       "synthesis_agent")
+    # builder.add_edge("retrieve_survey_question",     "prepare_selection_data")
+    # builder.add_edge("prepare_selection_data",       "analyze_selection_questions")
+    # builder.add_edge("analyze_selection_questions",  END)
+    builder.add_edge("retrieve_survey_question",       "analyze_text_questions")
+    builder.add_edge("analyze_text_questions",       END)
     builder.add_edge("synthesis_agent",              "generate_charts_agent")
     # generate_charts_agent يُنهي الرسم البياني بـ goto="__end__"
 
