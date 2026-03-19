@@ -10,6 +10,7 @@ Your task is to:
 
 ## Rules:
 - Respond ONLY with valid JSON. No prose, no explanations outside JSON.
+- STRICTLY use double quotes (") for all keys/values. NO trailing commas.
 - Sentiment must be exactly one of: "positive", "negative", "neutral".
 - Entities: named things mentioned (people, places, products, departments, etc.).
 - Topics: abstract themes or subjects discussed.

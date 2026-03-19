@@ -1,99 +1,52 @@
-import os
-
-import sys
-
-
 import json
-
-
+import os
+import sys
 import traceback
-
-
 import warnings
-
-
-from typing import Literal, Dict, Any
-
+from typing import Any, Dict, Literal
 
 import pandas as pd
-
-
 from langchain_core.messages import AIMessage
-
-
 from langgraph.types import Command
 
-
-
 # إعداد المسار للاستيراد
-
-
 current_file_path = os.path.abspath(__file__)
-
-
 src_dir = os.path.dirname(os.path.dirname(os.path.dirname(current_file_path)))
-
-
 if src_dir not in sys.path:
-
-
     sys.path.insert(0, src_dir)
 
-
-
-from llms.models import model, qwen3_model
-
-
 from agents.graphs.setup import State
-
-
-from data.operations import get_survey_df
-
-
+from agents.prompt.analysis_questions_recommender_prompt import (
+    analysis_questions_recommender_prompt,
+)
+from agents.prompt.chart_generation_prompt import chart_generation_prompt
 from agents.prompt.synthesis_agent_prompt import synthesis_agent_prompt
 
-
-from agents.prompt.chart_generation_prompt import chart_generation_prompt
-
-
-from agents.prompt.analysis_questions_recommender_prompt import analysis_questions_recommender_prompt
-
-
 # معالجة بيانات الخيارات
-
-
-from analytics_pipeline.selection_pipeline import (
-
-    generate_sql_analisys_queries,
-
-    group_answers_by_question,
-
+from analytics_pipeline.data_processing.processing_selection_data import (
     get_distinct_answers_per_question,
-
     get_sample_answers_per_question,
+    group_answers_by_question,
 )
-
-
+from analytics_pipeline.selection_pipeline import generate_sql_analisys_queries
+from analytics_pipeline.text_pipeline import (
+    analyze_text_questions_batch,
+    extract_top_topics_by_sentiment,
+)
+from analytics_pipeline.util.chart_utils import (
+    extract_json_from_response,
+    format_analysis_summary,
+)
 from analytics_pipeline.util.selection_utils import format_questions_block
-
-
-
+from analytics_pipeline.util.synthesis_utils import (
+    format_analytics_messages,
+    save_report,
+)
+from data.operations import get_survey_df
 from helper.utils import make_serializable
+from llms.models import model, qwen3_model
 
-
-from analytics_pipeline.util.synthesis_utils import format_analytics_messages, save_report
-
-
-from analytics_pipeline.util.chart_utils import extract_json_from_response, format_analysis_summary
-
-
-from analytics_pipeline.text_pipeline import analyze_text_questions_batch
-
-
-
-warnings.filterwarnings('ignore')
-
-
+warnings.filterwarnings("ignore")
 
 
 # ============================================================================
@@ -108,30 +61,14 @@ warnings.filterwarnings('ignore')
 # ============================================================================
 
 
-
 def retrieve_survey_question(state: State) -> Dict[str, Any]:
-    """
-
-    STAGE 1: استرجاع بيانات الاستبيان الخام وتصنيف الأسئلة إلى مجموعتين:
-
-      • text_questions_data     — أسئلة TEXT_INPUT
-
-      • selection_questions_data — باقي أنواع الأسئلة (اختيارات)
-    """
-
-
     try:
-
 
         survey_id = state["survey_id"]
 
-
         date_from = state.get("date_from")
 
-
-        date_to   = state.get("date_to")
-
-
+        date_to = state.get("date_to")
 
         print("=" * 60)
 
@@ -139,108 +76,73 @@ def retrieve_survey_question(state: State) -> Dict[str, Any]:
 
         print("=" * 60)
 
-        print(f"📋 Survey ID : {survey_id}"
-)
+        print(f"📋 Survey ID : {survey_id}")
         if date_from or date_to:
 
             print(f"📅 Date filter: {date_from} → {date_to}")
 
-
         survey_df = get_survey_df(survey_id, date_from=date_from, date_to=date_to)
-
 
         rows = len(survey_df)
 
-
         print(f"📊 Loaded {rows} rows from database")
-
 
         if survey_df.empty:
 
-
             print("⚠️  No data found — returning empty groups")
 
-
             return {
-
-
-                "survey_data":             [],
-
-
-                "text_questions_data":      [],
-
-
+                "survey_data": [],
+                "text_questions_data": [],
                 "selection_questions_data": [],
-
-
                 "messages": [
-
-
-                    AIMessage(content=f"No data found for survey {survey_id}. Analysis skipped.")
-
-
-                ]
-
-
+                    AIMessage(
+                        content=f"No data found for survey {survey_id}. Analysis skipped."
+                    )
+                ],
             }
-
-
 
         survey_data = survey_df.to_dict(orient="records")
 
-
-
         # ── تصنيف الأسئلة إلى مجموعتين ──────────────────────────────────────
-
 
         all_types = survey_df["question_type"].str.upper().str.strip().unique().tolist()
 
         print(f"🔍 All question types detected: {all_types}")
 
-
-
         TEXT_TYPE = "TEXT_INPUT"
-
 
         # ── المجموعة 1: أسئلة نصية (TEXT_INPUT) ──
 
-        text_mask           = survey_df["question_type"].str.upper().str.strip() == TEXT_TYPE
+        text_mask = survey_df["question_type"].str.upper().str.strip() == TEXT_TYPE
 
-        text_df             = survey_df[text_mask]
+        text_df = survey_df[text_mask]
 
         text_questions_data = text_df.to_dict(orient="records")
 
-
         text_q_ids = (
-
             text_df["question_id"].unique().tolist()
-
-            if "question_id" in text_df.columns else []
+            if "question_id" in text_df.columns
+            else []
         )
-
 
         # ── المجموعة 2: أسئلة الاختيارات (كل ما ليس TEXT_INPUT) ──
 
-        selection_df             = survey_df[~text_mask]
+        selection_df = survey_df[~text_mask]
 
         selection_questions_data = selection_df.to_dict(orient="records")
 
-
         sel_q_ids = (
-
             selection_df["question_id"].unique().tolist()
-
-            if "question_id" in selection_df.columns else []
+            if "question_id" in selection_df.columns
+            else []
         )
 
         sel_types = (
-
             selection_df["question_type"].str.upper().str.strip().unique().tolist()
-
-            if not selection_df.empty else []
+            if not selection_df.empty
+            else []
         )
-
-
 
         print("-" * 60)
 
@@ -248,57 +150,40 @@ def retrieve_survey_question(state: State) -> Dict[str, Any]:
 
         print(f"   • Total rows     : {rows}")
 
-        print(f"   • Text rows      : {len(text_questions_data)} ({len(text_q_ids)} questions)")
+        print(
+            f"   • Text rows      : {len(text_questions_data)} ({len(text_q_ids)} questions)"
+        )
 
-        print(f"   • Selection rows : {len(selection_questions_data)} ({len(sel_q_ids)} questions)")
+        print(
+            f"   • Selection rows : {len(selection_questions_data)} ({len(sel_q_ids)} questions)"
+        )
 
         print("=" * 60)
 
-
-
         return {
-
-
-            "survey_data":             survey_data,
-
-            "text_questions_data":      text_questions_data,
-
+            "survey_data": survey_data,
+            "text_questions_data": text_questions_data,
             "selection_questions_data": selection_questions_data,
-
             "messages": [
-
                 AIMessage(
                     content=(
-
                         f"Survey data retrieved: {rows} rows. "
-
                         f"Classified → Text: {len(text_questions_data)} rows ({len(text_q_ids)} questions), "
-
                         f"Selection: {len(selection_questions_data)} rows ({len(sel_q_ids)} questions)."
                     )
                 )
-
-            ]
-
+            ],
         }
-
-
 
     except Exception as e:
 
-
         error_msg = f"Failed to retrieve survey data: {str(e)}"
-
 
         print(f"❌ {error_msg}")
 
-
         print(traceback.format_exc())
 
-
         raise RuntimeError(error_msg)
-
-
 
 
 # ============================================================================
@@ -313,17 +198,9 @@ def retrieve_survey_question(state: State) -> Dict[str, Any]:
 # ============================================================================
 
 
-
 def prepare_selection_data(state: State) -> Dict[str, Any]:
-    """
-
-    تحويل selection_questions_data إلى DataFrame وتجميع الإجابات
-
-    وبناء questions_block — ثم تمرير النتائج للـ state.
-    """
 
     survey_id = state["survey_id"]
-
 
     print("=" * 60)
 
@@ -331,14 +208,11 @@ def prepare_selection_data(state: State) -> Dict[str, Any]:
 
     print("=" * 60)
 
-
-    raw_data  = state.get("selection_questions_data", [])
-
+    raw_data = state.get("selection_questions_data", [])
 
     # 1. تحويل البيانات وتحقق
 
     print("📥 Step 1 — Preparing selection questions data...")
-
 
     if isinstance(raw_data, list):
 
@@ -348,66 +222,49 @@ def prepare_selection_data(state: State) -> Dict[str, Any]:
 
         df = raw_data
 
-
     if df.empty:
 
         print("⚠️  No selection questions found — skipping.")
 
         return {
-
             "selection_prepared": {},
-
-            "messages": [AIMessage(content="No selection questions found. Skipping selection analysis.")],
-
+            "messages": [
+                AIMessage(
+                    content="No selection questions found. Skipping selection analysis."
+                )
+            ],
         }
 
-
     print(f"   ✅ {len(df)} rows | {df['question_id'].nunique()} questions")
-
 
     # 2. Group & distinct
 
     print("\n📊 Step 2 — Grouping answers...")
 
-
-    grouped  = group_answers_by_question(df)
+    grouped = group_answers_by_question(df)
 
     distinct = get_distinct_answers_per_question(grouped)
 
-    samples  = get_sample_answers_per_question(df, n=3)
-
+    samples = get_sample_answers_per_question(df, n=3)
 
     questions_block = format_questions_block(
         grouped, distinct, sample_answers=samples, survey_number=str(survey_id)
     )
 
-
     return {
-
         "selection_prepared": {
-
             "questions_block": questions_block,
-
         },
-
         "messages": [
-
             AIMessage(
                 content=(
-
                     f"Selection data prepared: {len(grouped)} questions, "
-
                     f"{sum(len(v) for v in distinct.values())} total distinct answers."
-
                 ),
-
-                name="prepare_selection_data"
+                name="prepare_selection_data",
             )
-
         ],
-
     }
-
 
 
 # ============================================================================
@@ -422,29 +279,19 @@ def prepare_selection_data(state: State) -> Dict[str, Any]:
 # ============================================================================
 
 
-
 def analyze_selection_questions(state: State) -> Dict[str, Any]:
-
 
     try:
 
-
         survey_id = state["survey_id"]
 
-
-
         print("=" * 60)
-
 
         print("SELECTION ANALYSIS NODE")
 
-
         print("=" * 60)
 
-
         print(f"Survey ID: {survey_id}")
-
-
 
         # Step A — توليد الأسئلة التحليلية
         questions_block = state.get("selection_prepared", {}).get("questions_block", "")
@@ -452,10 +299,14 @@ def analyze_selection_questions(state: State) -> Dict[str, Any]:
         print("\n🧠 Generating analytical questions from questions_block...")
 
         try:
-            q_prompt   = analysis_questions_recommender_prompt.invoke({"questions_block": questions_block})
+            q_prompt = analysis_questions_recommender_prompt.invoke(
+                {"questions_block": questions_block}
+            )
             q_response = model.invoke(q_prompt)
             analytical_questions = q_response.content
-            print(f"   ✅ Analytical questions generated ({len(analytical_questions)} chars).")
+            print(
+                f"   ✅ Analytical questions generated ({len(analytical_questions)} chars)."
+            )
         except Exception as e:
             analytical_questions = ""
             print(f"   ⚠️ Could not generate analytical questions: {e}")
@@ -467,19 +318,13 @@ def analyze_selection_questions(state: State) -> Dict[str, Any]:
             analytical_questions=analytical_questions,
         )
 
-
-
         # تحويل DataFrames إلى قوائم قابلة للتسلسل
-
 
         # الهيكل الجديد: query_results = [{label, sql, result: DataFrame}, ...]
 
-
         querys_results_serialized = []
 
-
         total_rows = 0
-
 
         for entry in queries_results.get("query_results", []):
 
@@ -487,25 +332,22 @@ def analyze_selection_questions(state: State) -> Dict[str, Any]:
             rows = df_result.to_dict(orient="records") if not df_result.empty else []
             total_rows += len(rows)
 
-
-            querys_results_serialized.append({
-                "label":  entry.get("label", ""),
-                "sql":    entry.get("sql", ""),
-                "result": rows,
-            })
-
-
+            querys_results_serialized.append(
+                {
+                    "label": entry.get("label", ""),
+                    "sql": entry.get("sql", ""),
+                    "result": rows,
+                }
+            )
 
         serializable_result = {
-            "query_results":         querys_results_serialized,
-            "errors":                queries_results["errors"]
+            "query_results": querys_results_serialized,
+            "errors": queries_results["errors"],
         }
 
-
-
-        print(f"✅ Selection analysis complete: {len(querys_results_serialized)} queries, {total_rows} total rows")
-
-
+        print(
+            f"✅ Selection analysis complete: {len(querys_results_serialized)} queries, {total_rows} total rows"
+        )
 
         return {
             "selection_questions_result": serializable_result,
@@ -515,58 +357,30 @@ def analyze_selection_questions(state: State) -> Dict[str, Any]:
                         f"Selection analysis complete: {len(querys_results_serialized)} queries, "
                         f"Total rows: {total_rows}."
                     ),
-                    name="analyze_selection_questions"
+                    name="analyze_selection_questions",
                 )
-
-
-            ]
-
-
+            ],
         }
-
-
 
     except Exception as e:
 
-
         error_msg = f"Selection analysis failed: {str(e)}"
-
 
         print(f"⚠️ {error_msg}")
 
-
         print(traceback.format_exc())
-
-
 
         # خطأ غير حرج — نكمل بدون نتائج خيارات
 
-
         return {
-
-
             "selection_questions_result": {"errors": [error_msg]},
-
-
             "messages": [
-
-
                 AIMessage(
-
-
                     content=f"Warning: {error_msg}. Proceeding to text analysis.",
-
-
-                    name="analyze_selection_questions"
+                    name="analyze_selection_questions",
                 )
-
-
-            ]
-
-
+            ],
         }
-
-
 
 
 # ============================================================================
@@ -581,170 +395,114 @@ def analyze_selection_questions(state: State) -> Dict[str, Any]:
 # ============================================================================
 
 
-
 def analyze_text_questions(state: State) -> Dict[str, Any]:
-
-
 
     try:
 
-
         print("=" * 60)
-
 
         print("TEXT ANALYSIS NODE")
 
-
         print("=" * 60)
-
-
 
         if not state.get("text_questions_data"):
 
-
             return {
-
-
                 "text_questions_data": [],
-
-
                 "text_questions_result": {},
-
-
-                "messages": [AIMessage(content="No survey data available for text analysis.")]
-
-
+                "messages": [
+                    AIMessage(content="No survey data available for text analysis.")
+                ],
             }
-
-
 
         text_questions_data = pd.DataFrame(state["text_questions_data"])
 
-
-
         rows_before = len(text_questions_data)
-
 
         print(f"📊 Loaded {rows_before} rows for survey {state['survey_id']}")
 
-
         if text_questions_data.empty:
 
-
             return {
-
-
                 "survey_data": [],
-
-
                 "text_questions_result": {},
-
-
-                "messages": [AIMessage(content="Survey data is empty — skipping text analysis.")]
-
-
+                "messages": [
+                    AIMessage(content="Survey data is empty — skipping text analysis.")
+                ],
             }
 
-
-
         survey_title = (
-
-
             text_questions_data["survey_title"].iloc[0]
-
-
             if "survey_title" in text_questions_data.columns
-
-
             else f"Survey {state['survey_id']}"
         )
 
-
-
         print(f"🔬 Starting text enrichment for: {survey_title}")
-
 
         # ── Two-stage batch analysis ──────────────────────────────────────
         enriched_df, text_questions_result = analyze_text_questions_batch(
-            df         = text_questions_data,
-            batch_size = 30,
+            df=text_questions_data,
+            batch_size=15,
         )
-
 
         enriched_data = enriched_df.to_dict(orient="records")
 
+        top_positive_topics = extract_top_topics_by_sentiment(
+            enriched_df, "positive", 10
+        )
+
+        if top_positive_topics:
+            print("أكثر المواضيع الإيجابية:")
+            for topic, count in top_positive_topics:
+                print(f"   - {topic}: {count} مرة")
+
+            # تضمينها في النتيجة
+            for qt_idx in text_questions_result:
+                text_questions_result[qt_idx][
+                    "top_positive_topics"
+                ] = top_positive_topics
 
         n_questions = len(text_questions_result)
-        n_enriched  = enriched_df["sentiment"].notna().sum() if "sentiment" in enriched_df.columns else 0
+        n_enriched = (
+            enriched_df["sentiment"].notna().sum()
+            if "sentiment" in enriched_df.columns
+            else 0
+        )
 
-
-        print(f"📈 Enrichment complete: {n_enriched}/{rows_before} rows | {n_questions} question(s)")
-
+        print(
+            f"📈 Enrichment complete: {n_enriched}/{rows_before} rows | {n_questions} question(s)"
+        )
 
         return {
-
-
             "survey_data": enriched_data,
-
-
             "text_questions_result": text_questions_result,
-
-
             "messages": [
-
-
                 AIMessage(
                     content=(
                         f"Text analysis complete: {n_questions} TEXT_INPUT question(s) analysed, "
                         f"{n_enriched}/{rows_before} answers enriched."
                     )
                 )
-
-
-            ]
-
-
+            ],
         }
-
-
 
     except Exception as e:
 
-
         error_msg = f"Text analysis failed: {str(e)}"
-
 
         print(f"⚠️ {error_msg}")
 
-
         print(traceback.format_exc())
-
-
 
         # خطأ غير حرج — نكمل بالبيانات الأساسية
 
-
         return {
-
-
             "survey_data": state.get("survey_data", []),
-
-
             "text_questions_result": state.get("text_questions_result", {}),
-
-
             "messages": [
-
-
                 AIMessage(content=f"Warning: {error_msg}. Proceeding with basic data.")
-
-
-            ]
-
-
+            ],
         }
-
-
 
 
 # ============================================================================
@@ -759,226 +517,118 @@ def analyze_text_questions(state: State) -> Dict[str, Any]:
 # ============================================================================
 
 
-
 def synthesis_agent(state: State) -> Dict[str, Any]:
-    """
-
-
-    STAGE 4: توليد تقرير تنفيذي ملخّص يجمع نتائج:
-
-
-      - تحليل أسئلة الخيارات (selection_results)
-
-
-      - تحليل أسئلة النصوص (analysis_results)
-    """
-
 
     try:
 
-
         print("=" * 60)
-
 
         print("SYNTHESIS AGENT")
 
-
         print("=" * 60)
-
 
         print(f"Survey ID: {state['survey_id']}")
 
-
-
-        text_questions_result      = state.get("text_questions_result", {})
-
+        text_questions_result = state.get("text_questions_result", {})
 
         selection_questions_result = state.get("selection_questions_result", {})
 
-
-
         if not text_questions_result and not selection_questions_result:
 
-
             return Command(
-
-
                 update={
-
-
                     "messages": [
-
-
                         AIMessage(
-
-
                             content="No analysis results to synthesize.",
-
-
-                            name="synthesis_agent"
+                            name="synthesis_agent",
                         )
-
-
                     ]
-
-
                 }
             )
 
-
-
         # استخراج عنوان الاستبيان
-
 
         survey_title = f"Survey {state['survey_id']}"
 
-
         if text_questions_result:
-
 
             first_result = next(iter(text_questions_result.values()))
 
-
             survey_title = first_result.get("survey_title", survey_title)
-
-
 
         print(f"Survey: {survey_title}")
 
-
         print(f"Text questions analyzed  : {len(text_questions_result)}")
 
-
-        print(f"Selection questions count: {selection_questions_result.get('questions_count', 0)}")
-
-
+        print(
+            f"Selection questions count: {selection_questions_result.get('questions_count', 0)}"
+        )
 
         # تنسيق التحليلات النصية (قائمة من الرسائل)
 
         text_questions_result = format_analytics_messages(text_questions_result)
 
-
-        prompt_messages = synthesis_agent_prompt.invoke({
-
-
-            "survey_subject":             survey_title,
-
-
-            "selection_questions_result": selection_questions_result,
-
-
-            "text_questions_result":      text_questions_result
-
-        })
-
+        prompt_messages = synthesis_agent_prompt.invoke(
+            {
+                "survey_subject": survey_title,
+                "selection_questions_result": selection_questions_result,
+                "text_questions_result": text_questions_result,
+            }
+        )
 
         response = model.invoke(prompt_messages)
 
         synthesis_content = response.content
 
-
-
-        report_path = save_report(synthesis_content, state['survey_id'])
-
+        report_path = save_report(synthesis_content, state["survey_id"])
 
         print("✅ Synthesis complete")
 
-
-
         # ── حفظ snapshot للاختبار (يُقرأ لاحقاً بواسطة test_generate_charts_agent.py) ──
-
 
         try:
 
-
             snapshot = {
-
-
-                "survey_id":                  state["survey_id"],
-
-
-                "text_questions_result":      state.get("text_questions_result", {}),
-
-
-                "selection_questions_result": state.get("selection_questions_result", {}),
-
-
+                "survey_id": state["survey_id"],
+                "text_questions_result": state.get("text_questions_result", {}),
+                "selection_questions_result": state.get(
+                    "selection_questions_result", {}
+                ),
             }
-
 
             snapshot_path = os.path.join(src_dir, "tests", "chart_agent_snapshot.json")
 
-
             os.makedirs(os.path.dirname(snapshot_path), exist_ok=True)
-
 
             with open(snapshot_path, "w", encoding="utf-8") as f:
 
-
                 json.dump(snapshot, f, ensure_ascii=False, indent=2, default=str)
-
 
             print(f"💾 State snapshot saved → {snapshot_path}")
 
         except Exception as snap_err:
 
-
             print(f"⚠️ Could not save snapshot: {snap_err}")
 
-
-
         return Command(
-
-
             update={
-
-
                 "messages": [
-
-
                     AIMessage(content=synthesis_content, name="synthesis_agent")
-
-
                 ]
-
-
             }
         )
-
-
 
     except Exception as e:
 
-
         error_msg = f"Synthesis failed: {str(e)}"
-
 
         print(f"❌ {error_msg}")
 
-
         print(traceback.format_exc())
 
-
-
         return Command(
-
-
-            update={
-
-
-                "messages": [
-
-
-                    AIMessage(content=error_msg, name="synthesis_agent")
-
-
-                ]
-
-
-            }
+            update={"messages": [AIMessage(content=error_msg, name="synthesis_agent")]}
         )
-
-
 
 
 # ============================================================================
@@ -993,232 +643,116 @@ def synthesis_agent(state: State) -> Dict[str, Any]:
 # ============================================================================
 
 
-
 def generate_charts_agent(state: State) -> Command[Literal["__end__"]]:
-    """
-
-
-    STAGE 5: توليد إعدادات الرسوم البيانية بناءً على نتائج التحليل.
-
-
-    يستخدم نموذج لغوي لإنشاء إعدادات Chart.js المتوافقة مع Vue.js.
-    """
-
 
     try:
 
-
         print("=" * 60)
-
 
         print("CHART GENERATION AGENT")
 
-
         print("=" * 60)
-
 
         print(f"Survey ID: {state['survey_id']}")
 
-
-
-        text_questions_result      = state.get("text_questions_result", {})
-
+        text_questions_result = state.get("text_questions_result", {})
 
         selection_questions_result = state.get("selection_questions_result", {})
 
-
-
         if not text_questions_result and not selection_questions_result:
-
 
             print("⚠️ No analysis results available for chart generation")
 
-
             return Command(
-
-
                 update={
-
-
                     "chart_configs": [],
-
-
                     "messages": [
-
-
                         AIMessage(
-
-
                             content="No analysis data available to generate charts.",
-
-
-                            name="chart_generation_agent"
+                            name="chart_generation_agent",
                         )
-
-
-                    ]
-
-
+                    ],
                 },
-
-
-                goto="__end__"
+                goto="__end__",
             )
-
-
 
         # استخراج عنوان الاستبيان
 
-
         survey_title = f"Survey {state['survey_id']}"
-
 
         if text_questions_result:
 
-
             first_result = next(iter(text_questions_result.values()))
-
 
             survey_title = first_result.get("survey_title", survey_title)
 
-
-
         print(f"Survey: {survey_title}")
-
-
 
         # تنسيق ملخص التحليل للنموذج اللغوي
 
-
-        analytics_summary = format_analysis_summary(text_questions_result, selection_questions_result)
-
+        analytics_summary = format_analysis_summary(
+            text_questions_result, selection_questions_result
+        )
 
         print(f"Analytics summary length: {len(analytics_summary)} chars")
 
-
-
-        prompt_messages = chart_generation_prompt.invoke({
-
-
-            "survey_subject": survey_title,
-
-
-            "analytics_summary": analytics_summary
-
-
-        })
-
-
+        prompt_messages = chart_generation_prompt.invoke(
+            {"survey_subject": survey_title, "analytics_summary": analytics_summary}
+        )
 
         print("🤖 Invoking LLM for chart generation...")
 
-
         response = qwen3_model.invoke(prompt_messages)
-
 
         response_text = response.content
 
-
         print(f"📥 LLM response length: {len(response_text)} chars")
-
-
 
         chart_configs = extract_json_from_response(response_text)
 
-
-
         if len(chart_configs) < 5:
-
 
             print(f"⚠️ Only {len(chart_configs)} charts generated, expected exactly 5.")
 
-
         elif len(chart_configs) > 5:
-
 
             print(f"⚠️ {len(chart_configs)} charts generated, trimming to 5.")
 
-
             chart_configs = chart_configs[:5]
-
-
 
         print(f"✅ Generated {len(chart_configs)} chart configurations")
 
-
         for i, chart in enumerate(chart_configs):
-
 
             print(f"   {i+1}. {chart.get('type','?')}: {chart.get('title','Untitled')}")
 
-
-
         return Command(
-
-
             update={
-
-
                 "chart_configs": chart_configs,
-
-
                 "messages": [
-
-
                     AIMessage(
-
-
                         content=f"Generated {len(chart_configs)} chart configurations successfully.",
-
-
-                        name="chart_generation_agent"
+                        name="chart_generation_agent",
                     )
-
-
-                ]
-
-
+                ],
             },
-
-
-            goto="__end__"
+            goto="__end__",
         )
-
-
 
     except Exception as e:
 
-
         error_msg = f"Chart generation failed: {str(e)}"
-
 
         print(f"❌ {error_msg}")
 
-
         print(traceback.format_exc())
 
-
-
         return Command(
-
-
             update={
-
-
                 "chart_configs": [],
-
-
                 "messages": [
-
-
                     AIMessage(content=error_msg, name="chart_generation_agent")
-
-
-                ]
-
-
+                ],
             },
-
-
-            goto="__end__"
+            goto="__end__",
         )
