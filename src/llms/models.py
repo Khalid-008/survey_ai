@@ -19,16 +19,16 @@ model = ChatOpenAI(
     model="gpt-oss-120b",
     timeout=60,
     max_retries=2,
-    max_tokens=4096
+    max_tokens=4096,
 )
 
 qwen3_model = ChatOpenAI(
     base_url=qwen3_mux_url,
     api_key=qwen3_mux_api_key,
-    model="Qwen/Qwen3.5-27B",
+    model="Qwen/Qwen3.5-27B-FP8",
     timeout=300,
     max_retries=2,
-    max_tokens=16384
+    max_tokens=16384,
 )
 
 # Alternative Google model
@@ -43,6 +43,5 @@ google_model = ChatGoogleGenerativeAI(
 )
 
 google_embeddings_model = GoogleGenerativeAIEmbeddings(
-    model="models/gemini-embedding-001",
-    api_key=google_api_key
+    model="models/gemini-embedding-001", api_key=google_api_key
 )

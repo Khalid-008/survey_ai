@@ -1,0 +1,114 @@
+SELECTION PIPELINE REPORT
+Survey   : S25120024
+Generated: 2026-04-13 16:28:28
+======================================================================
+
+── QUESTIONS ──
+
+
+── GENERATED SQL: Query 1 ──
+-- What is the average satisfaction score for overall services (Q296) compared to salesman performance (Q297)?
+SELECT 
+    sq.id,
+    sq.question_ar,
+    AVG(CAST(sa.answer AS DECIMAL(3,1))) AS avg_score
+FROM survey_answer sa
+JOIN survey_question sq ON sq.id = sa.survey_question_id
+JOIN survey s ON s.id = sq.survey_id
+WHERE s.survey_number = 'S25120024'
+    AND sq.id IN (296, 297)
+GROUP BY sq.id, sq.question_ar;
+
+── RESULT: Query 1 ──
+ id                                         question_ar  avg_score
+296                   بشكل عام، ما مدى رضاك عن خدماتنا؟    4.68837
+297 ما مدى رضاك عن أداء مندوب المبيعات الذي قام بخدمتك؟    4.77476
+
+(2 rows)
+
+
+── GENERATED SQL: Query 2 ──
+-- How does satisfaction with order execution speed and accuracy (Q298) correlate with overall service satisfaction (Q296)?
+SELECT ROUND(
+    (COUNT(*) * SUM(a1.v * a2.v) - SUM(a1.v) * SUM(a2.v)) /
+    SQRT(
+        (COUNT(*) * SUM(a1.v * a1.v) - POW(SUM(a1.v), 2)) *
+        (COUNT(*) * SUM(a2.v * a2.v) - POW(SUM(a2.v), 2))
+    ), 4
+) AS pearson_correlation
+FROM (
+    SELECT sa.submission_id, CAST(sa.answer AS DECIMAL(3,1)) AS v
+    FROM survey_answer sa
+    JOIN survey_question sq ON sq.id = sa.survey_question_id
+    JOIN survey s ON s.id = sq.survey_id
+    WHERE s.survey_number = 'S25120024'
+        AND sq.id = 296
+) a1
+JOIN (
+    SELECT sa.submission_id, CAST(sa.answer AS DECIMAL(3,1)) AS v
+    FROM survey_answer sa
+    JOIN survey_question sq ON sq.id = sa.survey_question_id
+    JOIN survey s ON s.id = sq.survey_id
+    WHERE s.survey_number = 'S25120024'
+        AND sq.id = 298
+) a2 ON a1.submission_id = a2.submission_id;
+
+── RESULT: Query 2 ──
+ pearson_correlation
+              0.1496
+
+(1 rows)
+
+
+── GENERATED SQL: Query 3 ──
+-- How do satisfaction scores for salesman performance (Q297) differ between respondents who rated overall services as 5 versus those who rated them 3 or 4?
+SELECT 
+    CASE 
+        WHEN q296.answer = '5' THEN 'Overall 5'
+        WHEN q296.answer IN ('3', '4') THEN 'Overall 3-4'
+    END AS overall_rating_group,
+    AVG(CAST(q297.answer AS DECIMAL(3,1))) AS avg_salesman_score
+FROM survey_answer q296
+JOIN survey_answer q297 ON q296.submission_id = q297.submission_id
+JOIN survey_question sq296 ON sq296.id = q296.survey_question_id
+JOIN survey_question sq297 ON sq297.id = q297.survey_question_id
+JOIN survey s ON s.id = sq296.survey_id
+WHERE s.survey_number = 'S25120024'
+    AND sq296.id = 296
+    AND sq297.id = 297
+    AND q296.answer IN ('3', '4', '5')
+GROUP BY 
+    CASE 
+        WHEN q296.answer = '5' THEN 'Overall 5'
+        WHEN q296.answer IN ('3', '4') THEN 'Overall 3-4'
+    END;
+
+── RESULT: Query 3 ──
+overall_rating_group  avg_salesman_score
+         Overall 3-4             3.98755
+           Overall 5             4.33163
+
+(2 rows)
+
+
+── GENERATED SQL: Query 4 ──
+-- Which metric shows a higher frequency of low scores (1-2): salesman performance (Q297) or order execution speed and accuracy (Q298)?
+SELECT 
+    sq.id,
+    sq.question_ar,
+    COUNT(CASE WHEN CAST(sa.answer AS SIGNED) IN (1, 2) THEN 1 END) AS low_score_count,
+    COUNT(*) AS total_count,
+    ROUND(100.0 * COUNT(CASE WHEN CAST(sa.answer AS SIGNED) IN (1, 2) THEN 1 END) / COUNT(*), 2) AS low_score_percentage
+FROM survey_answer sa
+JOIN survey_question sq ON sq.id = sa.survey_question_id
+JOIN survey s ON s.id = sq.survey_id
+WHERE s.survey_number = 'S25120024'
+    AND sq.id IN (297, 298)
+GROUP BY sq.id, sq.question_ar;
+
+── RESULT: Query 4 ──
+ id                                          question_ar  low_score_count  total_count  low_score_percentage
+297  ما مدى رضاك عن أداء مندوب المبيعات الذي قام بخدمتك؟              152         3241                  4.69
+298 ما مدى رضاك عن سرعة ودقة تنفيذ طلبك في الوقت المحدد؟              187         3241                  5.77
+
+(2 rows)

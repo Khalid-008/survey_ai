@@ -7,36 +7,68 @@ from agents.graphs.nodes import (
     analyze_selection_questions,
     analyze_text_questions,
     synthesis_agent,
-    generate_charts_agent
+    generate_charts_agent,
 )
 import json
 
 
-def create_survey_insight_workflow(survey_id: int, user_message: str, session_id: str,
-                                   date_from: str = None, date_to: str = None):
-    print(f"Creating workflow for survey_id: {survey_id}, session_id: {session_id}")
+def create_survey_insight_workflow(
+    survey_number: int,
+    user_message: str,
+    session_id: str,
+    date_from: str = None,
+    date_to: str = None,
+):
+    print(
+        f"Creating workflow for survey_number: {survey_number}, session_id: {session_id}"
+    )
     if date_from or date_to:
         print(f"  📅 Date filter: {date_from} → {date_to}")
 
     builder = StateGraph(State)
 
     # ── تسجيل النودز ──────────────────────────────────────────────────────────
-    builder.add_node("retrieve_survey_question",    retrieve_survey_question)
-    builder.add_node("prepare_selection_data",      prepare_selection_data)
+    builder.add_node("retrieve_survey_question", retrieve_survey_question)
+    builder.add_node("prepare_selection_data", prepare_selection_data)
     builder.add_node("analyze_selection_questions", analyze_selection_questions)
-    builder.add_node("analyze_text_questions",      analyze_text_questions)
-    builder.add_node("synthesis_agent",             synthesis_agent)
-    builder.add_node("generate_charts_agent",       generate_charts_agent)
+    builder.add_node("analyze_text_questions", analyze_text_questions)
+    builder.add_node("synthesis_agent", synthesis_agent)
+    builder.add_node("generate_charts_agent", generate_charts_agent)
+
+    def route(next_node: str):
+        """Return a router that goes to END if stop_reason is set, else next_node."""
+
+        def _router(state):
+            if state.get("stop_reason"):
+                print(f"🛑 Stopping workflow: {state['stop_reason']}")
+                return END
+            return next_node
+
+        return _router
 
     # ── الحواف (التسلسل) ──────────────────────────────────────────────────────
-    builder.add_edge(START,                          "retrieve_survey_question")
-    # builder.add_edge("retrieve_survey_question",     "prepare_selection_data")
-    # builder.add_edge("prepare_selection_data",       "analyze_selection_questions")
-    # builder.add_edge("analyze_selection_questions",  END)
-    builder.add_edge("retrieve_survey_question",       "analyze_text_questions")
-    builder.add_edge("analyze_text_questions",       END)
-    builder.add_edge("synthesis_agent",              "generate_charts_agent")
-    # generate_charts_agent يُنهي الرسم البياني بـ goto="__end__"
+    builder.add_edge(START, "retrieve_survey_question")
+    builder.add_conditional_edges(
+        "retrieve_survey_question",
+        route("prepare_selection_data"),
+        {"prepare_selection_data": "prepare_selection_data", END: END},
+    )
+    builder.add_conditional_edges(
+        "prepare_selection_data",
+        route("analyze_selection_questions"),
+        {"analyze_selection_questions": "analyze_selection_questions", END: END},
+    )
+    builder.add_conditional_edges(
+        "analyze_selection_questions",
+        route("analyze_text_questions"),
+        {"analyze_text_questions": "analyze_text_questions", END: END},
+    )
+    builder.add_conditional_edges(
+        "analyze_text_questions",
+        route("synthesis_agent"),
+        {"synthesis_agent": "synthesis_agent", END: END},
+    )
+    builder.add_edge("synthesis_agent", "generate_charts_agent")
 
     graph = builder.compile(checkpointer=memory)
 
@@ -47,11 +79,11 @@ def create_survey_insight_workflow(survey_id: int, user_message: str, session_id
         final_response = graph.invoke(
             {
                 "messages": [HumanMessage(content=user_message)],
-                "survey_id": survey_id,
+                "survey_number": survey_number,
                 "date_from": date_from,
-                "date_to":   date_to,
+                "date_to": date_to,
             },
-            config=config
+            config=config,
         )
         print("Graph invocation complete")
     except Exception as e:
@@ -78,7 +110,6 @@ def create_survey_insight_workflow(survey_id: int, user_message: str, session_id
         parsed_synthesis = json.loads(clean_text)
 
         # التأكد من أن الحقول المطلوبة موجودة
-        parsed_synthesis.setdefault("visualizations", [])
         parsed_synthesis.setdefault("executive_summary", "")
         parsed_synthesis.setdefault("detailed_analysis", "")
         parsed_synthesis.setdefault("key_metrics", [])
@@ -94,5 +125,5 @@ def create_survey_insight_workflow(survey_id: int, user_message: str, session_id
         # Fallback: return raw synthesis text under 'synthesis' key
         return {
             "synthesis": synthesis_text,
-            "charts":    chart_configs,
+            "charts": chart_configs,
         }

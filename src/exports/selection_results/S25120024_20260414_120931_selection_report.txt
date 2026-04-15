@@ -1,0 +1,104 @@
+SELECTION PIPELINE REPORT
+Survey   : S25120024
+Generated: 2026-04-14 12:09:31
+======================================================================
+
+── QUESTIONS ──
+
+
+── GENERATED SQL: Query 1 ──
+-- [Data Quality] What is the percentage of missing responses for the likelihood to recommend question given the null values? (Q299)
+SELECT 
+    ROUND(100.0 * SUM(CASE WHEN sa.selected_options_id IS NULL OR sa.selected_options_id = '' THEN 1 ELSE 0 END) / COUNT(*), 2) AS missing_percentage
+FROM survey_answer sa
+JOIN survey_question sq ON sq.id = sa.survey_question_id
+JOIN survey s ON s.id = sq.survey_id
+WHERE s.survey_number = 'S25120024' AND sq.id = 299;
+
+── RESULT: Query 1 ──
+ missing_percentage
+                0.0
+
+(1 rows)
+
+
+── GENERATED SQL: Query 2 ──
+-- [Correlation & Impact] How does satisfaction with salesman performance correlate with overall service satisfaction scores? (Q296, Q297)
+SELECT ROUND(
+    (COUNT(*) * SUM(v1 * v2) - SUM(v1) * SUM(v2)) /
+    SQRT(
+        (COUNT(*) * SUM(v1 * v1) - POW(SUM(v1), 2)) *
+        (COUNT(*) * SUM(v2 * v2) - POW(SUM(v2), 2))
+    ), 4
+) AS pearson_correlation
+FROM (
+    SELECT 
+        CAST(sa1.answer AS DECIMAL(3,1)) AS v1,
+        CAST(sa2.answer AS DECIMAL(3,1)) AS v2
+    FROM survey_answer sa1
+    JOIN survey_answer sa2 ON sa1.submission_id = sa2.submission_id
+    JOIN survey_question sq1 ON sq1.id = sa1.survey_question_id
+    JOIN survey_question sq2 ON sq2.id = sa2.survey_question_id
+    JOIN survey s ON s.id = sq1.survey_id
+    WHERE s.survey_number = 'S25120024'
+    AND sq1.id = 296
+    AND sq2.id = 297
+) AS pairs;
+
+── RESULT: Query 2 ──
+ pearson_correlation
+              0.1292
+
+(1 rows)
+
+
+── GENERATED SQL: Query 3 ──
+-- [Distribution & Scoring] What is the score distribution for order speed and accuracy execution? (Q298)
+SELECT 
+    CAST(sa.answer AS SIGNED) AS score,
+    COUNT(*) AS count,
+    ROUND(100.0 * COUNT(*) / (SELECT COUNT(*) FROM survey_answer sa2 
+        JOIN survey_question sq2 ON sq2.id = sa2.survey_question_id 
+        JOIN survey s2 ON s2.id = sq2.survey_id 
+        WHERE s2.survey_number = 'S25120024' AND sq2.id = 298), 2) AS percentage
+FROM survey_answer sa
+JOIN survey_question sq ON sq.id = sa.survey_question_id
+JOIN survey s ON s.id = sq.survey_id
+WHERE s.survey_number = 'S25120024' AND sq.id = 298
+GROUP BY CAST(sa.answer AS SIGNED);
+
+── RESULT: Query 3 ──
+ score  count  percentage
+     1    147        4.52
+     2     40        1.23
+     3     42        1.29
+     4     93        2.86
+     5   2927       90.09
+
+(5 rows)
+
+
+── GENERATED SQL: Query 4 ──
+-- [Segmentation] What is the average overall satisfaction score segmented by order execution satisfaction levels? (Q296, Q298)
+SELECT 
+    CAST(sa2.answer AS SIGNED) AS order_execution_score,
+    ROUND(AVG(CAST(sa1.answer AS DECIMAL(3,1))), 2) AS avg_overall_satisfaction
+FROM survey_answer sa1
+JOIN survey_answer sa2 ON sa1.submission_id = sa2.submission_id
+JOIN survey_question sq1 ON sq1.id = sa1.survey_question_id
+JOIN survey_question sq2 ON sq2.id = sa2.survey_question_id
+JOIN survey s ON s.id = sq1.survey_id
+WHERE s.survey_number = 'S25120024'
+AND sq1.id = 296
+AND sq2.id = 298
+GROUP BY CAST(sa2.answer AS SIGNED);
+
+── RESULT: Query 4 ──
+ order_execution_score  avg_overall_satisfaction
+                     1                      3.69
+                     2                      3.67
+                     3                      3.68
+                     4                      3.84
+                     5                      4.23
+
+(5 rows)

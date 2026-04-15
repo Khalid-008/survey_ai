@@ -19,6 +19,8 @@ def get_request_body():
         abort(400, "Missing 'request' field in request body")
 
     req_data = request_body.get("request", {})
+    if "survey_number" not in req_data:
+        abort(400, "Missing required field 'survey_number' in request['request']")
     if "message" not in req_data:
         abort(400, "Missing required field 'message' in request['request']")
 
@@ -72,14 +74,20 @@ def parse_json_response(raw: str, context: str = "") -> dict | None:
     except json.JSONDecodeError as json_err:
         try:
             # Fallback for trailing commas and single quotes
-            fixed_text = text.replace("null", "None").replace("true", "True").replace("false", "False")
+            fixed_text = (
+                text.replace("null", "None")
+                .replace("true", "True")
+                .replace("false", "False")
+            )
             parsed_dict = ast.literal_eval(fixed_text)
-            
+
             if isinstance(parsed_dict, dict):
                 print(f"   ℹ️  [{context}] JSON auto-repaired using fallback parser.")
                 return parsed_dict
             else:
                 return None
         except Exception as fallback_err:
-            print(f"   ⚠️  JSON parse error [{context}]: {json_err} | Fallback failed: {fallback_err}")
+            print(
+                f"   ⚠️  JSON parse error [{context}]: {json_err} | Fallback failed: {fallback_err}"
+            )
             return None

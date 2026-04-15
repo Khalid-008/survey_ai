@@ -1,0 +1,102 @@
+SELECTION PIPELINE REPORT
+Survey   : S25120024
+Generated: 2026-04-12 19:45:57
+======================================================================
+
+── QUESTIONS ──
+
+
+── GENERATED SQL: Query 1 ──
+-- [Distribution & Scoring] What is the average overall service satisfaction score and the count of responses for each rating level? (Q296)
+SELECT 
+    CAST(sa.answer AS SIGNED) AS rating_level,
+    COUNT(*) AS response_count,
+    ROUND(AVG(CAST(sa.answer AS DECIMAL(3,1))), 2) AS average_score
+FROM survey_answer sa
+JOIN survey_question sq ON sq.id = sa.survey_question_id
+JOIN survey s ON s.id = sq.survey_id
+WHERE s.survey_number = 'S25120024'
+    AND sq.id = 296
+GROUP BY CAST(sa.answer AS SIGNED)
+ORDER BY rating_level;
+
+── RESULT: Query 1 ──
+ rating_level  response_count  average_score
+            1             139            1.0
+            2              36            2.0
+            3             111            3.0
+            4             123            4.0
+            5            2831            5.0
+
+(5 rows)
+
+
+── GENERATED SQL: Query 2 ──
+-- [Correlation & Impact] How does the average sales representative satisfaction score compare to the average overall service satisfaction score? (Q296, Q297)
+SELECT 
+    (SELECT ROUND(AVG(CAST(sa.answer AS DECIMAL(3,1))), 2)
+     FROM survey_answer sa
+     JOIN survey_question sq ON sq.id = sa.survey_question_id
+     JOIN survey s ON s.id = sq.survey_id
+     WHERE s.survey_number = 'S25120024' AND sq.id = 296) AS avg_overall_service_satisfaction,
+    (SELECT ROUND(AVG(CAST(sa.answer AS DECIMAL(3,1))), 2)
+     FROM survey_answer sa
+     JOIN survey_question sq ON sq.id = sa.survey_question_id
+     JOIN survey s ON s.id = sq.survey_id
+     WHERE s.survey_number = 'S25120024' AND sq.id = 297) AS avg_sales_rep_satisfaction;
+
+── RESULT: Query 2 ──
+ avg_overall_service_satisfaction  avg_sales_rep_satisfaction
+                             4.69                        4.78
+
+(1 rows)
+
+
+── GENERATED SQL: Query 3 ──
+-- [Correlation & Impact] What is the correlation between satisfaction with order execution speed/accuracy and overall service satisfaction? (Q296, Q298)
+SELECT ROUND(
+    (COUNT(*) * SUM(a1.v * a2.v) - SUM(a1.v) * SUM(a2.v)) /
+    SQRT(
+      (COUNT(*) * SUM(a1.v * a1.v) - POW(SUM(a1.v), 2)) *
+      (COUNT(*) * SUM(a2.v * a2.v) - POW(SUM(a2.v), 2))
+    ), 4
+) AS pearson_correlation
+FROM (
+    SELECT CAST(sa.answer AS DECIMAL(10,2)) AS v
+    FROM survey_answer sa
+    JOIN survey_question sq ON sq.id = sa.survey_question_id
+    JOIN survey s ON s.id = sq.survey_id
+    WHERE s.survey_number = 'S25120024' AND sq.id = 296
+) a1
+JOIN (
+    SELECT CAST(sa.answer AS DECIMAL(10,2)) AS v
+    FROM survey_answer sa
+    JOIN survey_question sq ON sq.id = sa.survey_question_id
+    JOIN survey s ON s.id = sq.survey_id
+    WHERE s.survey_number = 'S25120024' AND sq.id = 298
+) a2 ON 1=1;
+
+── RESULT: Query 3 ──
+ pearson_correlation
+                 0.0
+
+(1 rows)
+
+
+── GENERATED SQL: Query 4 ──
+-- [Data Quality] Are there any non‑null responses recorded for the recommendation likelihood question, indicating whether this question is capturing data correctly? (Q299)
+SELECT 
+    COUNT(*) AS total_responses,
+    COUNT(CASE WHEN sa.selected_options_id IS NOT NULL AND sa.selected_options_id != '' THEN 1 END) AS non_null_responses,
+    COUNT(CASE WHEN sa.selected_options_id IS NULL OR sa.selected_options_id = '' THEN 1 END) AS null_responses
+FROM survey_answer sa
+JOIN survey_question sq ON sq.id = sa.survey_question_id
+JOIN survey s ON s.id = sq.survey_id
+WHERE s.survey_number = 'S25120024'
+    AND sq.id = 299;
+
+── RESULT: Query 4 ──
+ total_responses  non_null_responses  null_responses
+            3240                3240               0
+
+(1 rows)

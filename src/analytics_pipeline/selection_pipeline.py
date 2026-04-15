@@ -27,12 +27,12 @@ warnings.filterwarnings("ignore")
 
 
 def generate_sql_analisys_queries(
-    survey_id: str, prepared: dict[str, Any], analytical_questions: str = ""
+    survey_number: str, prepared: dict[str, Any], analytical_questions: str = ""
 ) -> dict[str, Any]:
 
     print(f"\n{'#'*60}")
 
-    print(f"# SELECTION PIPELINE — Survey: {survey_id}")
+    print(f"# SELECTION PIPELINE — Survey: {survey_number}")
 
     print(f"{'#'*60}\n")
 
@@ -43,7 +43,7 @@ def generate_sql_analisys_queries(
 
     # قراءة questions_block من النود السابق
 
-    questions_block = prepared.get("questions_block", "")
+    questions_block = prepared
 
     if not questions_block:
 
@@ -167,7 +167,7 @@ def generate_sql_analisys_queries(
 
     print(f"\n{'='*60}")
 
-    print(f"✅ DONE — Survey: {survey_id}")
+    print(f"✅ DONE — Survey: {survey_number}")
 
     print(f"   Queries   : {len(result['query_results'])}")
 
@@ -186,7 +186,7 @@ def generate_sql_analisys_queries(
     # Save
 
     result["report_path"] = save_results_to_file(
-        survey_number=survey_id,
+        survey_number=survey_number,
         query_results=result["query_results"],
         errors=result["errors"],
     )

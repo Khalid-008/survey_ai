@@ -18,3 +18,4 @@ whatsapp-venv/
 .vscode/
 *.pyc
 *.venv
+.claude/

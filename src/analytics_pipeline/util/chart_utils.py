@@ -15,10 +15,10 @@ def _repair_json_array(json_str):
     2. قوس الفتح المفقود: [{...},"type":...}]  →  [{...},{"type":...}]
     """
     # إزالة الفواصل المزدوجة (مثل ["1",,"2","3"])
-    repaired = re.sub(r',\s*,', ',', json_str)
+    repaired = re.sub(r",\s*,", ",", json_str)
 
     # إضافة { بعد الفاصلة مباشرةً إذا جاء بعدها مفتاح JSON مباشرة بدون قوس فتح
-    repaired = re.sub(r',\s*\"(type|title|data)\":', r',{\"\\1\":', repaired)
+    repaired = re.sub(r",\s*\"(type|title|data)\":", r",{\"\\1\":", repaired)
     return repaired
 
 
@@ -31,17 +31,17 @@ def _extract_chart_objects(text):
     depth = 0
     start = None
     for i, ch in enumerate(text):
-        if ch == '{':
+        if ch == "{":
             if depth == 0:
                 start = i
             depth += 1
-        elif ch == '}':
+        elif ch == "}":
             depth -= 1
             if depth == 0 and start is not None:
-                candidate = text[start:i + 1]
+                candidate = text[start : i + 1]
                 try:
                     obj = json.loads(candidate)
-                    if isinstance(obj, dict) and 'type' in obj and 'data' in obj:
+                    if isinstance(obj, dict) and "type" in obj and "data" in obj:
                         charts.append(obj)
                 except json.JSONDecodeError:
                     pass
@@ -56,11 +56,11 @@ def extract_json_from_response(response_text):
     يُرجع: قائمة من إعدادات الرسوم البيانية
     """
     # إزالة كتل الكود بصيغة markdown
-    response_text = re.sub(r'```json\s*', '', response_text)
-    response_text = re.sub(r'```\s*', '', response_text)
+    response_text = re.sub(r"```json\s*", "", response_text)
+    response_text = re.sub(r"```\s*", "", response_text)
 
     # محاولة إيجاد نمط مصفوفة JSON
-    json_match = re.search(r'\[.*\]', response_text, re.DOTALL)
+    json_match = re.search(r"\[.*\]", response_text, re.DOTALL)
     if json_match:
         json_str = json_match.group(0)
     else:
@@ -100,6 +100,42 @@ def extract_json_from_response(response_text):
     return []
 
 
+def format_selection_results_for_prompt(selection_questions_result: dict) -> str:
+    """Format selection query results into a readable text block for the chart prompt."""
+    results = selection_questions_result.get("results", [])
+    if not results:
+        return "No data available."
+
+    parts = []
+    for i, item in enumerate(results, 1):
+        label = item.get("label", f"Query {i}")
+        rows = item.get("result", [])
+        if not rows:
+            continue
+        parts.append(f"── Query {i}: {label} ──")
+        if rows:
+            headers = list(rows[0].keys())
+            parts.append("  " + "  |  ".join(headers))
+            for row in rows:
+                parts.append("  " + "  |  ".join(str(row.get(h, "")) for h in headers))
+        parts.append("")
+    return "\n".join(parts)
+
+
+def extract_python_code(response_text: str) -> str:
+    """Extract Python code block from model response, stripping markdown fences."""
+    # Try ```python ... ``` first
+    match = re.search(r"```python\s*(.*?)```", response_text, re.DOTALL)
+    if match:
+        return match.group(1).strip()
+    # Try plain ``` ... ```
+    match = re.search(r"```\s*(.*?)```", response_text, re.DOTALL)
+    if match:
+        return match.group(1).strip()
+    # Return as-is if no fences
+    return response_text.strip()
+
+
 def format_analysis_summary(text_questions_result, selection_questions_result=None):
     """
     تنسيق نتائج التحليل في ملخص موجز لتوليد الرسوم البيانية.
@@ -123,19 +159,3 @@ def format_analysis_summary(text_questions_result, selection_questions_result=No
 
     if sentiment_parts:
         parts.append("## تحليل المشاعر (أسئلة النص)\n\n" + "\n".join(sentiment_parts))
-
-    # ── 2) نتائج أسئلة الخيارات ──────────────────────────────────────────────
-    if selection_questions_result and isinstance(selection_questions_result, dict):
-        sel_parts = []
-        for qr in selection_questions_result.get("query_results", []):
-            label = qr.get("label", "")
-            rows  = qr.get("result", [])
-            if rows:
-                sel_parts.append(
-                    f"### {label}\n"
-                    + json.dumps(rows, ensure_ascii=False, indent=2)
-                )
-        if sel_parts:
-            parts.append("## نتائج أسئلة الخيارات\n\n" + "\n\n".join(sel_parts))
-
-    return "\n\n---\n\n".join(parts) if parts else "No analytical data available."

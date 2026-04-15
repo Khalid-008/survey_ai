@@ -6,18 +6,20 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
 def get_conn():
     return mysql.connector.connect(
-            host=os.getenv("DB_HOST"),
-            port=int(os.getenv("DB_PORT", 3306)),
-            user=os.getenv("DB_USER"),
-            password=os.getenv("DB_PASSWORD"),
-            database=os.getenv("DB_DATABASE"),
-            connection_timeout=60,
-            buffered=True
-        )
+        host=os.getenv("DB_HOST"),
+        port=int(os.getenv("DB_PORT", 3306)),
+        user=os.getenv("DB_USER"),
+        password=os.getenv("DB_PASSWORD"),
+        database=os.getenv("DB_DATABASE"),
+        connection_timeout=60,
+        buffered=True,
+    )
 
-def get_survey_df(survey_id, date_from=None, date_to=None):
+
+def get_survey_df(survey_number, date_from=None, date_to=None):
     try:
         conn = get_conn()
 
@@ -39,7 +41,7 @@ def get_survey_df(survey_id, date_from=None, date_to=None):
             FROM ms_survey_service.survey s
             INNER JOIN ms_survey_service.survey_question q ON q.survey_id = s.id
             INNER JOIN ms_survey_service.survey_answer a ON q.id = a.survey_question_id
-            WHERE s.survey_number = '{survey_id}'
+            WHERE s.survey_number = '{survey_number}'
             {date_filter}
             """
         result = pd.read_sql(query, conn)
@@ -48,7 +50,9 @@ def get_survey_df(survey_id, date_from=None, date_to=None):
         conn.close()
 
 
-def get_selection_questions_data(survey_number: str, date_from=None, date_to=None) -> pd.DataFrame:
+def get_selection_questions_data(
+    survey_number: str, date_from=None, date_to=None
+) -> pd.DataFrame:
 
     date_filter = ""
     params = [survey_number]
@@ -124,15 +128,20 @@ def get_selection_questions_data(survey_number: str, date_from=None, date_to=Non
         df = pd.read_sql(query, conn, params=params)
         if not df.empty:
             types = df["question_type"].unique().tolist()
-            print(f"DEBUG: get_selection_questions_data({survey_number}) → "
-                  f"{len(df)} rows | types: {types}"
-                  + (f" [filter: {date_from} → {date_to}]" if date_from or date_to else ""))
+            print(
+                f"DEBUG: get_selection_questions_data({survey_number}) → "
+                f"{len(df)} rows | types: {types}"
+                + (
+                    f" [filter: {date_from} → {date_to}]"
+                    if date_from or date_to
+                    else ""
+                )
+            )
         else:
             print(f"DEBUG: get_selection_questions_data({survey_number}) → 0 rows")
         return df
     finally:
         conn.close()
-
 
 
 def execute_raw_query(query: str) -> pd.DataFrame:
@@ -143,7 +152,9 @@ def execute_raw_query(query: str) -> pd.DataFrame:
     conn = get_conn()
     try:
         df = pd.read_sql(query, conn)
-        print(f"DEBUG: execute_raw_query() returned {len(df)} rows, {len(df.columns)} columns")
+        print(
+            f"DEBUG: execute_raw_query() returned {len(df)} rows, {len(df.columns)} columns"
+        )
         return df
     finally:
         conn.close()

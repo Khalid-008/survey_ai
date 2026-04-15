@@ -1,0 +1,113 @@
+SELECTION PIPELINE REPORT
+Survey   : S25120024
+Generated: 2026-04-12 19:39:16
+======================================================================
+
+── QUESTIONS ──
+
+
+── GENERATED SQL: Query 1 ──
+-- ما هو التوزيع التكراري لدرجة الرضا العامة عن الخدمات (Q296)؟ (Q296)
+SELECT 
+    CAST(sa.answer AS SIGNED) AS emoji_value,
+    COUNT(*) AS frequency
+FROM survey_answer sa
+JOIN survey_question sq ON sq.id = sa.survey_question_id
+JOIN survey s ON s.id = sq.survey_id
+WHERE s.survey_number = 'S25120024'
+AND sq.id = 296
+GROUP BY CAST(sa.answer AS SIGNED)
+ORDER BY CAST(sa.answer AS SIGNED);
+
+── RESULT: Query 1 ──
+ emoji_value  frequency
+           1        139
+           2         36
+           3        111
+           4        123
+           5       2831
+
+(5 rows)
+
+
+── GENERATED SQL: Query 2 ──
+-- ما هو التوزيع التكراري لتقييم أداء مندوب المبيعات (Q297)؟ (Q297)
+SELECT 
+    CAST(sa.answer AS SIGNED) AS emoji_value,
+    COUNT(*) AS frequency
+FROM survey_answer sa
+JOIN survey_question sq ON sq.id = sa.survey_question_id
+JOIN survey s ON s.id = sq.survey_id
+WHERE s.survey_number = 'S25120024'
+AND sq.id = 297
+GROUP BY CAST(sa.answer AS SIGNED)
+ORDER BY CAST(sa.answer AS SIGNED);
+
+── RESULT: Query 2 ──
+ emoji_value  frequency
+           1        126
+           2         26
+           3         28
+           4         91
+           5       2969
+
+(5 rows)
+
+
+── GENERATED SQL: Query 3 ──
+-- كيف يرتبط تقييم أداء مندوب المبيعات (Q297) بدرجة الرضا العامة عن الخدمات (Q296)؟ (Q296, Q297)
+SELECT ROUND(
+    (COUNT(*) * SUM(a1.v * a2.v) - SUM(a1.v) * SUM(a2.v)) /
+    SQRT(
+      (COUNT(*) * SUM(a1.v * a1.v) - POW(SUM(a1.v), 2)) *
+      (COUNT(*) * SUM(a2.v * a2.v) - POW(SUM(a2.v), 2))
+    ), 4
+  ) AS pearson_correlation
+FROM (
+    SELECT sa.submission_id, CAST(sa.answer AS DECIMAL(3,1)) AS v
+    FROM survey_answer sa
+    JOIN survey_question sq ON sq.id = sa.survey_question_id
+    JOIN survey s ON s.id = sq.survey_id
+    WHERE s.survey_number = 'S25120024'
+    AND sq.id = 296
+) a1
+JOIN (
+    SELECT sa.submission_id, CAST(sa.answer AS DECIMAL(3,1)) AS v
+    FROM survey_answer sa
+    JOIN survey_question sq ON sq.id = sa.survey_question_id
+    JOIN survey s ON s.id = sq.survey_id
+    WHERE s.survey_number = 'S25120024'
+    AND sq.id = 297
+) a2 ON a1.submission_id = a2.submission_id;
+
+── RESULT: Query 3 ──
+ pearson_correlation
+               0.129
+
+(1 rows)
+
+
+── GENERATED SQL: Query 4 ──
+-- هل توجد قيم غير مملوءة (NULL) لجميع الردود على سؤال التوصية (Q299)؟ (Q299)
+SELECT 
+    CASE 
+        WHEN sa.selected_options_id IS NULL OR sa.selected_options_id = '' THEN 'NULL/EMPTY'
+        ELSE 'FILLED'
+    END AS response_status,
+    COUNT(*) AS count
+FROM survey_answer sa
+JOIN survey_question sq ON sq.id = sa.survey_question_id
+JOIN survey s ON s.id = sq.survey_id
+WHERE s.survey_number = 'S25120024'
+AND sq.id = 299
+GROUP BY 
+    CASE 
+        WHEN sa.selected_options_id IS NULL OR sa.selected_options_id = '' THEN 'NULL/EMPTY'
+        ELSE 'FILLED'
+    END;
+
+── RESULT: Query 4 ──
+response_status  count
+         FILLED   3240
+
+(1 rows)

@@ -1,0 +1,23 @@
+SELECTION PIPELINE REPORT
+Survey   : S25120024
+Generated: 2026-04-12 17:46:33
+======================================================================
+
+── QUESTIONS ──
+
+
+── GENERATED SQL: Query 1 ──
+-- [Data Quality] What percentage of total survey submissions have a null answer for question 299? (Q299)
+SELECT 
+  ROUND(100.0 * COUNT(CASE WHEN sa.selected_options_id IS NULL OR sa.selected_options_id = '' THEN 1 END) / COUNT(*), 2) AS null_percentage
+FROM survey_answer sa
+JOIN survey_question sq ON sq.id = sa.survey_question_id
+JOIN survey s ON s.id = sq.survey_id
+WHERE s.survey_number = 'S25120024'
+  AND sq.id = 299;
+
+── RESULT: Query 1 ──
+ null_percentage
+             0.0
+
+(1 rows)

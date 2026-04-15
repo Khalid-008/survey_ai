@@ -1,0 +1,25 @@
+SELECTION PIPELINE REPORT
+Survey   : S25120024
+Generated: 2026-04-12 17:27:06
+======================================================================
+
+── QUESTIONS ──
+
+
+── GENERATED SQL: Query 1 ──
+-- [Data Quality] Does question 299 contain any non‑null responses? (Q299)
+SELECT COUNT(*) AS non_null_responses
+FROM survey_answer sa
+JOIN survey_question sq ON sq.id = sa.survey_question_id
+JOIN survey s ON s.id = sq.survey_id
+WHERE s.survey_number = 'S25120024'
+  AND sq.id = 299
+  AND sa.selected_options_id IS NOT NULL
+  AND sa.selected_options_id != ''
+;
+
+── RESULT: Query 1 ──
+ non_null_responses
+               3240
+
+(1 rows)

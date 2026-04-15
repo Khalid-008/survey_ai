@@ -1,0 +1,82 @@
+SELECTION PIPELINE REPORT
+Survey   : S25120024
+Generated: 2026-04-12 16:27:03
+======================================================================
+
+── QUESTIONS ──
+
+
+── GENERATED SQL: Query 1 ──
+-- [Distribution & Scoring] What is the count and percentage of each rating (1‑5) for overall service satisfaction? (Q296)
+SELECT 
+    CAST(sa.answer AS SIGNED) AS rating,
+    COUNT(*) AS count,
+    ROUND(100.0 * COUNT(*) / (SELECT COUNT(*) FROM survey_answer sa2
+        JOIN survey_question sq2 ON sq2.id = sa2.survey_question_id
+        JOIN survey s2 ON s2.id = sq2.survey_id
+        WHERE s2.survey_number = 'S25120024' AND sq2.id = 296 AND sa2.answer IS NOT NULL AND sa2.answer != ''), 2) AS percentage
+FROM survey_answer sa
+JOIN survey_question sq ON sq.id = sa.survey_question_id
+JOIN survey s ON s.id = sq.survey_id
+WHERE s.survey_number = 'S25120024' AND sq.id = 296 AND sa.answer IS NOT NULL AND sa.answer != ''
+GROUP BY sa.answer
+ORDER BY CAST(sa.answer AS SIGNED);
+
+── RESULT: Query 1 ──
+ rating  count  percentage
+      1    139        4.29
+      2     36        1.11
+      3    111        3.43
+      4    123        3.80
+      5   2831       87.38
+
+(5 rows)
+
+
+── GENERATED SQL: Query 2 ──
+-- [Correlation & Impact] How does the average overall service satisfaction rating differ across the ratings given to the salesperson's performance? (Q296, Q297)
+SELECT 
+    CAST(sa297.answer AS SIGNED) AS salesperson_rating,
+    ROUND(AVG(CAST(sa296.answer AS DECIMAL(3,1))), 2) AS avg_overall_satisfaction,
+    COUNT(*) AS count
+FROM survey_answer sa296
+JOIN survey_question sq296 ON sq296.id = sa296.survey_question_id
+JOIN survey s ON s.id = sq296.survey_id
+JOIN survey_answer sa297 ON sa297.submission_id = sa296.submission_id
+JOIN survey_question sq297 ON sq297.id = sa297.survey_question_id
+WHERE s.survey_number = 'S25120024' 
+    AND sq296.id = 296 
+    AND sq297.id = 297
+    AND sa296.answer IS NOT NULL AND sa296.answer != ''
+    AND sa297.answer IS NOT NULL AND sa297.answer != ''
+GROUP BY sa297.answer
+ORDER BY CAST(sa297.answer AS SIGNED);
+
+── RESULT: Query 2 ──
+ salesperson_rating  avg_overall_satisfaction  count
+                  1                      3.70   2009
+                  2                      3.63    115
+                  3                      3.71    141
+                  3                      4.00      1
+                  4                      3.78    636
+                  5                      4.20   8604
+
+(6 rows)
+
+
+── GENERATED SQL: Query 3 ──
+-- [Data Quality] What proportion of survey responses have a missing answer for the recommendation likelihood question? (Q299)
+SELECT 
+    COUNT(*) AS total_responses,
+    COUNT(CASE WHEN sa.selected_options_id IS NULL OR sa.selected_options_id = '' THEN 1 END) AS missing_responses,
+    ROUND(100.0 * COUNT(CASE WHEN sa.selected_options_id IS NULL OR sa.selected_options_id = '' THEN 1 END) / COUNT(*), 2) AS missing_percentage
+FROM survey_answer sa
+JOIN survey_question sq ON sq.id = sa.survey_question_id
+JOIN survey s ON s.id = sq.survey_id
+WHERE s.survey_number = 'S25120024' AND sq.id = 299;
+
+── RESULT: Query 3 ──
+ total_responses  missing_responses  missing_percentage
+            3240                  0                 0.0
+
+(1 rows)

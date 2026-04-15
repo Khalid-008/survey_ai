@@ -1,0 +1,28 @@
+SELECTION PIPELINE REPORT
+Survey   : S25120024
+Generated: 2026-04-12 17:36:02
+======================================================================
+
+── QUESTIONS ──
+
+
+── GENERATED SQL: Query 1 ──
+-- [Data Quality] 1. What percentage of survey submissions contain a non‑null answer for the recommendation question (Q299)? (Q299)
+SELECT ROUND(100.0 * COUNT(DISTINCT sa.submission_id) / 
+    (SELECT COUNT(DISTINCT sa2.submission_id) FROM survey_answer sa2 
+    JOIN survey_question sq2 ON sq2.id = sa2.survey_question_id 
+    JOIN survey s2 ON s2.id = sq2.survey_id 
+    WHERE s2.survey_number = 'S25120024'), 2) AS percentage_with_answer
+FROM survey_answer sa
+JOIN survey_question sq ON sq.id = sa.survey_question_id
+JOIN survey s ON s.id = sq.survey_id
+WHERE s.survey_number = 'S25120024' 
+AND sq.id = 299
+AND sa.selected_options_id IS NOT NULL 
+AND sa.selected_options_id != '';
+
+── RESULT: Query 1 ──
+ percentage_with_answer
+                  100.0
+
+(1 rows)

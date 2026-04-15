@@ -1,0 +1,84 @@
+SELECTION PIPELINE REPORT
+Survey   : S25120024
+Generated: 2026-04-12 20:10:10
+======================================================================
+
+── QUESTIONS ──
+
+
+── GENERATED SQL: Query 1 ──
+-- 1. What is the count and percentage of each rating (1‑5) for overall service satisfaction? (Q296)
+SELECT CAST(sa.answer AS SIGNED) AS rating, COUNT(*) AS count, ROUND(100.0 * COUNT(*) / (SELECT COUNT(*) FROM survey_answer sa2 JOIN survey_question sq2 ON sq2.id = sa2.survey_question_id JOIN survey s2 ON s2.id = sq2.survey_id WHERE s2.survey_number = 'S25120024' AND sq2.id = 296), 2) AS percentage
+FROM survey_answer sa
+JOIN survey_question sq ON sq.id = sa.survey_question_id
+JOIN survey s ON s.id = sq.survey_id
+WHERE s.survey_number = 'S25120024' AND sq.id = 296
+GROUP BY CAST(sa.answer AS SIGNED)
+ORDER BY rating;
+
+── RESULT: Query 1 ──
+ rating  count  percentage
+      1    139        4.29
+      2     36        1.11
+      3    111        3.43
+      4    123        3.80
+      5   2831       87.38
+
+(5 rows)
+
+
+── GENERATED SQL: Query 2 ──
+-- 2. What is the average rating for each of the three EMOJIS questions (overall service, sales rep performance, order speed/accuracy)? (Q296, Q297, Q298)
+SELECT sq.id AS question_id, sq.question_ar, AVG(CAST(sa.answer AS DECIMAL(3,1))) AS average_rating
+FROM survey_answer sa
+JOIN survey_question sq ON sq.id = sa.survey_question_id
+JOIN survey s ON s.id = sq.survey_id
+WHERE s.survey_number = 'S25120024' AND sq.id IN (296, 297, 298)
+GROUP BY sq.id, sq.question_ar
+ORDER BY sq.id;
+
+── RESULT: Query 2 ──
+ question_id                                          question_ar  average_rating
+         296                    بشكل عام، ما مدى رضاك عن خدماتنا؟         4.68858
+         297  ما مدى رضاك عن أداء مندوب المبيعات الذي قام بخدمتك؟         4.77500
+         298 ما مدى رضاك عن سرعة ودقة تنفيذ طلبك في الوقت المحدد؟         4.72778
+
+(3 rows)
+
+
+── GENERATED SQL: Query 3 ──
+-- 3. How does the average overall service satisfaction (Q296) differ between respondents who rated the sales rep performance (Q297) as 5 versus those who rated it as 1? (Q296, Q297)
+SELECT CAST(sa2.answer AS SIGNED) AS sales_rep_rating, AVG(CAST(sa1.answer AS DECIMAL(3,1))) AS avg_overall_satisfaction
+FROM survey_answer sa1
+JOIN survey_answer sa2 ON sa1.submission_id = sa2.submission_id
+JOIN survey_question sq1 ON sq1.id = sa1.survey_question_id
+JOIN survey_question sq2 ON sq2.id = sa2.survey_question_id
+JOIN survey s ON s.id = sq1.survey_id
+WHERE s.survey_number = 'S25120024'
+  AND sq1.id = 296
+  AND sq2.id = 297
+  AND CAST(sa2.answer AS SIGNED) IN (1, 5)
+GROUP BY CAST(sa2.answer AS SIGNED)
+ORDER BY CAST(sa2.answer AS SIGNED);
+
+── RESULT: Query 3 ──
+ sales_rep_rating  avg_overall_satisfaction
+                1                   3.70184
+                5                   4.19967
+
+(2 rows)
+
+
+── GENERATED SQL: Query 4 ──
+-- 4. How many responses have a NULL answer for the recommendation question, indicating missing or unmapped choices? (Q299)
+SELECT COUNT(*) AS null_response_count
+FROM survey_answer sa
+JOIN survey_question sq ON sq.id = sa.survey_question_id
+JOIN survey s ON s.id = sq.survey_id
+WHERE s.survey_number = 'S25120024' AND sq.id = 299 AND sa.answer IS NULL;
+
+── RESULT: Query 4 ──
+ null_response_count
+                3240
+
+(1 rows)

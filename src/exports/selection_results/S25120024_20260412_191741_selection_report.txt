@@ -1,0 +1,108 @@
+SELECTION PIPELINE REPORT
+Survey   : S25120024
+Generated: 2026-04-12 19:17:41
+======================================================================
+
+── QUESTIONS ──
+
+
+── GENERATED SQL: Query 1 ──
+-- What is the count and percentage of each rating (3, 4, 5) for the overall service satisfaction question? (Q296)
+SELECT 
+  CAST(sa.answer AS SIGNED) AS rating,
+  COUNT(*) AS count,
+  ROUND(100.0 * COUNT(*) / (SELECT COUNT(*) FROM survey_answer sa2 
+    JOIN survey_question sq2 ON sq2.id = sa2.survey_question_id 
+    JOIN survey s2 ON s2.id = sq2.survey_id 
+    WHERE s2.survey_number = 'S25120024' AND sq2.id = 296), 2) AS percentage
+FROM survey_answer sa
+JOIN survey_question sq ON sq.id = sa.survey_question_id
+JOIN survey s ON s.id = sq.survey_id
+WHERE s.survey_number = 'S25120024' 
+  AND sq.id = 296
+  AND sa.answer IS NOT NULL
+GROUP BY CAST(sa.answer AS SIGNED)
+ORDER BY CAST(sa.answer AS SIGNED);
+
+── RESULT: Query 1 ──
+ rating  count  percentage
+      1    139        4.29
+      2     36        1.11
+      3    111        3.43
+      4    123        3.80
+      5   2831       87.38
+
+(5 rows)
+
+
+── GENERATED SQL: Query 2 ──
+-- What are the average scores for overall service satisfaction (Q296), sales‑rep performance (Q297), and order execution speed/accuracy (Q298)? (Q296, Q297, Q298)
+SELECT 
+  (SELECT AVG(CAST(sa1.answer AS DECIMAL(3,1))) FROM survey_answer sa1 
+    JOIN survey_question sq1 ON sq1.id = sa1.survey_question_id 
+    JOIN survey s1 ON s1.id = sq1.survey_id 
+    WHERE s1.survey_number = 'S25120024' AND sq1.id = 296) AS avg_q296,
+  (SELECT AVG(CAST(sa2.answer AS DECIMAL(3,1))) FROM survey_answer sa2 
+    JOIN survey_question sq2 ON sq2.id = sa2.survey_question_id 
+    JOIN survey s2 ON s2.id = sq2.survey_id 
+    WHERE s2.survey_number = 'S25120024' AND sq2.id = 297) AS avg_q297,
+  (SELECT AVG(CAST(sa3.answer AS DECIMAL(3,1))) FROM survey_answer sa3 
+    JOIN survey_question sq3 ON sq3.id = sa3.survey_question_id 
+    JOIN survey s3 ON s3.id = sq3.survey_id 
+    WHERE s3.survey_number = 'S25120024' AND sq3.id = 298) AS avg_q298;
+
+── RESULT: Query 2 ──
+ avg_q296  avg_q297  avg_q298
+  4.68858     4.775   4.72778
+
+(1 rows)
+
+
+── GENERATED SQL: Query 3 ──
+-- How does the rating of sales‑rep performance (Q297) relate to overall service satisfaction (Q296) – e.g., average overall satisfaction for each sales‑rep rating? (Q296, Q297)
+SELECT 
+  CAST(sa297.answer AS SIGNED) AS sales_rep_rating,
+  ROUND(AVG(CAST(sa296.answer AS DECIMAL(3,1))), 2) AS avg_overall_satisfaction
+FROM survey_answer sa297
+JOIN survey_question sq297 ON sq297.id = sa297.survey_question_id
+JOIN survey s297 ON s297.id = sq297.survey_id
+JOIN survey_answer sa296 ON sa296.submission_id = sa297.submission_id
+JOIN survey_question sq296 ON sq296.id = sa296.survey_question_id
+JOIN survey s296 ON s296.id = sq296.survey_id
+WHERE s297.survey_number = 'S25120024' 
+  AND sq297.id = 297
+  AND s296.survey_number = 'S25120024'
+  AND sq296.id = 296
+  AND sa297.answer IS NOT NULL
+  AND sa296.answer IS NOT NULL
+GROUP BY CAST(sa297.answer AS SIGNED)
+ORDER BY CAST(sa297.answer AS SIGNED);
+
+── RESULT: Query 3 ──
+ sales_rep_rating  avg_overall_satisfaction
+                1                      3.70
+                2                      3.63
+                3                      3.71
+                4                      3.78
+                5                      4.20
+
+(5 rows)
+
+
+── GENERATED SQL: Query 4 ──
+-- Are there any non‑null answers recorded for the recommendation likelihood question, or is the answer field entirely null across all submissions? (Q299)
+SELECT 
+  COUNT(*) AS total_submissions,
+  SUM(CASE WHEN sa.answer IS NOT NULL THEN 1 ELSE 0 END) AS non_null_answers,
+  SUM(CASE WHEN sa.answer IS NULL THEN 1 ELSE 0 END) AS null_answers
+FROM survey_answer sa
+JOIN survey_question sq ON sq.id = sa.survey_question_id
+JOIN survey s ON s.id = sq.survey_id
+WHERE s.survey_number = 'S25120024' 
+  AND sq.id = 299;
+
+── RESULT: Query 4 ──
+ total_submissions  non_null_answers  null_answers
+              3240               0.0        3240.0
+
+(1 rows)

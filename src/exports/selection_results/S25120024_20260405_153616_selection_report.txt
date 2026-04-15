@@ -1,0 +1,242 @@
+SELECTION PIPELINE REPORT
+Survey   : S25120024
+Generated: 2026-04-05 15:36:16
+======================================================================
+
+── QUESTIONS ──
+
+
+── GENERATED SQL: Query 1 ──
+-- What is the count of responses for each rating (1‑5) of overall service satisfaction? (Q296)
+SELECT CAST(sa.answer AS SIGNED) AS rating, COUNT(*) AS response_count
+FROM survey_answer sa
+JOIN survey_question sq ON sq.id = sa.survey_question_id
+JOIN survey s ON s.id = sq.survey_id
+WHERE s.survey_number = 'S25120024'
+AND sq.id = 296
+AND sa.answer IS NOT NULL
+GROUP BY CAST(sa.answer AS SIGNED)
+ORDER BY rating;
+
+── RESULT: Query 1 ──
+ rating  response_count
+      1             139
+      2              36
+      3             109
+      4             121
+      5            2812
+
+(5 rows)
+
+
+── GENERATED SQL: Query 2 ──
+-- What is the average rating for overall service satisfaction? (Q296)
+SELECT ROUND(AVG(CAST(sa.answer AS DECIMAL(3,1))), 2) AS average_rating
+FROM survey_answer sa
+JOIN survey_question sq ON sq.id = sa.survey_question_id
+JOIN survey s ON s.id = sq.survey_id
+WHERE s.survey_number = 'S25120024'
+AND sq.id = 296
+AND sa.answer IS NOT NULL;
+
+── RESULT: Query 2 ──
+ average_rating
+           4.69
+
+(1 rows)
+
+
+── GENERATED SQL: Query 3 ──
+-- What is the count of responses for each rating of salesperson performance? (Q297)
+SELECT CAST(sa.answer AS SIGNED) AS rating, COUNT(*) AS response_count
+FROM survey_answer sa
+JOIN survey_question sq ON sq.id = sa.survey_question_id
+JOIN survey s ON s.id = sq.survey_id
+WHERE s.survey_number = 'S25120024'
+AND sq.id = 297
+AND sa.answer IS NOT NULL
+GROUP BY CAST(sa.answer AS SIGNED)
+ORDER BY rating;
+
+── RESULT: Query 3 ──
+ rating  response_count
+      1             125
+      2              26
+      3              27
+      4              90
+      5            2949
+
+(5 rows)
+
+
+── GENERATED SQL: Query 4 ──
+-- What is the average rating for salesperson performance? (Q297)
+SELECT ROUND(AVG(CAST(sa.answer AS DECIMAL(3,1))), 2) AS average_rating
+FROM survey_answer sa
+JOIN survey_question sq ON sq.id = sa.survey_question_id
+JOIN survey s ON s.id = sq.survey_id
+WHERE s.survey_number = 'S25120024'
+AND sq.id = 297
+AND sa.answer IS NOT NULL;
+
+── RESULT: Query 4 ──
+ average_rating
+           4.78
+
+(1 rows)
+
+
+── GENERATED SQL: Query 5 ──
+-- What is the count of responses for each rating (1‑5) of order execution speed and accuracy? (Q298)
+SELECT CAST(sa.answer AS SIGNED) AS rating, COUNT(*) AS response_count
+FROM survey_answer sa
+JOIN survey_question sq ON sq.id = sa.survey_question_id
+JOIN survey s ON s.id = sq.survey_id
+WHERE s.survey_number = 'S25120024'
+AND sq.id = 298
+AND sa.answer IS NOT NULL
+GROUP BY CAST(sa.answer AS SIGNED)
+ORDER BY rating;
+
+── RESULT: Query 5 ──
+ rating  response_count
+      1             147
+      2              40
+      3              41
+      4              89
+      5            2900
+
+(5 rows)
+
+
+── GENERATED SQL: Query 6 ──
+-- What is the average rating for order execution speed and accuracy? (Q298)
+SELECT ROUND(AVG(CAST(sa.answer AS DECIMAL(3,1))), 2) AS average_rating
+FROM survey_answer sa
+JOIN survey_question sq ON sq.id = sa.survey_question_id
+JOIN survey s ON s.id = sq.survey_id
+WHERE s.survey_number = 'S25120024'
+AND sq.id = 298
+AND sa.answer IS NOT NULL;
+
+── RESULT: Query 6 ──
+ average_rating
+           4.73
+
+(1 rows)
+
+
+── GENERATED SQL: Query 7 ──
+-- How does the overall service satisfaction rating correlate with the salesperson performance rating? (Q296, Q297)
+SELECT ROUND(
+    (COUNT(*) * SUM(a1.v * a2.v) - SUM(a1.v) * SUM(a2.v)) /
+    SQRT(
+      (COUNT(*) * SUM(a1.v * a1.v) - POW(SUM(a1.v), 2)) *
+      (COUNT(*) * SUM(a2.v * a2.v) - POW(SUM(a2.v), 2))
+    ), 4
+  ) AS pearson_correlation
+FROM (
+    SELECT sa.submission_id, CAST(sa.answer AS DECIMAL(3,1)) AS v
+    FROM survey_answer sa
+    JOIN survey_question sq ON sq.id = sa.survey_question_id
+    JOIN survey s ON s.id = sq.survey_id
+    WHERE s.survey_number = 'S25120024'
+    AND sq.id = 296
+    AND sa.answer IS NOT NULL
+) a1
+JOIN (
+    SELECT sa.submission_id, CAST(sa.answer AS DECIMAL(3,1)) AS v
+    FROM survey_answer sa
+    JOIN survey_question sq ON sq.id = sa.survey_question_id
+    JOIN survey s ON s.id = sq.survey_id
+    WHERE s.survey_number = 'S25120024'
+    AND sq.id = 297
+    AND sa.answer IS NOT NULL
+) a2 ON a1.submission_id = a2.submission_id;
+
+── RESULT: Query 7 ──
+ pearson_correlation
+              0.1285
+
+(1 rows)
+
+
+── GENERATED SQL: Query 8 ──
+-- How does the overall service satisfaction rating correlate with the order execution speed and accuracy rating? (Q296, Q298)
+SELECT ROUND(
+    (COUNT(*) * SUM(a1.v * a2.v) - SUM(a1.v) * SUM(a2.v)) /
+    SQRT(
+      (COUNT(*) * SUM(a1.v * a1.v) - POW(SUM(a1.v), 2)) *
+      (COUNT(*) * SUM(a2.v * a2.v) - POW(SUM(a2.v), 2))
+    ), 4
+  ) AS pearson_correlation
+FROM (
+    SELECT sa.submission_id, CAST(sa.answer AS DECIMAL(3,1)) AS v
+    FROM survey_answer sa
+    JOIN survey_question sq ON sq.id = sa.survey_question_id
+    JOIN survey s ON s.id = sq.survey_id
+    WHERE s.survey_number = 'S25120024'
+    AND sq.id = 296
+    AND sa.answer IS NOT NULL
+) a1
+JOIN (
+    SELECT sa.submission_id, CAST(sa.answer AS DECIMAL(3,1)) AS v
+    FROM survey_answer sa
+    JOIN survey_question sq ON sq.id = sa.survey_question_id
+    JOIN survey s ON s.id = sq.survey_id
+    WHERE s.survey_number = 'S25120024'
+    AND sq.id = 298
+    AND sa.answer IS NOT NULL
+) a2 ON a1.submission_id = a2.submission_id;
+
+── RESULT: Query 8 ──
+ pearson_correlation
+              0.1492
+
+(1 rows)
+
+
+── GENERATED SQL: Query 9 ──
+-- What is the average overall service satisfaction rating by day of week of submission? (Q296)
+SELECT DAYNAME(sa.created_date) AS day_of_week, ROUND(AVG(CAST(sa.answer AS DECIMAL(3,1))), 2) AS average_rating
+FROM survey_answer sa
+JOIN survey_question sq ON sq.id = sa.survey_question_id
+JOIN survey s ON s.id = sq.survey_id
+WHERE s.survey_number = 'S25120024'
+AND sq.id = 296
+AND sa.answer IS NOT NULL
+GROUP BY DAYNAME(sa.created_date)
+ORDER BY FIELD(DAYNAME(sa.created_date), 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday');
+
+── RESULT: Query 9 ──
+(empty)
+
+
+── GENERATED SQL: Query 10 ──
+-- How many responses have a null answer for the recommendation likelihood question, indicating missing data? (Q299)
+SELECT COUNT(*) AS null_response_count
+FROM survey_answer sa
+JOIN survey_question sq ON sq.id = sa.survey_question_id
+JOIN survey s ON s.id = sq.survey_id
+WHERE s.survey_number = 'S25120024'
+AND sq.id = 299
+AND sa.answer IS NULL;
+
+── RESULT: Query 10 ──
+ null_response_count
+                3217
+
+(1 rows)
+
+
+── ERRORS ──
+  • [Query 9] Execution failed: Execution failed on sql '-- What is the average overall service satisfaction rating by day of week of submission? (Q296)
+SELECT DAYNAME(sa.created_date) AS day_of_week, ROUND(AVG(CAST(sa.answer AS DECIMAL(3,1))), 2) AS average_rating
+FROM survey_answer sa
+JOIN survey_question sq ON sq.id = sa.survey_question_id
+JOIN survey s ON s.id = sq.survey_id
+WHERE s.survey_number = 'S25120024'
+AND sq.id = 296
+AND sa.answer IS NOT NULL
+GROUP BY DAYNAME(sa.created_date)
+ORDER BY FIELD(DAYNAME(sa.created_date), 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday');': 1055 (42000): Expression #1 of ORDER BY clause is not in GROUP BY clause and contains nonaggregated column 'ms_survey_service.sa.created_date' which is not functionally dependent on columns in GROUP BY clause; this is incompatible with sql_mode=only_full_group_by

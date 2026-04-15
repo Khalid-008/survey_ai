@@ -1,0 +1,77 @@
+SELECTION PIPELINE REPORT
+Survey   : S25120024
+Generated: 2026-04-05 16:58:25
+======================================================================
+
+── QUESTIONS ──
+
+
+── GENERATED SQL: Query 1 ──
+-- ما هو توزيع إجابات سؤال الرضا العام (Q296) بالنسب المئوية لكل قيمة؟ (Q296)
+SELECT
+    CAST(sa.answer AS SIGNED) AS score,
+    COUNT(*) AS count,
+    ROUND(100.0 * COUNT(*) / (
+        SELECT COUNT(*)
+        FROM survey_answer sa2
+        JOIN survey_question sq2 ON sq2.id = sa2.survey_question_id
+        JOIN survey s2 ON s2.id = sq2.survey_id
+        WHERE s2.survey_number = 'S25120024' AND sq2.id = 296
+    ), 2) AS percentage
+FROM survey_answer sa
+JOIN survey_question sq ON sq.id = sa.survey_question_id
+JOIN survey s ON s.id = sq.survey_id
+WHERE s.survey_number = 'S25120024' AND sq.id = 296
+GROUP BY CAST(sa.answer AS SIGNED)
+ORDER BY CAST(sa.answer AS SIGNED);
+
+── RESULT: Query 1 ──
+ score  count  percentage
+     1    139        4.32
+     2     36        1.12
+     3    109        3.39
+     4    121        3.76
+     5   2813       87.41
+
+(5 rows)
+
+
+── GENERATED SQL: Query 2 ──
+-- كيف يتغير متوسط رضى العميل العام (Q296) بناءً على درجات رضاهم عن أداء مندوب المبيعات (Q297)؟ (Q296, Q297)
+SELECT
+    CAST(sa297.answer AS SIGNED) AS salesman_satisfaction_score,
+    ROUND(AVG(CAST(sa296.answer AS DECIMAL(3,1))), 2) AS avg_overall_satisfaction
+FROM survey_answer sa296
+JOIN survey_question sq296 ON sq296.id = sa296.survey_question_id
+JOIN survey s ON s.id = sq296.survey_id
+JOIN survey_answer sa297 ON sa297.submission_id = sa296.submission_id AND sa297.survey_question_id = 297
+WHERE s.survey_number = 'S25120024' AND sq296.id = 296
+GROUP BY CAST(sa297.answer AS SIGNED)
+ORDER BY CAST(sa297.answer AS SIGNED);
+
+── RESULT: Query 2 ──
+ salesman_satisfaction_score  avg_overall_satisfaction
+                           1                      3.70
+                           2                      3.63
+                           3                      3.71
+                           4                      3.77
+                           5                      4.20
+
+(5 rows)
+
+
+── GENERATED SQL: Query 3 ──
+-- ما عدد الاستجابات التي تحتوي على إجابة فارغة لسؤال احتمالية التوصية (Q299)؟ (Q299)
+SELECT
+    COUNT(*) AS empty_response_count
+FROM survey_answer sa
+JOIN survey_question sq ON sq.id = sa.survey_question_id
+JOIN survey s ON s.id = sq.survey_id
+WHERE s.survey_number = 'S25120024' AND sq.id = 299
+AND (sa.selected_options_id IS NULL OR sa.selected_options_id = '');
+
+── RESULT: Query 3 ──
+ empty_response_count
+                    0
+
+(1 rows)

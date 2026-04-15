@@ -39,16 +39,16 @@ def extract_top_topics_by_sentiment(
                 all_topics.append(topics_val.strip())
 
     raw_counts = Counter(all_topics).most_common(50)
-    
+
     if raw_counts:
         return semantic_normalization(raw_counts, top_n)
-    
+
     return []
 
 
 def analyze_text_questions_batch(
     df: pd.DataFrame,
-    batch_size: int = 30,
+    batch_size: int,
 ) -> tuple[pd.DataFrame, dict]:
 
     print("=" * 60)

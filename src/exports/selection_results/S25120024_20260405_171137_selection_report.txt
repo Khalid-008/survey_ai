@@ -1,0 +1,78 @@
+SELECTION PIPELINE REPORT
+Survey   : S25120024
+Generated: 2026-04-05 17:11:38
+======================================================================
+
+── QUESTIONS ──
+
+
+── GENERATED SQL: Query 1 ──
+-- What is the distribution of overall service satisfaction scores? (Distribution & Scoring) (Q296)
+SELECT 
+  CAST(sa.answer AS SIGNED) AS satisfaction_score,
+  COUNT(*) AS response_count,
+  ROUND(100.0 * COUNT(*) / (SELECT COUNT(*) FROM survey_answer WHERE survey_question_id = 296), 2) AS percentage
+FROM survey_answer sa
+JOIN survey_question sq ON sq.id = sa.survey_question_id
+JOIN survey s ON s.id = sq.survey_id
+WHERE s.survey_number = 'S25120024'
+  AND sa.survey_question_id = 296
+  AND sa.answer IS NOT NULL
+GROUP BY CAST(sa.answer AS SIGNED)
+ORDER BY CAST(sa.answer AS SIGNED);
+
+── RESULT: Query 1 ──
+ satisfaction_score  response_count  percentage
+                  1             139        4.32
+                  2              36        1.12
+                  3             109        3.39
+                  4             121        3.76
+                  5            2813       87.41
+
+(5 rows)
+
+
+── GENERATED SQL: Query 2 ──
+-- How does the average overall service satisfaction vary across different sales representative performance ratings? (Correlation & Impact) (Q296, Q297)
+SELECT 
+  CAST(sa297.answer AS SIGNED) AS sales_rep_rating,
+  ROUND(AVG(CAST(sa296.answer AS DECIMAL(3,1))), 2) AS avg_overall_satisfaction
+FROM survey_answer sa296
+JOIN survey_answer sa297 ON sa296.submission_id = sa297.submission_id
+JOIN survey_question sq296 ON sq296.id = sa296.survey_question_id
+JOIN survey_question sq297 ON sq297.id = sa297.survey_question_id
+JOIN survey s ON s.id = sq296.survey_id
+WHERE s.survey_number = 'S25120024'
+  AND sa296.survey_question_id = 296
+  AND sa297.survey_question_id = 297
+  AND sa296.answer IS NOT NULL
+  AND sa297.answer IS NOT NULL
+GROUP BY CAST(sa297.answer AS SIGNED)
+ORDER BY CAST(sa297.answer AS SIGNED);
+
+── RESULT: Query 2 ──
+ sales_rep_rating  avg_overall_satisfaction
+                1                      3.70
+                2                      3.63
+                3                      3.71
+                4                      3.77
+                5                      4.20
+
+(5 rows)
+
+
+── GENERATED SQL: Query 3 ──
+-- What percentage of survey responses have a missing answer for the recommendation likelihood question? (Data Quality) (Q299)
+SELECT 
+  ROUND(100.0 * SUM(CASE WHEN sa.selected_options_id IS NULL OR sa.selected_options_id = '' THEN 1 ELSE 0 END) / COUNT(*), 2) AS missing_percentage
+FROM survey_answer sa
+JOIN survey_question sq ON sq.id = sa.survey_question_id
+JOIN survey s ON s.id = sq.survey_id
+WHERE s.survey_number = 'S25120024'
+  AND sa.survey_question_id = 299;
+
+── RESULT: Query 3 ──
+ missing_percentage
+                0.0
+
+(1 rows)

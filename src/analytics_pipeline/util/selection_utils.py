@@ -7,12 +7,14 @@ import pandas as pd
 
 EXPORTS_DIR = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-    "exports", "selection_results"
+    "exports",
+    "selection_results",
 )
 os.makedirs(EXPORTS_DIR, exist_ok=True)
 
 
 # ── SQL extraction ────────────────────────────────────────────────────────────
+
 
 def extract_sql(text: str) -> str:
     match = re.search(r"```(?:sql)?\s*(.*?)```", text, re.DOTALL | re.IGNORECASE)
@@ -23,14 +25,15 @@ def extract_sql(text: str) -> str:
 
 # ── SQL cleaning & splitting ───────────────────────────────────────────────────
 
+
 def clean_sql_queries(raw_output: str) -> list[str]:
     """
     Strips prose mixed into LLM output, auto-fixes COUNT() and CAST AS INT,
     then splits the output into individual executable SQL queries.
     """
-    SQL_KEYWORDS = ('SELECT', 'WITH', 'INSERT', 'UPDATE', 'DELETE', '--')
+    SQL_KEYWORDS = ("SELECT", "WITH", "INSERT", "UPDATE", "DELETE", "--")
 
-    lines = raw_output.split('\n')
+    lines = raw_output.split("\n")
     cleaned_lines: list[str] = []
     inside_query = False
 
@@ -38,8 +41,10 @@ def clean_sql_queries(raw_output: str) -> list[str]:
         stripped = line.strip()
 
         # Skip prose lines that appear before any SQL keyword
-        if not inside_query and stripped and not any(
-            stripped.upper().startswith(kw) for kw in SQL_KEYWORDS
+        if (
+            not inside_query
+            and stripped
+            and not any(stripped.upper().startswith(kw) for kw in SQL_KEYWORDS)
         ):
             continue
 
@@ -49,18 +54,18 @@ def clean_sql_queries(raw_output: str) -> list[str]:
         if inside_query:
             cleaned_lines.append(line)
 
-        if stripped.endswith(';'):
+        if stripped.endswith(";"):
             inside_query = False
 
-    joined = '\n'.join(cleaned_lines)
+    joined = "\n".join(cleaned_lines)
 
     # Fix COUNT() → COUNT(*)
-    joined = re.sub(r'\bCOUNT\s*\(\s*\)', 'COUNT(*)', joined)
+    joined = re.sub(r"\bCOUNT\s*\(\s*\)", "COUNT(*)", joined)
 
     # Fix CAST(x AS INT) → CAST(x AS SIGNED)
     joined = re.sub(
-        r'CAST\(([^)]+)\s+AS\s+INT\)',
-        lambda m: f'CAST({m.group(1)} AS SIGNED)',
+        r"CAST\(([^)]+)\s+AS\s+INT\)",
+        lambda m: f"CAST({m.group(1)} AS SIGNED)",
         joined,
         flags=re.IGNORECASE,
     )
@@ -69,10 +74,10 @@ def clean_sql_queries(raw_output: str) -> list[str]:
     queries: list[str] = []
     current: list[str] = []
 
-    for line in joined.split('\n'):
+    for line in joined.split("\n"):
         current.append(line)
-        if line.strip().endswith(';'):
-            query = '\n'.join(current).strip()
+        if line.strip().endswith(";"):
+            query = "\n".join(current).strip()
             if query and len(query) > 20:
                 queries.append(query)
             current = []
@@ -82,6 +87,7 @@ def clean_sql_queries(raw_output: str) -> list[str]:
 
 # ── SQL validation ─────────────────────────────────────────────────────────────
 
+
 def validate_query(sql: str) -> tuple[bool, list[str]]:
     """
     Checks basic MySQL 5.7 rule compliance before execution.
@@ -89,17 +95,17 @@ def validate_query(sql: str) -> tuple[bool, list[str]]:
     """
     issues: list[str] = []
 
-    if re.search(r'\bCOUNT\s*\(\s*\)', sql):
+    if re.search(r"\bCOUNT\s*\(\s*\)", sql):
         issues.append("❌ COUNT() without * found")
 
-    if re.search(r'\bOVER\s*\(', sql, re.IGNORECASE):
+    if re.search(r"\bOVER\s*\(", sql, re.IGNORECASE):
         issues.append("❌ Window function OVER() found")
 
-    if re.search(r'CAST\s*\(.*AS\s+INT\b', sql, re.IGNORECASE):
+    if re.search(r"CAST\s*\(.*AS\s+INT\b", sql, re.IGNORECASE):
         issues.append("❌ CAST AS INT found (use SIGNED)")
 
-    first_line = sql.strip().split('\n')[0].strip()
-    if not first_line.startswith(('--', 'SELECT', 'WITH')):
+    first_line = sql.strip().split("\n")[0].strip()
+    if not first_line.startswith(("--", "SELECT", "WITH")):
         issues.append("❌ Query starts with prose text, not SQL")
 
     return len(issues) == 0, issues
@@ -107,7 +113,13 @@ def validate_query(sql: str) -> tuple[bool, list[str]]:
 
 # ── Questions block formatter ─────────────────────────────────────────────────
 
-def format_questions_block(grouped: dict, distinct: dict, sample_answers: dict | None = None, survey_number: str = "") -> str:
+
+def format_questions_block(
+    grouped: dict,
+    distinct: dict,
+    sample_answers: dict | None = None,
+    survey_number: str = "",
+) -> str:
     lines = []
     if survey_number:
         lines.append(f"Survey Number : {survey_number}")
@@ -127,10 +139,9 @@ def format_questions_block(grouped: dict, distinct: dict, sample_answers: dict |
 
 # ── Results export ────────────────────────────────────────────────────────────
 
+
 def save_results_to_file(
-    survey_number: str,
-    query_results: list[dict],
-    errors: list
+    survey_number: str, query_results: list[dict], errors: list
 ) -> str:
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     base_name = f"{survey_number}_{ts}"
@@ -146,8 +157,8 @@ def save_results_to_file(
 
         for idx, qr in enumerate(query_results, start=1):
             label = qr.get("label", f"Query {idx}")
-            sql   = qr.get("sql", "")
-            df    = qr.get("result", pd.DataFrame())
+            sql = qr.get("sql", "")
+            df = qr.get("result", pd.DataFrame())
 
             f.write(f"\n\n── GENERATED SQL: {label} ──\n")
             f.write(sql if sql else "(not generated)")

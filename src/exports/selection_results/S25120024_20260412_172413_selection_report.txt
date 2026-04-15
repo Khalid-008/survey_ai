@@ -1,0 +1,23 @@
+SELECTION PIPELINE REPORT
+Survey   : S25120024
+Generated: 2026-04-12 17:24:13
+======================================================================
+
+── QUESTIONS ──
+
+
+── GENERATED SQL: Query 1 ──
+-- [Data Quality] How many responses for question 299 are null? (Q299)
+SELECT COUNT(*) AS null_responses
+FROM survey_answer sa
+JOIN survey_question sq ON sq.id = sa.survey_question_id
+JOIN survey s ON s.id = sq.survey_id
+WHERE sq.id = 299
+  AND s.survey_number = 'S25120024'
+  AND sa.answer IS NULL;
+
+── RESULT: Query 1 ──
+ null_responses
+           3240
+
+(1 rows)

@@ -1,0 +1,93 @@
+SELECTION PIPELINE REPORT
+Survey   : S25120024
+Generated: 2026-04-13 14:23:01
+======================================================================
+
+── QUESTIONS ──
+
+
+── GENERATED SQL: Query 1 ──
+-- [Distribution & Scoring] What is the count and percentage of each answer option for overall service satisfaction? (Q296)
+SELECT 
+    sa.answer,
+    COUNT(*) AS count,
+    ROUND(100.0 * COUNT(*) / (SELECT COUNT(*) FROM survey_answer WHERE survey_question_id = 296), 2) AS percentage
+FROM survey_answer sa
+JOIN survey_question sq ON sq.id = sa.survey_question_id
+JOIN survey s ON s.id = sq.survey_id
+WHERE s.survey_number = 'S25120024'
+AND sa.survey_question_id = 296
+GROUP BY sa.answer
+ORDER BY sa.answer;
+
+── RESULT: Query 1 ──
+answer  count  percentage
+     1    139        4.29
+     2     36        1.11
+     3    111        3.43
+     4    123        3.80
+     5   2831       87.38
+
+(5 rows)
+
+
+── GENERATED SQL: Query 2 ──
+-- [Correlation & Impact] How does the average rating for overall service satisfaction compare to the average rating for salesperson performance across respondents? (Q296, Q297)
+SELECT 
+    AVG(CAST(sa1.answer AS DECIMAL(3,1))) AS avg_overall_satisfaction,
+    AVG(CAST(sa2.answer AS DECIMAL(3,1))) AS avg_salesperson_performance
+FROM survey_answer sa1
+JOIN survey_answer sa2 ON sa1.submission_id = sa2.submission_id
+JOIN survey_question sq1 ON sq1.id = sa1.survey_question_id
+JOIN survey_question sq2 ON sq2.id = sa2.survey_question_id
+JOIN survey s ON s.id = sq1.survey_id
+WHERE s.survey_number = 'S25120024'
+AND sa1.survey_question_id = 296
+AND sa2.survey_question_id = 297;
+
+── RESULT: Query 2 ──
+ avg_overall_satisfaction  avg_salesperson_performance
+                  4.07761                      4.19164
+
+(1 rows)
+
+
+── GENERATED SQL: Query 3 ──
+-- [Distribution & Scoring] What share of respondents gave the highest rating (5) for each of the three service dimensions? (Q296, Q297, Q298)
+SELECT 
+    sq.id AS question_id,
+    sq.question_ar,
+    COUNT(CASE WHEN sa.answer = '5' THEN 1 END) AS count_5,
+    ROUND(100.0 * COUNT(CASE WHEN sa.answer = '5' THEN 1 END) / COUNT(*), 2) AS percentage_5
+FROM survey_answer sa
+JOIN survey_question sq ON sq.id = sa.survey_question_id
+JOIN survey s ON s.id = sq.survey_id
+WHERE s.survey_number = 'S25120024'
+AND sa.survey_question_id IN (296, 297, 298)
+GROUP BY sq.id, sq.question_ar
+ORDER BY sq.id;
+
+── RESULT: Query 3 ──
+ question_id                                          question_ar  count_5  percentage_5
+         296                    بشكل عام، ما مدى رضاك عن خدماتنا؟     2831         87.38
+         297  ما مدى رضاك عن أداء مندوب المبيعات الذي قام بخدمتك؟     2969         91.64
+         298 ما مدى رضاك عن سرعة ودقة تنفيذ طلبك في الوقت المحدد؟     2921         90.15
+
+(3 rows)
+
+
+── GENERATED SQL: Query 4 ──
+-- [Data Quality] What proportion of submissions have a null answer for the recommendation question? (Q299)
+SELECT 
+    ROUND(100.0 * COUNT(CASE WHEN sa.answer IS NULL THEN 1 END) / COUNT(*), 2) AS percentage_null
+FROM survey_answer sa
+JOIN survey_question sq ON sq.id = sa.survey_question_id
+JOIN survey s ON s.id = sq.survey_id
+WHERE s.survey_number = 'S25120024'
+AND sa.survey_question_id = 299;
+
+── RESULT: Query 4 ──
+ percentage_null
+           100.0
+
+(1 rows)

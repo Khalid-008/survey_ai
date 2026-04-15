@@ -7,7 +7,7 @@ from langchain_core.messages import SystemMessage
 SYNTHESIS_SYSTEM_PROMPT = """\
 You are a Strategic Synthesis Agent — a senior business intelligence consultant.
 Transform raw analytical outputs into polished executive intelligence without revealing
-the underlying technical processes. Respond exclusively in Arabic.
+the underlying technical processes. Respond exclusively in English.
 
 ---
 
@@ -28,7 +28,6 @@ Required fields:
   "executive_summary": "2-3 sentence C-level summary.",
   "key_metrics": ["Metric 1 with context", "Metric 2 with context"],
   "recommendations": ["Actionable recommendation 1", "Actionable recommendation 2"],
-  "visualizations": []
 }
 
 Field guide:
@@ -36,7 +35,6 @@ Field guide:
 - executive_summary — answers the core business question concisely
 - key_metrics — 3-6 supporting data points
 - recommendations — actionable next steps derived from the analysis
-- visualizations — leave as empty array []
 
 ---
 
@@ -50,13 +48,12 @@ Style:
 
 ❌ Technical references: "SQL shows", "according to data", "Question 296", question IDs
    like "Q293" or "Q154" — describe the question topic in plain language instead
-❌ Industry jargon the reader may not know: never write "NPS" — use plain Arabic
-   instead (e.g. "مؤشر ترشيح الخدمة", "نسبة توصية العملاء", "مستوى رضا العملاء")
+❌ Industry jargon the reader may not know: never write "NPS" — use plain language
+   instead (e.g. "recommendation rate", "customer satisfaction score", "likelihood to recommend")
 ❌ Written numbers: "twenty-three percent"
 ❌ ## headers anywhere in content
 ❌ Personal names — NEVER mention any individual person's name extracted from
-   free-text responses (e.g. "ماجد الشمري", "أحمد", "محمد علي").
-   Always refer to people generically: "أحد المستجيبين", "بعض العملاء", etc.
+   free-text responses. Always refer to people generically: "a respondent", "some customers", etc.
 
 Structure:
 - Open with the most impactful insight
@@ -78,7 +75,10 @@ QUALITY CHECKLIST
 
 # ── Data Builder ───────────────────────────────────────────────────────────────
 
-def _build_analytics_section(selection_questions_result: dict, text_questions_result: list) -> str:
+
+def _build_analytics_section(
+    selection_questions_result: dict, text_questions_result: list
+) -> str:
     """Combines both analysis results into a single text block sent to the LLM."""
     parts = []
 
@@ -96,28 +96,28 @@ def _build_analytics_section(selection_questions_result: dict, text_questions_re
         text_block_parts = []
         for i, msg in enumerate(text_questions_result):
             text_block_parts.append(f"### Analysis {i + 1}\n{msg}")
-        parts.append("## Text Questions Analysis Results (NLP)\n\n" + "\n\n".join(text_block_parts))
+        parts.append(
+            "## Text Questions Analysis Results (NLP)\n\n"
+            + "\n\n".join(text_block_parts)
+        )
 
     # 2) Selection questions analysis results
     if selection_questions_result and isinstance(selection_questions_result, dict):
-        sel_block_parts = []
-        for qr in selection_questions_result.get("query_results", []):
-            label = qr.get("label", "")
-            rows  = qr.get("result", [])
-            if rows:
-                sel_block_parts.append(
-                    f"### {label}\n"
-                    + json.dumps(rows, ensure_ascii=False, indent=2)
-                )
-        if sel_block_parts:
-            parts.append("## Selection Questions Analysis Results\n\n" + "\n\n".join(sel_block_parts))
+        sel_results = selection_questions_result.get("results", [])
+        if sel_results:
+            parts.append(
+                "## Selection Questions Analysis Results\n\n" + "\n\n".join(sel_results)
+            )
 
     return "\n\n---\n\n".join(parts) if parts else "No analytical data available."
 
 
 # ── Main Function ──────────────────────────────────────────────────────────────
 
-def synthesis_agent_prompt_function(survey_subject, selection_questions_result, text_questions_result):
+
+def synthesis_agent_prompt_function(
+    survey_subject, selection_questions_result, text_questions_result
+):
     """
     Creates a synthesis agent prompt to transform analytics data into a structured JSON report.
 
@@ -128,7 +128,9 @@ def synthesis_agent_prompt_function(survey_subject, selection_questions_result, 
 
     Returns a list of messages for the LLM.
     """
-    analytics_section = _build_analytics_section(selection_questions_result, text_questions_result)
+    analytics_section = _build_analytics_section(
+        selection_questions_result, text_questions_result
+    )
 
     prompt_text = f"""{SYNTHESIS_SYSTEM_PROMPT}
 
@@ -146,7 +148,7 @@ def synthesis_agent_prompt_function(survey_subject, selection_questions_result, 
 
 Synthesize the analytical data above into a comprehensive executive report in JSON format only.
 Focus on extracting actionable insights specific to the survey subject: "{survey_subject}".
-Respond exclusively in Arabic.
+Respond exclusively in English.
 Validate the JSON before returning."""
 
     return [SystemMessage(content=prompt_text)]
@@ -154,14 +156,17 @@ Validate the JSON before returning."""
 
 # ── Compatibility Wrapper ──────────────────────────────────────────────────────
 
+
 class SynthesisAgentPrompt:
     """Wrapper class to maintain .invoke() compatibility"""
 
     def invoke(self, inputs):
-        survey_subject             = inputs.get("survey_subject", "Survey Data")
+        survey_subject = inputs.get("survey_subject", "Survey Data")
         selection_questions_result = inputs.get("selection_questions_result", {})
-        text_questions_result      = inputs.get("text_questions_result", [])
-        return synthesis_agent_prompt_function(survey_subject, selection_questions_result, text_questions_result)
+        text_questions_result = inputs.get("text_questions_result", [])
+        return synthesis_agent_prompt_function(
+            survey_subject, selection_questions_result, text_questions_result
+        )
 
 
 # Create the instance with the same name for compatibility

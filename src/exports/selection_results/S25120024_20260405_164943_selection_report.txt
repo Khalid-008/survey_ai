@@ -1,0 +1,73 @@
+SELECTION PIPELINE REPORT
+Survey   : S25120024
+Generated: 2026-04-05 16:49:43
+======================================================================
+
+── QUESTIONS ──
+
+
+── GENERATED SQL: Query 1 ──
+-- What is the distribution of overall service satisfaction scores? (Q296)
+SELECT CAST(sa.answer AS SIGNED) AS score, COUNT(*) AS count
+FROM survey_answer sa
+JOIN survey_question sq ON sq.id = sa.survey_question_id
+JOIN survey s ON s.id = sq.survey_id
+WHERE s.survey_number = 'S25120024'
+AND sq.id = 296
+AND sa.answer IS NOT NULL
+GROUP BY CAST(sa.answer AS SIGNED)
+ORDER BY CAST(sa.answer AS SIGNED);
+
+── RESULT: Query 1 ──
+ score  count
+     1    139
+     2     36
+     3    109
+     4    121
+     5   2813
+
+(5 rows)
+
+
+── GENERATED SQL: Query 2 ──
+-- How does overall service satisfaction (Q296) relate to sales‑rep performance satisfaction (Q297)? (Q296, Q297)
+SELECT ROUND(
+    (COUNT(*) * SUM(CAST(sa1.answer AS DECIMAL(10,2)) * CAST(sa2.answer AS DECIMAL(10,2))) - SUM(CAST(sa1.answer AS DECIMAL(10,2))) * SUM(CAST(sa2.answer AS DECIMAL(10,2)))) /
+    SQRT(
+        (COUNT(*) * SUM(CAST(sa1.answer AS DECIMAL(10,2)) * CAST(sa1.answer AS DECIMAL(10,2))) - POW(SUM(CAST(sa1.answer AS DECIMAL(10,2))), 2)) *
+        (COUNT(*) * SUM(CAST(sa2.answer AS DECIMAL(10,2)) * CAST(sa2.answer AS DECIMAL(10,2))) - POW(SUM(CAST(sa2.answer AS DECIMAL(10,2))), 2))
+    ), 4
+) AS pearson_correlation
+FROM survey_answer sa1
+JOIN survey_question sq1 ON sq1.id = sa1.survey_question_id
+JOIN survey s1 ON s1.id = sq1.survey_id
+JOIN survey_answer sa2 ON sa2.submission_id = sa1.submission_id
+JOIN survey_question sq2 ON sq2.id = sa2.survey_question_id
+JOIN survey s2 ON s2.id = sq2.survey_id
+WHERE s1.survey_number = 'S25120024'
+AND s2.survey_number = 'S25120024'
+AND sq1.id = 296
+AND sq2.id = 297
+AND sa1.answer IS NOT NULL
+AND sa2.answer IS NOT NULL;
+
+── RESULT: Query 2 ──
+ pearson_correlation
+              0.1285
+
+(1 rows)
+
+
+── GENERATED SQL: Query 3 ──
+-- What percentage of responses for the recommendation question are null, indicating missing data? (Q299)
+SELECT ROUND(100.0 * COUNT(CASE WHEN sa.selected_options_id IS NULL OR sa.selected_options_id = '' THEN 1 END) / (SELECT COUNT(*) FROM survey_answer sa2 JOIN survey_question sq2 ON sq2.id = sa2.survey_question_id JOIN survey s2 ON s2.id = sq2.survey_id WHERE s2.survey_number = 'S25120024' AND sq2.id = 299), 2) AS null_percentage
+FROM survey_answer sa
+JOIN survey_question sq ON sq.id = sa.survey_question_id
+JOIN survey s ON s.id = sq.survey_id
+WHERE s.survey_number = 'S25120024' AND sq.id = 299;
+
+── RESULT: Query 3 ──
+ null_percentage
+             0.0
+
+(1 rows)

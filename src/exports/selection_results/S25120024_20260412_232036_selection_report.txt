@@ -1,0 +1,115 @@
+SELECTION PIPELINE REPORT
+Survey   : S25120024
+Generated: 2026-04-12 23:20:36
+======================================================================
+
+── QUESTIONS ──
+
+
+── GENERATED SQL: Query 1 ──
+-- [Correlation & Impact] How does satisfaction with the sales representative (Q297) correlate with overall service satisfaction (Q296)? (Q296, Q297)
+SELECT ROUND(
+  (COUNT(*) * SUM(a1.v * a2.v) - SUM(a1.v) * SUM(a2.v)) /
+  SQRT(
+    (COUNT(*) * SUM(a1.v * a1.v) - POW(SUM(a1.v), 2)) *
+    (COUNT(*) * SUM(a2.v * a2.v) - POW(SUM(a2.v), 2))
+  ), 4
+) AS pearson_correlation
+FROM (
+  SELECT sa.submission_id, CAST(sa.answer AS DECIMAL(3,1)) AS v
+  FROM survey_answer sa
+  JOIN survey_question sq ON sq.id = sa.survey_question_id
+  JOIN survey s ON s.id = sq.survey_id
+  WHERE s.survey_number = 'S25120024'
+    AND sq.id = 296
+    AND sa.answer IS NOT NULL
+) a1
+JOIN (
+  SELECT sa.submission_id, CAST(sa.answer AS DECIMAL(3,1)) AS v
+  FROM survey_answer sa
+  JOIN survey_question sq ON sq.id = sa.survey_question_id
+  JOIN survey s ON s.id = sq.survey_id
+  WHERE s.survey_number = 'S25120024'
+    AND sq.id = 297
+    AND sa.answer IS NOT NULL
+) a2 ON a1.submission_id = a2.submission_id;
+
+── RESULT: Query 1 ──
+ pearson_correlation
+               0.129
+
+(1 rows)
+
+
+── GENERATED SQL: Query 2 ──
+-- [Distribution & Scoring] What is the frequency distribution of scores for order fulfillment speed and accuracy (Q298)? (Q298)
+SELECT CAST(sa.answer AS SIGNED) AS score_value, COUNT(*) AS frequency
+FROM survey_answer sa
+JOIN survey_question sq ON sq.id = sa.survey_question_id
+JOIN survey s ON s.id = sq.survey_id
+WHERE s.survey_number = 'S25120024'
+  AND sq.id = 298
+  AND sa.answer IS NOT NULL
+GROUP BY CAST(sa.answer AS SIGNED)
+ORDER BY CAST(sa.answer AS SIGNED);
+
+── RESULT: Query 2 ──
+ score_value  frequency
+           1        147
+           2         40
+           3         42
+           4         90
+           5       2921
+
+(5 rows)
+
+
+── GENERATED SQL: Query 3 ──
+-- [Data Quality] What is the percentage of null responses for the Net Promoter Score question (Q299)? (Q299)
+SELECT ROUND(100.0 * COUNT(CASE WHEN sa.selected_options_id IS NULL OR sa.selected_options_id = '' THEN 1 END) / COUNT(*), 2) AS null_response_percentage
+FROM survey_answer sa
+JOIN survey_question sq ON sq.id = sa.survey_question_id
+JOIN survey s ON s.id = sq.survey_id
+WHERE s.survey_number = 'S25120024'
+  AND sq.id = 299;
+
+── RESULT: Query 3 ──
+ null_response_percentage
+                      0.0
+
+(1 rows)
+
+
+── GENERATED SQL: Query 4 ──
+-- [Correlation & Impact] How does satisfaction with order fulfillment (Q298) align with overall service satisfaction (Q296)? (Q296, Q298)
+SELECT ROUND(
+  (COUNT(*) * SUM(a1.v * a2.v) - SUM(a1.v) * SUM(a2.v)) /
+  SQRT(
+    (COUNT(*) * SUM(a1.v * a1.v) - POW(SUM(a1.v), 2)) *
+    (COUNT(*) * SUM(a2.v * a2.v) - POW(SUM(a2.v), 2))
+  ), 4
+) AS pearson_correlation
+FROM (
+  SELECT sa.submission_id, CAST(sa.answer AS DECIMAL(3,1)) AS v
+  FROM survey_answer sa
+  JOIN survey_question sq ON sq.id = sa.survey_question_id
+  JOIN survey s ON s.id = sq.survey_id
+  WHERE s.survey_number = 'S25120024'
+    AND sq.id = 296
+    AND sa.answer IS NOT NULL
+) a1
+JOIN (
+  SELECT sa.submission_id, CAST(sa.answer AS DECIMAL(3,1)) AS v
+  FROM survey_answer sa
+  JOIN survey_question sq ON sq.id = sa.survey_question_id
+  JOIN survey s ON s.id = sq.survey_id
+  WHERE s.survey_number = 'S25120024'
+    AND sq.id = 298
+    AND sa.answer IS NOT NULL
+) a2 ON a1.submission_id = a2.submission_id;
+
+── RESULT: Query 4 ──
+ pearson_correlation
+              0.1496
+
+(1 rows)

@@ -1,0 +1,76 @@
+SELECTION PIPELINE REPORT
+Survey   : S25120024
+Generated: 2026-04-12 16:30:09
+======================================================================
+
+── QUESTIONS ──
+
+
+── GENERATED SQL: Query 1 ──
+-- What is the count and percentage of each answer option for overall service satisfaction? (Q296)
+SELECT 
+  CAST(sa.answer AS SIGNED) AS answer_value,
+  COUNT(*) AS count,
+  ROUND(100.0 * COUNT(*) / (SELECT COUNT(*) FROM survey_answer sa2 
+    JOIN survey_question sq2 ON sq2.id = sa2.survey_question_id 
+    JOIN survey s2 ON s2.id = sq2.survey_id 
+    WHERE s2.survey_number = 'S25120024' AND sq2.id = 296), 2) AS percentage
+FROM survey_answer sa
+JOIN survey_question sq ON sq.id = sa.survey_question_id
+JOIN survey s ON s.id = sq.survey_id
+WHERE s.survey_number = 'S25120024' AND sq.id = 296
+GROUP BY CAST(sa.answer AS SIGNED);
+
+── RESULT: Query 1 ──
+ answer_value  count  percentage
+            1    139        4.29
+            2     36        1.11
+            3    111        3.43
+            4    123        3.80
+            5   2831       87.38
+
+(5 rows)
+
+
+── GENERATED SQL: Query 2 ──
+-- How does the average overall service satisfaction (Q296) differ across the various salesman performance ratings (Q297)? (Q296, Q297)
+SELECT 
+  CAST(sa297.answer AS SIGNED) AS salesman_rating,
+  ROUND(AVG(CAST(sa296.answer AS DECIMAL(3,1))), 2) AS avg_overall_satisfaction
+FROM survey_answer sa296
+JOIN survey_answer sa297 ON sa296.submission_id = sa297.submission_id
+JOIN survey_question sq296 ON sq296.id = sa296.survey_question_id
+JOIN survey_question sq297 ON sq297.id = sa297.survey_question_id
+JOIN survey s ON s.id = sq296.survey_id
+WHERE s.survey_number = 'S25120024' 
+  AND sq296.id = 296 
+  AND sq297.id = 297
+  AND sa296.answer IS NOT NULL 
+  AND sa297.answer IS NOT NULL
+GROUP BY CAST(sa297.answer AS SIGNED);
+
+── RESULT: Query 2 ──
+ salesman_rating  avg_overall_satisfaction
+               1                      3.70
+               2                      3.63
+               3                      3.71
+               4                      3.78
+               5                      4.20
+
+(5 rows)
+
+
+── GENERATED SQL: Query 3 ──
+-- What proportion of survey responses have a null answer for the recommendation likelihood question? (Q299)
+SELECT 
+  ROUND(100.0 * COUNT(CASE WHEN sa.selected_options_id IS NULL OR sa.selected_options_id = '' THEN 1 END) / COUNT(*), 2) AS null_percentage
+FROM survey_answer sa
+JOIN survey_question sq ON sq.id = sa.survey_question_id
+JOIN survey s ON s.id = sq.survey_id
+WHERE s.survey_number = 'S25120024' AND sq.id = 299;
+
+── RESULT: Query 3 ──
+ null_percentage
+             0.0
+
+(1 rows)

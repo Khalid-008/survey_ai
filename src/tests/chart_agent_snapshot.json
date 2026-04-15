@@ -2,345 +2,83 @@
   "survey_id": "S25120024",
   "text_questions_result": {
     "300": {
-      "sentiment_distribution": {
-        "العدد": {
-          "positive": 76,
-          "neutral": 12,
-          "negative": 7
-        },
-        "النسبة المئوية (%)": {
-          "positive": 80.0,
-          "neutral": 12.63,
-          "negative": 7.37
-        }
-      },
-      "top_topics": {
-        "علي": 8,
-        "تركي": 8,
-        "علي حسن": 8,
-        "حسن": 8,
-        "التعامل": 8,
-        "الله": 8,
-        "الاستاذ": 8,
-        "الشكر": 8,
-        "شكر": 8,
-        "حسن التعامل": 8,
-        "مميز": 2,
-        "جدا": 2,
-        "ممتاز": 2,
-        "الموظف": 2,
-        "وسرعه": 2
-      },
-      "top_topics_by_sentiment": {},
-      "top_entities": {
-        "الشرايح (منتج)": 3,
-        "منكم (شخص)": 1,
-        "نامل (شخص)": 1,
-        "البيانات (منتج)": 1,
-        "جيد (منتج)": 1,
-        "اسوعين (شخص)": 1,
-        "ل (شخص)": 1,
-        "كويك بلس (منتج)": 1,
-        "موظف (شخص)": 1,
-        "عبدالكريم (شخص)": 1,
-        "المندوب (شخص)": 1
-      },
-      "top_words": {
-        "الشرايح": 3,
-        "منكم": 1,
-        "خفض": 1,
-        "اسعار": 1,
-        "نامل": 1,
-        "البيانات": 1,
-        "جيد": 1,
-        "تقريبن": 1,
-        "جدن": 1,
-        "اسوعين": 1,
-        "عشان": 1,
-        "تجي": 1,
-        "نعاني": 1,
-        "كثره": 1,
-        "اعطال": 1
-      },
-      "topics_analysis": "لا توجد بيانات كافية للتحليل",
-      "entities_analysis": "## 📊 مؤشرات الكيانs:\n- الشرايح (منتج): 3 تكرار (42.86%)\n- نامل (شخص): 1 تكرار (14.29%)\n- منكم (شخص): 1 تكرار (14.29%)\n- البيانات (منتج): 1 تكرار (14.29%)\n- جيد (منتج): 1 تكرار (14.29%)\n- اسوعين (شخص): 1 تكرار (14.29%)\n- ل (شخص): 1 تكرار (14.29%)\n- كويك بلس (منتج): 1 تكرار (14.29%)\n- موظف (شخص): 1 تكرار (14.29%)\n- عبدالكريم (شخص): 1 تكرار (14.29%)\n- المندوب (شخص): 1 تكرار (14.29%)\n\n## 📝 التقرير المختصر:\n- **الشرايح**: تكرار عالي نتيجة شكاوى متكررة حول تأخر تسليم الشرايح وعدم حل مشكلة العمولة، ما يوضح مشكلة لوجستية تحتاج تحسيناً فوريًا.  \n- **نامل / منكم / البيانات**: جميعها مرتبطة بطلب خفض أسعار البيانات، مما يشير إلى حساسية العملاء للتكلفة ورغبتهم في عروض أسعار أقل.  \n- **اسوعين**: ذُكر في سياق الانتظار “تقريباً أسوعين” لتوصيل الشرايح، reinforcing مشكلة الوقت المستغرق.  \n- **كويك بلس**: شكوى عن أعطال متكررة، تدل على عدم استقرار الخدمة التقنية.  \n- **عبدالكريم / موظف**: إشارة إيجابية للموظف عبدالكريم، تُظهر تقدير العملاء لأداء الموظفين المميز.  \n- **المندوب**: ذكر مرة واحدة مع الشرايح لتأكيد تأخر التوصيل، ما يدعم نفس المشكلة السابقة.  \n- **جيد / ل**: تعبيرات قليلة غير مركزة ولا تضيف رؤى ذات وزن.  \n\n**الاستنتاج العام:** أبرز نقاط الضعف هي تأخر تسليم الشرايح ومشكلات العمولة، بالإضافة إلى طلب خفض الأسعار وأعطال كويك بلس. فرص التحسين تكمن في تعزيز كفاءة التوزيع، مراجعة سياسات العمولة، وتحسين استقرار الخدمة التقنية، مع الاستفادة من الموظفين المتميزين مثل عبدالكريم لتعزيز تجربة العملاء.",
-      "words_analysis": "## 📊 مؤشرات الكلمات:\n- **الشرايح**: 3 تكرار (42.9 %)\n- **نامل**: 1 تكرار (14.3 %)\n- **منكم**: 1 تكرار (14.3 %)\n- **خفض**: 1 تكرار (14.3 %)\n- **اسعار**: 1 تكرار (14.3 %)\n- **البيانات**: 1 تكرار (14.3 %)\n- **جيد**: 1 تكرار (14.3 %)\n- **جدن**: 1 تكرار (14.3 %)\n- **تقريبن**: 1 تكرار (14.3 %)\n- **اسوعين**: 1 تكرار (14.3 %)\n- **عشان**: 1 تكرار (14.3 %)\n- **تجي**: 1 تكرار (14.3 %)\n- **نعاني**: 1 تكرار (14.3 %)\n- **كثره**: 1 تكرار (14.3 %)\n- **اعطال**: 1 تكرار (14.3 %)\n\n## 📝 التقرير المختصر:\n- **الشرايح** (42.9 %): تتكرر بسبب تأخر المندوب في تسليم الشرايح ومشكلات العمولة المرتبطة بها، ما يُظهر أن إمداد الشرايح هو نقطة ألم رئيسية للمستجيبين.\n- **نامل – منكم – خفض – اسعار – البيانات** (كل منها 14.3 %): تعكس طلباً موحداً لخفض أسعار البيانات، أي أن التكلفة تُعد عاملاً حساساً للرضا.\n- **جيد / جدن** (كل منها 14.3 %): ملاحظة إيجابية قليلة تشير إلى رضا محدود أو إشادة محدودة بالأداء.\n- **تقريبن – اسوعين – عشان – تجي** (كل منها 14.3 %): توضح أن استغراق ما يقرب من شهرين لتوصيل الشرايح يُعد عبئاً زمنياً غير مقبول.\n- **نعاني – كثره – اعطال** (كل منها 14.3 %): تشير إلى مشاكل تقنية متكررة (أعطال كويك بلس) تُسبب إزعاجاً مستمراً للمستخدمين.",
-      "survey_question": "رأيك يهمنا، فضلاً شاركنا تعليق او مقترح يساعد في تحسين التجربة",
-      "survey_title": "MS - Merchant with salesman CSAT",
-      "question_id": "300"
+      "question_id": 300,
+      "question_ar": "رأيك يهمنا، فضلاً شاركنا تعليق او مقترح يساعد في تحسين التجربة",
+      "dominant_sentiment": "positive",
+      "top_topics": [
+        "شكر",
+        "التقدير",
+        "خدمة العملاء",
+        "أخلاق",
+        "سرعة الاستجابة",
+        "حسن التعامل",
+        "تحية",
+        "تعاون",
+        "جودة الخدمة",
+        "اقتراح"
+      ],
+      "top_entities": [
+        "تركي",
+        "الاخ تركي",
+        "المندوب",
+        "طارق",
+        "Esim",
+        "عزام",
+        "الشيخ بدر",
+        "رضا الشمري",
+        "سعود القحطاني",
+        "قنوات - شانلز"
+      ],
+      "final_summary": "غلبت التعليقات الإيجابية حيث أعرب المشاركون عن شكرهم وتقديرهم للموظفين، لا سيما الأخ تركي، مشيدين بسرعة الاستجابة وجودة الخدمة والأخلاق العالية. تم طرح عدة مقترحات لتحسين التجربة مثل إضافة شريحة eSIM، تحويل ملكية الخدمة وربط المنصة بشركة قنوات-شانلز. ولوُجدت ملاحظة واحدة سلبية بخصوص سلوك غير صادق وتأخير، فإن الانطباع العام يبقى إيجابياً.",
+      "top_positive_topics": [
+        [
+          "شكر وتقدير",
+          52
+        ],
+        [
+          "أخلاق",
+          14
+        ],
+        [
+          "سرعة",
+          10
+        ],
+        [
+          "دعاء",
+          6
+        ],
+        [
+          "تحية",
+          6
+        ],
+        [
+          "خدمة",
+          6
+        ],
+        [
+          "حسن التعامل",
+          4
+        ],
+        [
+          "احترام",
+          3
+        ],
+        [
+          "جودة الخدمة",
+          3
+        ],
+        [
+          "تعاون",
+          3
+        ]
+      ]
     }
   },
   "selection_questions_result": {
-    "questions_count": 4,
-    "questions_metadata": [
-      {
-        "id": 296,
-        "text": "بشكل عام، ما مدى رضاك عن خدماتنا؟",
-        "type": "EMOJIS"
-      },
-      {
-        "id": 297,
-        "text": "ما مدى رضاك عن أداء مندوب المبيعات الذي قام بخدمتك؟",
-        "type": "EMOJIS"
-      },
-      {
-        "id": 298,
-        "text": "ما مدى رضاك عن سرعة ودقة تنفيذ طلبك في الوقت المحدد؟",
-        "type": "EMOJIS"
-      },
-      {
-        "id": 299,
-        "text": "ما مدى احتمالية أن توصي بشركة قنوات كمورد لزميل أو شريك تجاري؟",
-        "type": "MULTIPLE_CHOICE"
-      }
-    ],
-    "distinct_per_question": {
-      "296": [
-        "Dissatisfied",
-        "Neutral",
-        "Satisfied",
-        "Very Dissatisfied",
-        "Very Satisfied"
-      ],
-      "297": [
-        "Dissatisfied",
-        "Satisfied",
-        "Very Dissatisfied",
-        "Very Satisfied"
-      ],
-      "298": [
-        "Dissatisfied",
-        "Neutral",
-        "Satisfied",
-        "Very Dissatisfied",
-        "Very Satisfied"
-      ],
-      "299": [
-        "0-6 (لا أوصي بشدة)",
-        "7-8 (محايد)",
-        "9-10 (أوصي بشدة)"
-      ]
-    },
-    "query_results": [
-      {
-        "label": "Query 1",
-        "sql": "-- Overall distribution and percentage for primary EMOJIS question (ID 296)\nSELECT sa.answer AS answer_value,\n       COUNT(*) AS response_count,\n       ROUND(100.0 * COUNT(*) / (\n           SELECT COUNT(*)\n           FROM survey_answer sa2\n           JOIN survey_question sq2 ON sa2.survey_question_id = sq2.id\n           JOIN survey s2 ON sq2.survey_id = s2.id\n           WHERE s2.survey_number = 'S25120024' AND sq2.id = 296\n       ), 2) AS percentage\nFROM survey_answer sa\nJOIN survey_question sq ON sa.survey_question_id = sq.id\nJOIN survey s ON sq.survey_id = s.id\nWHERE s.survey_number = 'S25120024' AND sq.id = 296\nGROUP BY sa.answer;",
-        "result": [
-          {
-            "answer_value": "1",
-            "response_count": 136,
-            "percentage": 4.49
-          },
-          {
-            "answer_value": "2",
-            "response_count": 35,
-            "percentage": 1.16
-          },
-          {
-            "answer_value": "3",
-            "response_count": 107,
-            "percentage": 3.53
-          },
-          {
-            "answer_value": "4",
-            "response_count": 109,
-            "percentage": 3.6
-          },
-          {
-            "answer_value": "5",
-            "response_count": 2642,
-            "percentage": 87.22
-          }
-        ]
-      },
-      {
-        "label": "Query 2",
-        "sql": "-- Average score for each EMOJIS question (IDs 296, 297, 298)\nSELECT sq.id AS question_id,\n       ROUND(AVG(CAST(sa.answer AS DECIMAL(3,1))), 2) AS avg_score,\n       COUNT(*) AS response_count\nFROM survey_answer sa\nJOIN survey_question sq ON sa.survey_question_id = sq.id\nJOIN survey s ON sq.survey_id = s.id\nWHERE s.survey_number = 'S25120024'\n  AND sq.id IN (296, 297, 298)\nGROUP BY sq.id;",
-        "result": [
-          {
-            "question_id": 296,
-            "avg_score": 4.68,
-            "response_count": 3029
-          },
-          {
-            "question_id": 297,
-            "avg_score": 4.77,
-            "response_count": 3029
-          },
-          {
-            "question_id": 298,
-            "avg_score": 4.72,
-            "response_count": 3029
-          }
-        ]
-      },
-      {
-        "label": "Query 3",
-        "sql": "-- Monthly trend for primary EMOJIS question (ID 296)\nSELECT DATE_FORMAT(sa.created_date, '%Y-%m') AS month,\n       COUNT(*) AS responses,\n       ROUND(AVG(CAST(sa.answer AS DECIMAL(3,1))), 2) AS avg_score,\n       ROUND(100.0 * COUNT(*) / (\n           SELECT COUNT(*)\n           FROM survey_answer sa2\n           JOIN survey_question sq2 ON sa2.survey_question_id = sq2.id\n           JOIN survey s2 ON sq2.survey_id = s2.id\n           WHERE s2.survey_number = 'S25120024' AND sq2.id = 296\n       ), 2) AS percentage_of_total\nFROM survey_answer sa\nJOIN survey_question sq ON sa.survey_question_id = sq.id\nJOIN survey s ON sq.survey_id = s.id\nWHERE s.survey_number = 'S25120024' AND sq.id = 296\nGROUP BY DATE_FORMAT(sa.created_date, '%Y-%m')\nORDER BY month;",
-        "result": [
-          {
-            "month": "2024-04",
-            "responses": 1,
-            "avg_score": 4.0,
-            "percentage_of_total": 0.03
-          },
-          {
-            "month": "2024-05",
-            "responses": 86,
-            "avg_score": 4.67,
-            "percentage_of_total": 2.84
-          },
-          {
-            "month": "2024-06",
-            "responses": 83,
-            "avg_score": 4.8,
-            "percentage_of_total": 2.74
-          },
-          {
-            "month": "2024-07",
-            "responses": 87,
-            "avg_score": 4.56,
-            "percentage_of_total": 2.87
-          },
-          {
-            "month": "2024-08",
-            "responses": 138,
-            "avg_score": 4.44,
-            "percentage_of_total": 4.56
-          },
-          {
-            "month": "2024-09",
-            "responses": 193,
-            "avg_score": 4.77,
-            "percentage_of_total": 6.37
-          },
-          {
-            "month": "2024-10",
-            "responses": 182,
-            "avg_score": 4.7,
-            "percentage_of_total": 6.01
-          },
-          {
-            "month": "2024-11",
-            "responses": 113,
-            "avg_score": 4.83,
-            "percentage_of_total": 3.73
-          },
-          {
-            "month": "2024-12",
-            "responses": 109,
-            "avg_score": 4.45,
-            "percentage_of_total": 3.6
-          },
-          {
-            "month": "2025-01",
-            "responses": 113,
-            "avg_score": 4.49,
-            "percentage_of_total": 3.73
-          },
-          {
-            "month": "2025-02",
-            "responses": 112,
-            "avg_score": 4.25,
-            "percentage_of_total": 3.7
-          },
-          {
-            "month": "2025-03",
-            "responses": 130,
-            "avg_score": 4.77,
-            "percentage_of_total": 4.29
-          },
-          {
-            "month": "2025-04",
-            "responses": 145,
-            "avg_score": 4.72,
-            "percentage_of_total": 4.79
-          },
-          {
-            "month": "2025-05",
-            "responses": 170,
-            "avg_score": 4.81,
-            "percentage_of_total": 5.61
-          },
-          {
-            "month": "2025-06",
-            "responses": 102,
-            "avg_score": 4.8,
-            "percentage_of_total": 3.37
-          },
-          {
-            "month": "2025-07",
-            "responses": 149,
-            "avg_score": 4.72,
-            "percentage_of_total": 4.92
-          },
-          {
-            "month": "2025-08",
-            "responses": 196,
-            "avg_score": 4.73,
-            "percentage_of_total": 6.47
-          },
-          {
-            "month": "2025-09",
-            "responses": 173,
-            "avg_score": 4.57,
-            "percentage_of_total": 5.71
-          },
-          {
-            "month": "2025-10",
-            "responses": 196,
-            "avg_score": 4.74,
-            "percentage_of_total": 6.47
-          },
-          {
-            "month": "2025-11",
-            "responses": 138,
-            "avg_score": 4.83,
-            "percentage_of_total": 4.56
-          },
-          {
-            "month": "2025-12",
-            "responses": 130,
-            "avg_score": 4.53,
-            "percentage_of_total": 4.29
-          },
-          {
-            "month": "2026-01",
-            "responses": 38,
-            "avg_score": 4.95,
-            "percentage_of_total": 1.25
-          },
-          {
-            "month": "2026-02",
-            "responses": 224,
-            "avg_score": 4.71,
-            "percentage_of_total": 7.4
-          },
-          {
-            "month": "2026-03",
-            "responses": 21,
-            "avg_score": 4.95,
-            "percentage_of_total": 0.69
-          }
-        ]
-      },
-      {
-        "label": "Query 4",
-        "sql": "-- NPS breakdown for MULTIPLE_CHOICE question (ID 299)\nSELECT\n   SUM(CASE WHEN CAST(sa.selected_options_id AS SIGNED) IN (395) THEN 1 ELSE 0 END) AS detractors,\n   SUM(CASE WHEN CAST(sa.selected_options_id AS SIGNED) IN (396) THEN 1 ELSE 0 END) AS passives,\n   SUM(CASE WHEN CAST(sa.selected_options_id AS SIGNED) IN (397) THEN 1 ELSE 0 END) AS promoters,\n   ROUND(100.0 * (\n       SUM(CASE WHEN CAST(sa.selected_options_id AS SIGNED) IN (397) THEN 1 ELSE 0 END) -\n       SUM(CASE WHEN CAST(sa.selected_options_id AS SIGNED) IN (395) THEN 1 ELSE 0 END)\n   ) / NULLIF(COUNT(*), 0), 2) AS nps_score\nFROM survey_answer sa\nJOIN survey_question sq ON sa.survey_question_id = sq.id\nJOIN survey s ON sq.survey_id = s.id\nWHERE s.survey_number = 'S25120024' AND sq.id = 299\n  AND sa.selected_options_id IS NOT NULL\n  AND sa.selected_options_id != '';",
-        "result": [
-          {
-            "detractors": 0.0,
-            "passives": 0.0,
-            "promoters": 2629.0,
-            "nps_score": 86.79
-          }
-        ]
-      },
-      {
-        "label": "Query 5",
-        "sql": "-- Department-level breakdown for primary EMOJIS question (ID 296)\nSELECT d.name_en AS department,\n       COUNT(*) AS response_count,\n       ROUND(AVG(CAST(sa.answer AS DECIMAL(3,1))), 2) AS avg_score,\n       ROUND(100.0 * COUNT(*) / (\n           SELECT COUNT(*)\n           FROM survey_answer sa2\n           JOIN survey_question sq2 ON sa2.survey_question_id = sq2.id\n           JOIN survey s2 ON sq2.survey_id = s2.id\n           WHERE s2.survey_number = 'S25120024' AND sq2.id = 296\n       ), 2) AS percentage_of_total\nFROM survey_answer sa\nJOIN survey_question sq ON sa.survey_question_id = sq.id\nJOIN survey s ON sq.survey_id = s.id\nJOIN department_survey ds ON ds.survey_id = s.id\nJOIN department d ON d.id = ds.department_id\nWHERE s.survey_number = 'S25120024' AND sq.id = 296\nGROUP BY d.name_en;",
-        "result": []
-      }
+    "results": [
+      "Query 1 Results\n[\n  {\n    \"satisfaction_score\": 1,\n    \"response_count\": 139,\n    \"percentage\": 4.32\n  },\n  {\n    \"satisfaction_score\": 2,\n    \"response_count\": 36,\n    \"percentage\": 1.12\n  },\n  {\n    \"satisfaction_score\": 3,\n    \"response_count\": 109,\n    \"percentage\": 3.39\n  },\n  {\n    \"satisfaction_score\": 4,\n    \"response_count\": 121,\n    \"percentage\": 3.76\n  },\n  {\n    \"satisfaction_score\": 5,\n    \"response_count\": 2813,\n    \"percentage\": 87.41\n  }\n]\n\nResult Summary: question: ما هو توزيع درجات الرضا العام عن الخدمة؟\nsummary: توزع الدرجات يظهر هيمنة واضحة للدرجة 5 حيث استحوذت على 87.41% من الإجابات (2813 مشاركة). الدرجات 1 و2 و3 و4 تمثل نسباً ضئيلة فقط، إذ بلغت 4.32% و1.12% و3.39% و3.76% على التوالي. بذلك يتضح أن رضا العملاء عن الخدمة مرتفع جداً.",
+      "Query 2 Results\n[\n  {\n    \"sales_rep_rating\": 1,\n    \"avg_overall_satisfaction\": 3.7\n  },\n  {\n    \"sales_rep_rating\": 2,\n    \"avg_overall_satisfaction\": 3.63\n  },\n  {\n    \"sales_rep_rating\": 3,\n    \"avg_overall_satisfaction\": 3.71\n  },\n  {\n    \"sales_rep_rating\": 4,\n    \"avg_overall_satisfaction\": 3.77\n  },\n  {\n    \"sales_rep_rating\": 5,\n    \"avg_overall_satisfaction\": 4.2\n  }\n]\n\nResult Summary: question: كيف يختلف متوسط الرضا العام عن الخدمة عبر مستويات تقييم أداء مندوبي المبيعات؟\n\nsummary: يظهر أن متوسط الرضا عن الخدمة يزداد مع ارتفاع تقييم مندوبي المبيعات. التقييم 1 يحقق متوسط 3.70، بينما التقييم 5 يصل إلى أعلى متوسط وهو 4.20. الفروقات بين التقييمات المتوسطة (2‑4) قليلة نسبياً (من 3.63 إلى 3.77)، لكن زيادة ملحوظة تظهر عند أعلى تقييم. باختصار، رضا العملاء يتوافق إيجابياً مع تقييم مندوبي المبيعات، مع أعلى مستوى رضى عند أفضل تقييمات المناديب.",
+      "Query 3 Results\n[\n  {\n    \"missing_percentage\": 0.0\n  }\n]\n\nResult Summary: question: ما نسبة الردود في الاستطلاع التي تفتقد إجابة لسؤال احتمالية التوصية؟ (جودة البيانات) (Q299)\n\nsummary: نسبة الإجابات المفقودة لهذا السؤال هي 0.0٪، مما يدل على عدم وجود أي ردود غير مكتملة في الاستطلاع بالنسبة لهذا البند. جودة البيانات في هذا الجانب ممتازة. باختصار، جميع المشاركين أجابوا على سؤال احتمالية التوصية."
     ],
     "errors": []
   }

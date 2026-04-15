@@ -1,0 +1,99 @@
+SELECTION PIPELINE REPORT
+Survey   : S25120024
+Generated: 2026-04-12 19:33:36
+======================================================================
+
+── QUESTIONS ──
+
+
+── GENERATED SQL: Query 1 ──
+-- What is the count of responses for each emoji rating (1‑5) in the overall service satisfaction question? (Q296)
+SELECT CAST(sa.answer AS SIGNED) AS rating, COUNT(*) AS response_count
+FROM survey_answer sa
+JOIN survey_question sq ON sq.id = sa.survey_question_id
+JOIN survey s ON s.id = sq.survey_id
+WHERE s.survey_number = 'S25120024' AND sq.id = 296
+GROUP BY CAST(sa.answer AS SIGNED)
+ORDER BY CAST(sa.answer AS SIGNED);
+
+── RESULT: Query 1 ──
+ rating  response_count
+      1             139
+      2              36
+      3             111
+      4             123
+      5            2831
+
+(5 rows)
+
+
+── GENERATED SQL: Query 2 ──
+-- What are the average ratings for overall service satisfaction (Q296) and for sales representative performance (Q297)? (Q296, Q297)
+SELECT 
+  CASE WHEN sq.id = 296 THEN 'Overall Service Satisfaction'
+       WHEN sq.id = 297 THEN 'Sales Representative Performance' END AS question_label,
+  sq.id AS question_id,
+  ROUND(AVG(CAST(sa.answer AS DECIMAL(3,1))), 2) AS average_rating
+FROM survey_answer sa
+JOIN survey_question sq ON sq.id = sa.survey_question_id
+JOIN survey s ON s.id = sq.survey_id
+WHERE s.survey_number = 'S25120024' AND sq.id IN (296, 297)
+GROUP BY 
+  CASE WHEN sq.id = 296 THEN 'Overall Service Satisfaction'
+       WHEN sq.id = 297 THEN 'Sales Representative Performance' END,
+  sq.id
+ORDER BY sq.id;
+
+── RESULT: Query 2 ──
+                  question_label  question_id  average_rating
+    Overall Service Satisfaction          296            4.69
+Sales Representative Performance          297            4.78
+
+(2 rows)
+
+
+── GENERATED SQL: Query 3 ──
+-- How strongly are the overall service satisfaction scores (Q296) correlated with the speed and accuracy of order execution scores (Q298)? (Q296, Q298)
+SELECT ROUND(
+    (COUNT(*) * SUM(a1.v * a2.v) - SUM(a1.v) * SUM(a2.v)) /
+    SQRT(
+      (COUNT(*) * SUM(a1.v * a1.v) - POW(SUM(a1.v), 2)) *
+      (COUNT(*) * SUM(a2.v * a2.v) - POW(SUM(a2.v), 2))
+    ), 4
+  ) AS pearson_correlation
+FROM (
+  SELECT sa.submission_id, CAST(sa.answer AS SIGNED) AS v
+  FROM survey_answer sa
+  JOIN survey_question sq ON sq.id = sa.survey_question_id
+  JOIN survey s ON s.id = sq.survey_id
+  WHERE s.survey_number = 'S25120024' AND sq.id = 296
+) a1
+JOIN (
+  SELECT sa.submission_id, CAST(sa.answer AS SIGNED) AS v
+  FROM survey_answer sa
+  JOIN survey_question sq ON sq.id = sa.survey_question_id
+  JOIN survey s ON s.id = sq.survey_id
+  WHERE s.survey_number = 'S25120024' AND sq.id = 298
+) a2 ON a1.submission_id = a2.submission_id;
+
+── RESULT: Query 3 ──
+ pearson_correlation
+              0.1496
+
+(1 rows)
+
+
+── GENERATED SQL: Query 4 ──
+-- What proportion of submissions have a missing (NULL) answer for the referral likelihood question? (Q299)
+SELECT 
+  ROUND(100.0 * SUM(CASE WHEN sa.answer IS NULL THEN 1 ELSE 0 END) / COUNT(*), 2) AS null_proportion_percent
+FROM survey_answer sa
+JOIN survey_question sq ON sq.id = sa.survey_question_id
+JOIN survey s ON s.id = sq.survey_id
+WHERE s.survey_number = 'S25120024' AND sq.id = 299;
+
+── RESULT: Query 4 ──
+ null_proportion_percent
+                   100.0
+
+(1 rows)

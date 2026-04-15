@@ -1,0 +1,113 @@
+SELECTION PIPELINE REPORT
+Survey   : S25120024
+Generated: 2026-04-12 19:04:10
+======================================================================
+
+── QUESTIONS ──
+
+
+── GENERATED SQL: Query 1 ──
+-- What is the distribution of overall service satisfaction scores? (Q296)
+SELECT 
+    CAST(sa.answer AS SIGNED) AS satisfaction_score,
+    COUNT(*) AS count
+FROM survey_answer sa
+JOIN survey_question sq ON sq.id = sa.survey_question_id
+JOIN survey s ON s.id = sq.survey_id
+WHERE s.survey_number = 'S25120024'
+    AND sa.survey_question_id = 296
+    AND sa.answer IS NOT NULL
+GROUP BY CAST(sa.answer AS SIGNED)
+ORDER BY CAST(sa.answer AS SIGNED);
+
+── RESULT: Query 1 ──
+ satisfaction_score  count
+                  1    139
+                  2     36
+                  3    111
+                  4    123
+                  5   2831
+
+(5 rows)
+
+
+── GENERATED SQL: Query 2 ──
+-- How does the average overall service satisfaction score differ across the various sales‑rep performance ratings? (Q296, Q297)
+SELECT 
+    CAST(sa297.answer AS SIGNED) AS sales_rep_rating,
+    ROUND(AVG(CAST(sa296.answer AS DECIMAL(3,1))), 2) AS avg_overall_satisfaction
+FROM survey_answer sa296
+JOIN survey_answer sa297 ON sa296.submission_id = sa297.submission_id
+JOIN survey_question sq296 ON sq296.id = sa296.survey_question_id
+JOIN survey_question sq297 ON sq297.id = sa297.survey_question_id
+JOIN survey s ON s.id = sq296.survey_id
+WHERE s.survey_number = 'S25120024'
+    AND sa296.survey_question_id = 296
+    AND sa297.survey_question_id = 297
+    AND sa296.answer IS NOT NULL
+    AND sa297.answer IS NOT NULL
+GROUP BY CAST(sa297.answer AS SIGNED)
+ORDER BY CAST(sa297.answer AS SIGNED);
+
+── RESULT: Query 2 ──
+ sales_rep_rating  avg_overall_satisfaction
+                1                      3.70
+                2                      3.63
+                3                      3.71
+                4                      3.78
+                5                      4.20
+
+(5 rows)
+
+
+── GENERATED SQL: Query 3 ──
+-- What is the correlation between overall service satisfaction and satisfaction with speed & accuracy of order execution? (Q296, Q298)
+SELECT ROUND(
+    (COUNT(*) * SUM(a1.v * a2.v) - SUM(a1.v) * SUM(a2.v)) /
+    SQRT(
+      (COUNT(*) * SUM(a1.v * a1.v) - POW(SUM(a1.v), 2)) *
+      (COUNT(*) * SUM(a2.v * a2.v) - POW(SUM(a2.v), 2))
+    ), 4
+  ) AS pearson_correlation
+FROM (
+    SELECT sa296.submission_id, CAST(sa296.answer AS DECIMAL(10,2)) AS v
+    FROM survey_answer sa296
+    JOIN survey_question sq296 ON sq296.id = sa296.survey_question_id
+    JOIN survey s ON s.id = sq296.survey_id
+    WHERE s.survey_number = 'S25120024'
+        AND sa296.survey_question_id = 296
+        AND sa296.answer IS NOT NULL
+) a1
+JOIN (
+    SELECT sa298.submission_id, CAST(sa298.answer AS DECIMAL(10,2)) AS v
+    FROM survey_answer sa298
+    JOIN survey_question sq298 ON sq298.id = sa298.survey_question_id
+    JOIN survey s ON s.id = sq298.survey_id
+    WHERE s.survey_number = 'S25120024'
+        AND sa298.survey_question_id = 298
+        AND sa298.answer IS NOT NULL
+) a2 ON a1.submission_id = a2.submission_id;
+
+── RESULT: Query 3 ──
+ pearson_correlation
+              0.1496
+
+(1 rows)
+
+
+── GENERATED SQL: Query 4 ──
+-- How many survey responses have a missing answer for the recommendation likelihood question? (Q299)
+SELECT 
+    COUNT(*) AS missing_responses
+FROM survey_answer sa
+JOIN survey_question sq ON sq.id = sa.survey_question_id
+JOIN survey s ON s.id = sq.survey_id
+WHERE s.survey_number = 'S25120024'
+    AND sa.survey_question_id = 299
+    AND sa.answer IS NULL;
+
+── RESULT: Query 4 ──
+ missing_responses
+              3240
+
+(1 rows)

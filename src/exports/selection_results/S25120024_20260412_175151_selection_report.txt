@@ -1,0 +1,112 @@
+SELECTION PIPELINE REPORT
+Survey   : S25120024
+Generated: 2026-04-12 17:51:51
+======================================================================
+
+── QUESTIONS ──
+
+
+── GENERATED SQL: Query 1 ──
+-- What is the count and percentage of each rating value for the overall service satisfaction question? (Q296)
+SELECT 
+    CAST(sa.answer AS SIGNED) AS rating_value,
+    COUNT(*) AS count,
+    ROUND(100.0 * COUNT(*) / (SELECT COUNT(*) FROM survey_answer sa2 
+        JOIN survey_question sq2 ON sq2.id = sa2.survey_question_id 
+        JOIN survey s2 ON s2.id = sq2.survey_id 
+        WHERE s2.survey_number = 'S25120024' AND sq2.id = 296), 2) AS percentage
+FROM survey_answer sa
+JOIN survey_question sq ON sq.id = sa.survey_question_id
+JOIN survey s ON s.id = sq.survey_id
+WHERE s.survey_number = 'S25120024' AND sq.id = 296
+GROUP BY CAST(sa.answer AS SIGNED);
+
+── RESULT: Query 1 ──
+ rating_value  count  percentage
+            1    139        4.29
+            2     36        1.11
+            3    111        3.43
+            4    123        3.80
+            5   2831       87.38
+
+(5 rows)
+
+
+── GENERATED SQL: Query 2 ──
+-- What is the average rating for sales‑rep performance and how does it differ from the average overall satisfaction rating? (Q297, Q296)
+SELECT 
+    (SELECT AVG(CAST(sa.answer AS DECIMAL(3,1))) 
+     FROM survey_answer sa 
+     JOIN survey_question sq ON sq.id = sa.survey_question_id 
+     JOIN survey s ON s.id = sq.survey_id 
+     WHERE s.survey_number = 'S25120024' AND sq.id = 296) AS overall_satisfaction_avg,
+    (SELECT AVG(CAST(sa.answer AS DECIMAL(3,1))) 
+     FROM survey_answer sa 
+     JOIN survey_question sq ON sq.id = sa.survey_question_id 
+     JOIN survey s ON s.id = sq.survey_id 
+     WHERE s.survey_number = 'S25120024' AND sq.id = 297) AS sales_rep_avg,
+    (SELECT AVG(CAST(sa.answer AS DECIMAL(3,1))) 
+     FROM survey_answer sa 
+     JOIN survey_question sq ON sq.id = sa.survey_question_id 
+     JOIN survey s ON s.id = sq.survey_id 
+     WHERE s.survey_number = 'S25120024' AND sq.id = 297) -
+    (SELECT AVG(CAST(sa.answer AS DECIMAL(3,1))) 
+     FROM survey_answer sa 
+     JOIN survey_question sq ON sq.id = sa.survey_question_id 
+     JOIN survey s ON s.id = sq.survey_id 
+     WHERE s.survey_number = 'S25120024' AND sq.id = 296) AS difference;
+
+── RESULT: Query 2 ──
+ overall_satisfaction_avg  sales_rep_avg  difference
+                  4.68858          4.775     0.08642
+
+(1 rows)
+
+
+── GENERATED SQL: Query 3 ──
+-- What is the Pearson correlation coefficient between overall service satisfaction and speed & accuracy of order execution? (Q296, Q298)
+SELECT ROUND(
+    (COUNT(*) * SUM(a1.v * a2.v) - SUM(a1.v) * SUM(a2.v)) /
+    SQRT(
+      (COUNT(*) * SUM(a1.v * a1.v) - POW(SUM(a1.v), 2)) *
+      (COUNT(*) * SUM(a2.v * a2.v) - POW(SUM(a2.v), 2))
+    ), 4
+  ) AS pearson_correlation
+FROM (
+    SELECT sa.submission_id, CAST(sa.answer AS DECIMAL(3,1)) AS v
+    FROM survey_answer sa
+    JOIN survey_question sq ON sq.id = sa.survey_question_id
+    JOIN survey s ON s.id = sq.survey_id
+    WHERE s.survey_number = 'S25120024' AND sq.id = 296
+) a1
+INNER JOIN (
+    SELECT sa.submission_id, CAST(sa.answer AS DECIMAL(3,1)) AS v
+    FROM survey_answer sa
+    JOIN survey_question sq ON sq.id = sa.survey_question_id
+    JOIN survey s ON s.id = sq.survey_id
+    WHERE s.survey_number = 'S25120024' AND sq.id = 298
+) a2 ON a1.submission_id = a2.submission_id;
+
+── RESULT: Query 3 ──
+ pearson_correlation
+              0.1496
+
+(1 rows)
+
+
+── GENERATED SQL: Query 4 ──
+-- What proportion of survey submissions have a NULL answer for the recommendation likelihood question? (Q299)
+SELECT 
+    COUNT(*) AS total_submissions,
+    SUM(CASE WHEN sa.answer IS NULL THEN 1 ELSE 0 END) AS null_count,
+    ROUND(100.0 * SUM(CASE WHEN sa.answer IS NULL THEN 1 ELSE 0 END) / COUNT(*), 2) AS null_percentage
+FROM survey_answer sa
+JOIN survey_question sq ON sq.id = sa.survey_question_id
+JOIN survey s ON s.id = sq.survey_id
+WHERE s.survey_number = 'S25120024' AND sq.id = 299;
+
+── RESULT: Query 4 ──
+ total_submissions  null_count  null_percentage
+              3240      3240.0            100.0
+
+(1 rows)
